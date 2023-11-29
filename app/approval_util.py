@@ -30,7 +30,7 @@ class NoZeroTable():
     #     datetime_query = self.table.query.filter(and_(filter)).all()
     #     return datetime_query
 
-    def convert_value_to_none(self, func: Callable[[datetime, datetime], List[T]], *target: datetime) -> None:
+    def convert_value_to_none(self, func: Callable[[datetime, datetime], List[T]], *target: str) -> None:
         pickup_objects = func
 
         for pickup_obj in pickup_objects:
