@@ -36,6 +36,9 @@ class NotificationList(db.Model):
     END_DAY = db.Column(db.Date, nullable=True)
     END_TIME = db.Column(db.Time, nullable=True)
     REMARK = db.Column(db.String(255))
+    D_PAIDHOLIDAY_LOGs = db.relationship(
+        "PaidHolidayLog", backref="D_NOTIFICATION_LIST"
+    )
 
     def __init__(
         self,
@@ -74,3 +77,24 @@ class PaidHolidayModel(db.Model):
 
     def __init__(self, STAFFID):
         self.STAFFID = STAFFID
+
+
+class PaidHolidayLog(db.Model):
+    __tablename__ = "D_PAIDHOLIDAY_LOG"
+    id = db.Column(
+        db.Integer, primary_key=True, autoincrement=True, index=True, nullable=False
+    )
+    STAFFID = db.Column(
+        db.Integer, db.ForeignKey("M_STAFFINFO.STAFFID"), index=True, nullable=False
+    )
+    REMAIN_TIMES = db.Column(db.Float, nullable=True)
+    WORK_TIME = db.Column(db.Float, nullable=False)
+    NOTIFICATION_id = db.Column(
+        db.Integer, db.ForeignKey("D_NOTIFICATION_LIST.id"), index=True
+    )
+
+    def __init__(self, STAFFID, REMAIN_TIMES, WORK_TIME, NOTIFICATION_id):
+        self.STAFFID = STAFFID
+        self.REMAIN_TIMES = REMAIN_TIMES
+        self.WORK_TIME = WORK_TIME
+        self.NOTIFICATION_id = NOTIFICATION_id

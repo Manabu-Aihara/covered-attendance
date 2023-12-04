@@ -67,7 +67,11 @@ class User(db.Model):
     """    2023/11/27
         リレーション機能追加
         """
-    M_PAIDHOLIDAYs = db.relationship("PaidHolidayModel", backref="M_PAIDHOLIDAY")
+    # M_PAIDHOLIDAYs = db.relationship("PaidHolidayModel", backref="M_PAIDHOLIDAY")
+    """    2023/12/4
+        リレーション機能追加
+        """
+    D_PAIDHOLIDAY_LOGs = db.relationship("PaidHolidayLog", backref="M_STAFFINFO")
 
     def __init__(self, STAFFID):
         self.STAFFID = STAFFID
@@ -258,6 +262,7 @@ class Shinsei(db.Model):
     ONCALL = db.Column(db.String(32), index=True, nullable=True)  # オンコール当番
     ONCALL_COUNT = db.Column(db.String(32), index=True, nullable=True)  # オンコール回数
     ENGEL_COUNT = db.Column(db.String(32), index=True, nullable=True)  # エンゼルケア
+    ALCOHOL = db.Column(db.Boolean())
     NOTIFICATION = db.Column(db.String(32), index=True, nullable=True)  # 届出（午前）
     NOTIFICATION2 = db.Column(db.String(32), index=True, nullable=True)  # 届出（午後）
     OVERTIME = db.Column(db.String(32), index=True, nullable=True)  # 残業時間申請
@@ -274,6 +279,7 @@ class Shinsei(db.Model):
         ONCALL,
         ONCALL_COUNT,
         ENGEL_COUNT,
+        ALCOHOL,
         NOTIFICATION,
         NOTIFICATION2,
         OVERTIME,
@@ -288,6 +294,7 @@ class Shinsei(db.Model):
         self.ONCALL = ONCALL
         self.ONCALL_COUNT = ONCALL_COUNT
         self.ENGEL_COUNT = ENGEL_COUNT
+        self.ALCOHOL = ALCOHOL
         self.NOTIFICATION = NOTIFICATION
         self.NOTIFICATION2 = NOTIFICATION2
         self.OVERTIME = OVERTIME

@@ -9,7 +9,7 @@ from flask_login.utils import login_required
 from app import app, db
 from app.common_func import GetPullDownList
 from app.models import User, Todokede, SystemInfo
-from app.models_aprv import NotificationList, Approval
+from app.models_aprv import NotificationList, Approval, PaidHolidayLog
 from app.errors import not_admin
 from app.approval_util import toggle_notification_type, NoZeroTable
 from app.approval_contact import (
@@ -17,8 +17,8 @@ from app.approval_contact import (
     SkypeRelatedException,
     check_skype_account,
 )
-from app.content_paidholiday import HolidayAcquire, AcquisitionType
-from app.content_paidholiday import HolidayCalcurate
+from app.middle_paidholiday import PaidHolidayMiddleware
+from app.content_paidholiday import AcquisitionType
 
 """
     戻り値に代入される変数名は、必ずstf_login！！
@@ -82,18 +82,9 @@ def get_notification_list(STAFFID):
     )
 
     # 年休エリア
-    acquisition_holiday_obj = HolidayAcquire(STAFFID)
-    (
-        start_list,
-        end_list,
-        acquisition_list,
-    ) = acquisition_holiday_obj.print_holidays_data(AcquisitionType.A)
-
-    # 暫定的に8時間勤務の年休付与タイプA
-    holiday_calc_obj = HolidayCalcurate(8, AcquisitionType.A)
-    enable_holidays = holiday_calc_obj.convert_tuple(
-        holiday_calc_obj.get_sum_holiday(STAFFID)
-    )
+    mid_paid_holiday = PaidHolidayMiddleware(STAFFID)
+    start_list, end_list = mid_paid_holiday.output_acquisitions()
+    # enable_holidays = mid_paid_holiday.output_remain_days(STAFFID, 8, AcquisitionType.A)
 
     return render_template(
         "attendance/notification_list.html",
@@ -101,7 +92,7 @@ def get_notification_list(STAFFID):
         nlst=user_notification_list,
         f=get_current_url_flag(),
         h_items=zip(start_list, end_list),
-        holidays=enable_holidays,
+        # holidays=enable_holidays,
         stf_login=current_user,
     )
 
@@ -271,19 +262,6 @@ def retrieve_form_data(form_data: List[str]) -> list:
 @app.route("/regist", methods=["POST"])
 @login_required
 def append_approval():
-    # tkinterさくらサーバーでは、動かないんです！！
-    # import tkinter as tk
-    # from tkinter import messagebox
-
-    # root = tk.Tk() # ウインドウを作る
-    # # get two frames, one is emty対策
-    # root.withdraw()
-    # confirm_dialog = messagebox.askokcancel("確認", "申請します。この内容で宜しいですか？")
-
-    # if confirm_dialog == True:
-    # こちらは数値(CODE)に変換
-    # form_content: int = toggle_notification_type(Todokede, request.form.get('content'))
-
     approval_list = [
         "content",
         "start-day",
@@ -430,6 +408,13 @@ def change_status_judge(id, STAFFID, status: int):
         update_status(id, status)
         channel = skype_system_obj.contacts[approval_wait_user.SKYPE_ID].chat
         channel.sendMsg(approval_reply_message)
+
+    if status == 1:
+        mid_paid_obj = PaidHolidayMiddleware(STAFFID)
+        remain = mid_paid_obj.make_paidholiday_log_data(id, AcquisitionType.A)
+        pay_log_obj = PaidHolidayLog(STAFFID, remain, 8, id)
+        db.session.add(pay_log_obj)
+        db.session.commit()
 
     # やはりこちらはダメ、url_forクセがすごい
     # return redirect(url_for('get_middle_approval'))

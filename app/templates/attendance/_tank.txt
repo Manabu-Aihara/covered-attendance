@@ -1,0 +1,4 @@
+<div style="border: 1px solid; width: 20%;">
+  残り<span>{{ holidays[0] }}日 {{ holidays[1] }}時間</span>
+</div>
+

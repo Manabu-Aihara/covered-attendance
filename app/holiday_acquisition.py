@@ -120,7 +120,7 @@ class HolidayAcquire:
         holiday_pair = self.acquire_start_holidays()
 
         for i, acquisition_day in enumerate(frame.under5y):
-            if i == len(day_list):
+            if i == len(day_list) - 1:
                 break
             else:
                 holiday_pair[day_list[i + 1]] = acquisition_day
@@ -131,10 +131,10 @@ class HolidayAcquire:
 
         return holiday_pair
 
-    # ENDDAYを含めた表示・DBinsert用
+    # STARTDAY,ENDDAYのペア
     def print_holidays_data(
         self, frame: AcquisitionType
-    ) -> Tuple[list[date], list[date], list[int]]:
+    ) -> Tuple[list[date], list[date]]:
         # 取得日、日数のペア
         holiday_dict = self.plus_next_holidays(frame)
 
@@ -142,8 +142,4 @@ class HolidayAcquire:
             end_day + relativedelta(years=1, days=-1) for end_day in holiday_dict.keys()
         ]
 
-        return (
-            list(holiday_dict.keys()),
-            end_day_list,
-            list(holiday_dict.values()),
-        )
+        return (list(holiday_dict.keys()), end_day_list)
