@@ -87,14 +87,12 @@ class PaidHolidayLog(db.Model):
     STAFFID = db.Column(
         db.Integer, db.ForeignKey("M_STAFFINFO.STAFFID"), index=True, nullable=False
     )
-    REMAIN_TIMES = db.Column(db.Float, nullable=True)
-    WORK_TIME = db.Column(db.Float, nullable=False)
+    REMAIN_TIMES = db.Column(db.Float, nullable=False)
     NOTIFICATION_id = db.Column(
         db.Integer, db.ForeignKey("D_NOTIFICATION_LIST.id"), index=True
     )
 
-    def __init__(self, STAFFID, REMAIN_TIMES, WORK_TIME, NOTIFICATION_id):
+    def __init__(self, STAFFID, REMAIN_TIMES, NOTIFICATION_id):
         self.STAFFID = STAFFID
         self.REMAIN_TIMES = REMAIN_TIMES
-        self.WORK_TIME = WORK_TIME
         self.NOTIFICATION_id = NOTIFICATION_id

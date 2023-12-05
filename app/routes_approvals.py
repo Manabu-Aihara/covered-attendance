@@ -17,8 +17,8 @@ from app.approval_contact import (
     SkypeRelatedException,
     check_skype_account,
 )
-from app.middle_paidholiday import PaidHolidayMiddleware
-from app.content_paidholiday import AcquisitionType
+from app.holiday_acquisition import HolidayAcquire
+from app.holiday_enum import AcquisitionTypeClass
 
 """
     戻り値に代入される変数名は、必ずstf_login！！
@@ -82,9 +82,8 @@ def get_notification_list(STAFFID):
     )
 
     # 年休エリア
-    mid_paid_holiday = PaidHolidayMiddleware(STAFFID)
-    start_list, end_list = mid_paid_holiday.output_acquisitions()
-    # enable_holidays = mid_paid_holiday.output_remain_days(STAFFID, 8, AcquisitionType.A)
+    acquisition_back_obj = AcquisitionTypeClass(STAFFID)
+    start_list, end_list = acquisition_back_obj.print_acquisition_data()
 
     return render_template(
         "attendance/notification_list.html",
@@ -359,12 +358,21 @@ def update_status(id: int, judgement: int) -> None:
     db.session.commit()
 
 
+def insert_pay_log(staff_id: int, id: int) -> None:
+    holiday_obj = HolidayAcquire(staff_id)
+    remain = holiday_obj.print_remains()
+    pay_log_obj = PaidHolidayLog(
+        staff_id, remain - holiday_obj.get_notification_rests(id), id
+    )
+    # if status == 1:
+    db.session.add(pay_log_obj)
+    db.session.commit()
+
+
 # 申請に対して、承認
 @app.route("/approval_judge/<STAFFID>/<id>/<status>", methods=["POST"])
 @login_required
 def change_status_judge(id, STAFFID, status: int):
-    # approval_certificate_user = Approval.query.filter(Approval.STAFFID==current_user.STAFFID).first()
-
     # 承認待ちユーザー
     # tupleで返る
     approval_wait_user = (
@@ -409,12 +417,8 @@ def change_status_judge(id, STAFFID, status: int):
         channel = skype_system_obj.contacts[approval_wait_user.SKYPE_ID].chat
         channel.sendMsg(approval_reply_message)
 
-    if status == 1:
-        mid_paid_obj = PaidHolidayMiddleware(STAFFID)
-        remain = mid_paid_obj.make_paidholiday_log_data(id, AcquisitionType.A)
-        pay_log_obj = PaidHolidayLog(STAFFID, remain, 8, id)
-        db.session.add(pay_log_obj)
-        db.session.commit()
+    if int(status) == 1:
+        insert_pay_log(STAFFID, id)
 
     # やはりこちらはダメ、url_forクセがすごい
     # return redirect(url_for('get_middle_approval'))

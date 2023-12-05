@@ -329,6 +329,10 @@ class RecordPaidHoliday(db.Model):  # 年休関連
     ATENDANCE_YEAR = db.Column(db.Integer, index=True, nullable=True)  # 年間出勤日数（年休べース）
     WORK_TIME = db.Column(db.Float, index=True, nullable=True)  # 職員勤務時間
     BASETIMES_PAIDHOLIDAY = db.Column(db.Float, index=True, nullable=True)  # 規定の年休時間
+    """    2023/12/5
+        追加カラム
+        """
+    ACQUISITION_TYPE = db.Column(db.String(1), nullable=False)  # 年休付与タイプ
 
 
 class CountAttendance(db.Model):  ##### 年休用設定での勤務日数ダンプ(ページ表示用)

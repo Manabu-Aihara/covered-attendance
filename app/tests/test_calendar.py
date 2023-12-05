@@ -1,46 +1,51 @@
 import pytest
-import datetime
-from typing import Tuple
 
 from app import db
-from app.holiday_acquisition import HolidayAcquire, AcquisitionType
-from app.content_paidholiday import HolidayCalcurate
-from app.middle_paidholiday import PaidHolidayMiddleware
+from app.holiday_acquisition import HolidayAcquire
+from app.holiday_enum import AcquisitionType, AcquisitionTypeClass
 from app.new_calendar import NewCalendar
 from app.models_aprv import PaidHolidayLog
 
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(201)
+    acquisition_object = HolidayAcquire(20)
     return acquisition_object
 
 
 def test_convert_base_day(get_official_user):
+    # assert get_official_user.in_day.date()
     conv_date = get_official_user.convert_base_day()
-    # print(conv_date)
-    assert conv_date.month == 4
+    assert conv_date.month == 10
 
 
 @pytest.mark.skip
 def test_calcurate_days(get_official_user):
-    final_data_list = get_official_user.print_date_type_list()
+    conv_date = get_official_user.convert_base_day()
+    final_data_list = get_official_user.get_acquisition_list(conv_date)
     print(final_data_list)
 
 
-@pytest.mark.skip
-def test_plus_2years_over_holidays(get_official_user):
-    test_result_dict = get_official_user.plus_next_holidays(AcquisitionType.A)
-    # print(AcquisitionType.A.__dict__["onward"])
-    # print(AcquisitionType.A.under5y)
-    print(test_result_dict)
-    assert AcquisitionType.A.onward == 20
-
-
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_print_holiday_data(get_official_user):
-    print_result = get_official_user.print_holidays_data(AcquisitionType.B)
-    print(print_result)
+    base_day = get_official_user.convert_base_day()
+    test_all_list = [
+        get_official_user.in_day.date()
+    ] + get_official_user.get_acquisition_list(base_day)
+    print(test_all_list)
+
+
+# @pytest.mark.skip
+def test_get_sum_holiday(get_official_user):
+    holiday_enum_obj = AcquisitionTypeClass(get_official_user.id)
+    result_tuple = get_official_user.convert_tuple(holiday_enum_obj.get_sum_holiday())
+    print(result_tuple)
+
+
+# @pytest.mark.skip
+def test_get_notification_rests(get_official_user):
+    result_times = get_official_user.get_notification_rests(49)
+    assert result_times == 3
 
 
 # @pytest.mark.skip
@@ -61,33 +66,29 @@ def test_print_holiday_data(get_official_user):
 
 
 # @pytest.mark.skip
-def test_get_notification_rests(app_context):
-    holiday_calc_obj = HolidayCalcurate()
-    result_times = holiday_calc_obj.get_notification_rests(49)
-    assert result_times == 3
+def test_plus_next_holidays(get_official_user):
+    # holiday_enum_obj = AcquisitionTypeClass(get_official_user.id)
+    # test_result_dict = holiday_enum_obj.plus_next_holidays(AcquisitionType.A)
+    # print(AcquisitionType.A.__dict__["onward"])
+    # print(AcquisitionType.A.under5y)
+    print(AcquisitionType.name("A"))
+    # assert AcquisitionType.A.onward == 20
 
 
 # @pytest.mark.skip
-def test_get_sum_holiday(app_context):
-    hc_object = HolidayCalcurate()
-    result_tuple = hc_object.convert_tuple(
-        hc_object.get_sum_holiday(201, AcquisitionType.B)
+def test_paid_log_db(get_official_user):
+    remain = get_official_user.print_remains()
+    # print(get_official_user.get_notification_rests(53))
+    pay_log_obj = PaidHolidayLog(
+        20, remain - get_official_user.get_notification_rests(53), 53
     )
-    print(result_tuple)
-
-
-@pytest.mark.skip
-def test_paid_log_db(app_context):
-    holiday_calc_obj = HolidayCalcurate(8, AcquisitionType.A)
-    result_times = holiday_calc_obj.get_sum_holiday(20)
-    pay_log_obj = PaidHolidayLog(20, result_times, 8, None)
     db.session.add(pay_log_obj)
     db.session.commit()
 
 
-def test_get_work_time(app_context):
-    holiday_calc_obj = HolidayCalcurate()
-    print(holiday_calc_obj.job_time)
+# def test_get_work_time(app_context):
+#     holiday_calc_obj = HolidayCalcurate()
+#     print(holiday_calc_obj.job_time)
 
 
 # おニューカレンダーテスト
