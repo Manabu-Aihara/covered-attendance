@@ -18,7 +18,6 @@ from app.approval_contact import (
     check_skype_account,
 )
 from app.holiday_acquisition import HolidayAcquire
-from app.holiday_enum import AcquisitionTypeClass
 
 """
     戻り値に代入される変数名は、必ずstf_login！！
@@ -51,7 +50,7 @@ def get_url_past_flag() -> bool:
 @app.route("/notification-list/<STAFFID>", methods=["GET"])
 @login_required
 def get_notification_list(STAFFID):
-    # 00：00：00処理ユーティリティクラス
+    # 00：00：00処理ユーティリティメソッド
     table_objects = NoZeroTable(NotificationList)
     table_objects.convert_value_to_none(
         table_objects.select_zero_date_tables("START_TIME", "END_TIME"),
@@ -82,8 +81,9 @@ def get_notification_list(STAFFID):
     )
 
     # 年休エリア
-    acquisition_back_obj = AcquisitionTypeClass(STAFFID)
-    start_list, end_list = acquisition_back_obj.print_acquisition_data()
+    holiday_obj = HolidayAcquire(STAFFID)
+    start_list, end_list = holiday_obj.print_acquisition_data()
+    enable_holidays = holiday_obj.convert_tuple(holiday_obj.print_remains())
 
     return render_template(
         "attendance/notification_list.html",
@@ -91,7 +91,7 @@ def get_notification_list(STAFFID):
         nlst=user_notification_list,
         f=get_current_url_flag(),
         h_items=zip(start_list, end_list),
-        # holidays=enable_holidays,
+        holidays=enable_holidays,
         stf_login=current_user,
     )
 
@@ -358,13 +358,21 @@ def update_status(id: int, judgement: int) -> None:
     db.session.commit()
 
 
+"""
+    @Param
+        staff_id: int
+        id: int 申請id
+    @Return
+        : None DBinsert処理
+    """
+
+
 def insert_pay_log(staff_id: int, id: int) -> None:
     holiday_obj = HolidayAcquire(staff_id)
     remain = holiday_obj.print_remains()
     pay_log_obj = PaidHolidayLog(
         staff_id, remain - holiday_obj.get_notification_rests(id), id
     )
-    # if status == 1:
     db.session.add(pay_log_obj)
     db.session.commit()
 
