@@ -25,15 +25,17 @@
 {% endif %}
 
 {% if holidays %}
-<select id="status">
-  <option>年次休暇付与歴</option>
-  {% for start, end in h_items %}
-  <option>{{ start }} | {{ end }}</option>
-  {% endfor %}
-</select>
+<div class="holiday">
+  <select class="term-list">
+    <option>年次休暇付与歴</option>
+    {% for start, end in h_items %}
+    <option>{{ start }} | {{ end }}</option>
+    {% endfor %}
+  </select>
 
-<div style="border: 1px solid; width: 20%;">
-  残り<span>{{ holidays[0] }}日 {{ holidays[1] }}時間</span>
+  <div class="remain">
+    残り<span>{{ holidays[0] }}日 {{ holidays[1] }}時間</span>
+  </div>
 </div>
 {% endif %}
 

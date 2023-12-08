@@ -40,14 +40,22 @@ class HolidayAcquire:
 
     def __post_init__(self):
         target_user = User.query.filter(User.STAFFID == self.id).first()
-        self.in_day: datetime = target_user.INDAY
+        if target_user.INDAY is not None:
+            self.in_day = target_user.INDAY
+        else:
+            raise TypeError("User.INDAYの値がありません。")
 
         # 勤務時間
         # job_time: float
         self.job_time: float = (
-            RecordPaidHoliday.query.with_entities(
-                RecordPaidHoliday.WORK_TIME, RecordPaidHoliday.ACQUISITION_TYPE
-            )
+            RecordPaidHoliday.query.with_entities(RecordPaidHoliday.WORK_TIME)
+            .filter(self.id == RecordPaidHoliday.STAFFID)
+            .first()
+        )[0]
+
+        # 勤務形態['A', 'B', 'C', 'D', 'E']
+        self.acquisition_key: str = (
+            RecordPaidHoliday.query.with_entities(RecordPaidHoliday.ACQUISITION_TYPE)
             .filter(self.id == RecordPaidHoliday.STAFFID)
             .first()
         )[0]
@@ -167,12 +175,9 @@ class HolidayAcquire:
     """
 
     def plus_next_holidays(self) -> OrderedDict[date, int]:
-        acquisition_obj = HolidayAcquire(self.id)
-        base_day = acquisition_obj.convert_base_day()
-        day_list = [
-            acquisition_obj.in_day.date()
-        ] + acquisition_obj.get_acquisition_list(base_day)
-        holiday_pair = acquisition_obj.acquire_start_holidays()
+        base_day = self.convert_base_day()
+        day_list = [self.in_day.date()] + self.get_acquisition_list(base_day)
+        holiday_pair = self.acquire_start_holidays()
 
         for i, acquisition_day in enumerate(
             AcquisitionType.name(self.acquisition_key).under5y
@@ -215,7 +220,7 @@ class HolidayAcquire:
         sum_times: float = default_sum_holiday * (acquisition_obj.job_time)
         return sum_times
 
-    # STARTDAY,ENDDAYのペア
+    # 表示用:STARTDAY, ENDDAYのペア
     def print_acquisition_data(self) -> Tuple[list[date], list[date]]:
         # 取得日、日数のペア
         holiday_dict = self.plus_next_holidays()
@@ -223,5 +228,5 @@ class HolidayAcquire:
         end_day_list = [
             end_day + relativedelta(years=1, days=-1) for end_day in holiday_dict.keys()
         ]
-
+        end_day_list[0] = ""
         return (list(holiday_dict.keys()), end_day_list)

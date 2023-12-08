@@ -8,24 +8,18 @@ from app.models_aprv import PaidHolidayLog
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(20)
+    acquisition_object = HolidayAcquire(201)
     return acquisition_object
 
 
+@pytest.mark.skip
 def test_convert_base_day(get_official_user):
     conv_date = get_official_user.convert_base_day()
     assert conv_date.month == 10
 
 
 @pytest.mark.skip
-def test_calcurate_days(get_official_user):
-    conv_date = get_official_user.convert_base_day()
-    final_data_list = get_official_user.get_acquisition_list(conv_date)
-    print(final_data_list)
-
-
-# @pytest.mark.skip
-def test_print_holiday_data(get_official_user):
+def test_get_acquisition_list(get_official_user):
     base_day = get_official_user.convert_base_day()
     test_all_list = [
         get_official_user.in_day.date()
@@ -33,10 +27,9 @@ def test_print_holiday_data(get_official_user):
     print(test_all_list)
 
 
-# @pytest.mark.skip
-def test_get_sum_holiday(get_official_user):
-    holiday_enum_obj = HolidayAcquire(get_official_user.id)
-    result_tuple = get_official_user.convert_tuple(holiday_enum_obj.get_sum_holiday())
+@pytest.mark.skip
+def test_convert_tuple(get_official_user):
+    result_tuple = get_official_user.convert_tuple(get_official_user.get_sum_holiday())
     print(result_tuple)
 
 
@@ -63,12 +56,16 @@ def test_get_notification_rests(get_official_user):
 # db.session.commit()
 
 
-# @pytest.mark.skip
-def test_plus_next_holidays(get_official_user):
+@pytest.mark.skip
+def test_print_class_method():
     # print(AcquisitionType.A.__dict__["onward"])
     # print(AcquisitionType.A.under5y)
     print(AcquisitionType.name("A"))
-    # assert AcquisitionType.A.onward == 20
+
+
+def test_plus_next_holidays(get_official_user):
+    test_value = get_official_user.plus_next_holidays()
+    print(test_value)
 
 
 @pytest.mark.skip

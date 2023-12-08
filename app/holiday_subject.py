@@ -32,7 +32,7 @@ class Subject(ABC):
         """
         pass
 
-    def acquire_holidays(self) -> bool:
+    def notice_acquisition_day(self) -> bool:
         raise NotImplementedError
 
     def execute(self) -> None:
@@ -77,14 +77,17 @@ class SubjectImpl(Subject):
         for observer in self._observers:
             observer.update(self)
 
-    def acquire_holidays(self) -> bool:
-        now = datetime.now()
-        if (now.month == 10 and now.day == 1) or (now.month == 4 and now.day == 1):
-            return True
-        else:
-            return False
+    def notice_acquisition_day(self) -> bool:
+        # now = datetime.now()
+        # if (now.month == 10 and now.day == 1) or (now.month == 4 and now.day == 1):
+        #     print("Notify!---処理が入ります。---")
+        #     return True
+        # else:
+        #     print("---")
+        #     return False
+        return True
         # return super().acquire_holidays()
 
     def execute(self) -> None:
-        self.notify_observer()
-        return super().execute()
+        self.notify()
+        # return super().execute()
