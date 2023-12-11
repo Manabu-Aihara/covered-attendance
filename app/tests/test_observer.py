@@ -5,16 +5,25 @@ from typing import List
 # from sqlalchemy import notin_
 
 from app.holiday_subject import SubjectImpl
-from app.holiday_observer import ObserverImpl
-from app.models import RecordPaidHoliday, User
+from app.holiday_observer import ObserverNotice, ObserverParse
+from app.holiday_acquisition import AcquisitionType
+from app.models import User
+
+
+@pytest.fixture
+def subject():
+    subject = SubjectImpl()
+    return subject
 
 
 # @pytest.mark.skip
 def test_observer(app_context):
     subject = SubjectImpl()
-    observer = ObserverImpl()
+    observer = ObserverParse()
 
     subject.attach(observer)
+    # print(subject.get_concerned_staff())
+    # print(subject.acquire_holidays(20))
 
     print(subject.execute())
 
@@ -28,3 +37,12 @@ def test_print_db(app_context):
         .filter(User.INDAY != None).all()
     )
     print(acquisition_type_list)
+
+
+@pytest.mark.skip
+def test_output_holiday_count(subject):
+    # @param AcquisitionType
+    # @return int
+    count = subject.output_holiday_count(AcquisitionType.B, 5)
+    print(count)
+    # assert count == 8

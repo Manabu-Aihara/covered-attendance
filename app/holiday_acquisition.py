@@ -6,6 +6,7 @@ from collections import OrderedDict
 from monthdelta import monthmod
 from dateutil.relativedelta import relativedelta
 
+from app import db
 from app.models import User, RecordPaidHoliday
 from app.models_aprv import NotificationList, PaidHolidayLog
 
@@ -39,7 +40,9 @@ class HolidayAcquire:
     id: int
 
     def __post_init__(self):
-        target_user = User.query.filter(User.STAFFID == self.id).first()
+        target_user = (
+            db.session.query(User.INDAY).filter(User.STAFFID == self.id).first()
+        )
         if target_user.INDAY is not None:
             self.in_day = target_user.INDAY
         else:
@@ -47,18 +50,23 @@ class HolidayAcquire:
 
         # 勤務時間
         # job_time: float
-        self.job_time: float = (
-            RecordPaidHoliday.query.with_entities(RecordPaidHoliday.WORK_TIME)
-            .filter(self.id == RecordPaidHoliday.STAFFID)
-            .first()
-        )[0]
+        try:
+            self.job_time: float = (
+                db.session.query(RecordPaidHoliday.WORK_TIME)
+                .filter(self.id == RecordPaidHoliday.STAFFID)
+                .first()
+            )
+        except AttributeError:
+            print("RecordPaidHoliday.WORK_TIMEの値がありません。")
+        else:
+            self.job_time.WORK_TIME
 
         # 勤務形態['A', 'B', 'C', 'D', 'E']
         self.acquisition_key: str = (
-            RecordPaidHoliday.query.with_entities(RecordPaidHoliday.ACQUISITION_TYPE)
+            db.session.query(RecordPaidHoliday.ACQUISITION_TYPE)
             .filter(self.id == RecordPaidHoliday.STAFFID)
             .first()
-        )[0]
+        ).ACQUISITION_TYPE
 
     """
     acquire: 日数
@@ -158,12 +166,12 @@ class HolidayAcquire:
 
     def print_remains(self) -> float:
         last_remain: float = (
-            PaidHolidayLog.query.with_entities(PaidHolidayLog.REMAIN_TIMES)
+            db.session.query(PaidHolidayLog.REMAIN_TIMES)
             .filter(self.id == PaidHolidayLog.STAFFID)
             .order_by(PaidHolidayLog.id.desc())
             .first()
-        )
-        return last_remain[0]
+        ).REMAIN_TIMES
+        return last_remain
         # - self.get_notification_rests(notification_id)で引き算
 
     """
