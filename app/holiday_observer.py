@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from app import db
+from app.models_aprv import PaidHolidayLog
 
 # 循環参照回避
 if TYPE_CHECKING:
@@ -17,17 +18,17 @@ class Observer(ABC):
         raise NotImplementedError
 
 
-class ObserverNotice(Observer):
+class ObserverRegist(Observer):
     def update(self, subject: Subject) -> None:
-        notification_state: int = subject.notice_month()
-        print(f"Notify!---{notification_state}月年休付与の処理が入ります。---")
-        # return super().update(subject)
+        # notification_state: int = subject.notice_month()
+        if (notification_state := subject.notice_month()) == 4 or (
+            notification_state := subject.notice_month()
+        ) == 10:
+            print(f"Notify!---{notification_state}月年休付与の処理が入ります。---")
+            for concerned_id in subject.get_concerned_staff():
+                print(subject.acquire_holidays(concerned_id))
+            #     result_tuple: tuple = subject.acquire_holidays(concerned_id)
+            #     add_holidays = PaidHolidayLog(result_tuple[0], result_tuple[1])
+            #     db.session.add(add_holidays)
 
-
-class ObserverParse(Observer):
-    def update(self, subject: Subject) -> None:
-        for concerned_id in subject.get_concerned_staff():
-            print(subject.acquire_holidays(concerned_id))
-        #     db.session.add(subject.acquire_holidays(concerned_id))
-
-        # db.session.commit()
+            # db.session.commit()

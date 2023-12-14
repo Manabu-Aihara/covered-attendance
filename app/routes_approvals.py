@@ -59,12 +59,12 @@ def get_notification_list(STAFFID):
     )
 
     user_basic_info: User = (
-        User.query.with_entities(User.STAFFID, User.LNAME, User.FNAME)
+        db.session.query(User.STAFFID, User.LNAME, User.FNAME)
         .filter(User.STAFFID == STAFFID)
         .first()
     )
     user_notification_list = (
-        NotificationList.query.with_entities(
+        db.session.query(
             NotificationList.NOTICE_DAYTIME,
             Todokede.NAME,
             NotificationList.START_DAY,
@@ -84,6 +84,7 @@ def get_notification_list(STAFFID):
     holiday_obj = HolidayAcquire(STAFFID)
     start_list, end_list = holiday_obj.print_acquisition_data()
     enable_holidays = holiday_obj.convert_tuple(holiday_obj.print_remains())
+    recognized_holidays = holiday_obj.convert_tuple(holiday_obj.sum_notify_times())
 
     return render_template(
         "attendance/notification_list.html",
@@ -91,7 +92,8 @@ def get_notification_list(STAFFID):
         nlst=user_notification_list,
         f=get_current_url_flag(),
         h_items=zip(start_list, end_list),
-        holidays=enable_holidays,
+        recognized=recognized_holidays,
+        remains=enable_holidays,
         stf_login=current_user,
     )
 
@@ -106,9 +108,11 @@ class StatusEnum(IntEnum):
 def auth_approval_user(func):
     def wrapper(*args, **kwargs):
         if current_user:
-            approval_certificate_user = Approval.query.filter(
-                Approval.STAFFID == current_user.STAFFID
-            ).first()
+            approval_certificate_user = (
+                db.session.query(Approval)
+                .filter(Approval.STAFFID == current_user.STAFFID)
+                .first()
+            )
             if approval_certificate_user is None:
                 return not_admin()
             # else:

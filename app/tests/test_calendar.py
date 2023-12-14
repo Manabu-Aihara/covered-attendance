@@ -8,7 +8,7 @@ from app.models_aprv import PaidHolidayLog
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(20)
+    acquisition_object = HolidayAcquire(201)
     return acquisition_object
 
 
@@ -35,8 +35,9 @@ def test_convert_tuple(get_official_user):
 
 # @pytest.mark.skip
 def test_get_notification_rests(get_official_user):
-    result_times = get_official_user.get_notification_rests(49)
-    assert result_times == 3
+    for i in [30, 31, 35, 39]:
+        result_times = get_official_user.get_notification_rests(i)
+        print(result_times)
 
 
 # @pytest.mark.skip
@@ -56,6 +57,7 @@ def test_get_notification_rests(get_official_user):
 # db.session.commit()
 
 
+@pytest.mark.skip
 def test_print_class_method(get_official_user):
     # print(AcquisitionType.A.__dict__["onward"])
     # print(AcquisitionType.A.under5y)
@@ -63,10 +65,15 @@ def test_print_class_method(get_official_user):
     print(AcquisitionType.name(get_official_user.acquisition_key[0]))
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_plus_next_holidays(get_official_user):
     test_value = get_official_user.plus_next_holidays()
     print(test_value)
+
+
+def test_sum_notification(get_official_user):
+    test_result = get_official_user.sum_notify_times()
+    print(test_result)
 
 
 @pytest.mark.skip

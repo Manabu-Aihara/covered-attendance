@@ -4,8 +4,8 @@ from typing import List
 
 # from sqlalchemy import notin_
 
-from app.holiday_subject import SubjectImpl
-from app.holiday_observer import ObserverNotice, ObserverParse
+from app.holiday_subject import SubjectImpl, WorkdayType
+from app.holiday_observer import ObserverRegist
 from app.holiday_acquisition import AcquisitionType
 from app.models import User
 
@@ -19,7 +19,7 @@ def subject():
 # @pytest.mark.skip
 def test_observer(app_context):
     subject = SubjectImpl()
-    observer = ObserverParse()
+    observer = ObserverRegist()
 
     subject.attach(observer)
     # print(subject.get_concerned_staff())
@@ -45,4 +45,12 @@ def test_output_holiday_count(subject):
     # @return int
     count = subject.output_holiday_count(AcquisitionType.B, 5)
     print(count)
-    # assert count == 8
+
+
+def test_output_workday_type():
+    for char in ["B", "C", "D", "E"]:
+        if 200 in list(WorkdayType.name(char).value):
+            #         if 200 in meet_list:
+            break
+
+    print(char)

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+import enum
 from typing import List, Tuple
 from abc import ABC, abstractmethod
 
@@ -8,6 +8,18 @@ from app.models import User
 from app.holiday_acquisition import HolidayAcquire
 
 from app.holiday_observer import Observer
+
+
+class WorkdayType(enum.Enum):
+    A = 217
+    B = range(169, 217)
+    C = range(121, 169)
+    D = range(73, 121)
+    E = range(48, 73)
+
+    @classmethod
+    def name(cls, name: str) -> str:
+        return cls._member_map_[name]
 
 
 class Subject(ABC):
@@ -82,9 +94,11 @@ class SubjectImpl(Subject):
             observer.update(self)
 
     def notice_month(self) -> int:
-        now = datetime.now()
-        self._state = 10 if (now.month == 10 and now.day == 1) else self._state
-        self._state = 4 if (now.month == 4 and now.day == 1) else self._state
+        # now = datetime.now()
+        # self._state = 3 if (now.month == 3 and now.day == 31) else self._state
+        # self._state = 9 if (now.month == 9 and now.day == 30) else self._state
+        # self._state = 4 if (now.month == 4 and now.day == 1) else self._state
+        # self._state = 10 if (now.month == 10 and now.day == 1) else self._state
         return 4
 
     # def output_holiday_count(self, work_type: AcquisitionType, subscript: int) -> int:
@@ -107,9 +121,6 @@ class SubjectImpl(Subject):
 
         return concerned_id_list
 
-        # print("Notify!---処理が入ります。---")
-        # return True
-
     def acquire_holidays(self, concerned_id: int) -> Tuple[int, float]:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         # 繰り越し日数
@@ -128,8 +139,10 @@ class SubjectImpl(Subject):
             concerned_id,
             carry_times + acquisition_days * holiday_acquire_obj.job_time,
         )
-
         # return super().acquire_holidays()
+
+    # def change_acquire_type(self) -> None:
+    # 年間出勤日数の計算　sum_workday_count: int
 
     def execute(self) -> None:
         self.notify()
