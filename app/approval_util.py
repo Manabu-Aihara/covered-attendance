@@ -39,7 +39,7 @@ class NoZeroTable:
     #     return datetime_query
 
     def convert_value_to_none(self, func: Callable[..., List[T]], *target: str) -> None:
-        pickup_objects = func
+        pickup_objects = func(target[0], target[1])
 
         for pickup_obj in pickup_objects:
             for one_val in target:

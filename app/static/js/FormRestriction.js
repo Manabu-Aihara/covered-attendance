@@ -1,6 +1,6 @@
-// 大本のセレクトボックス
-const selectForm = document.getElementsByClassName('form-control')[0];
-const selectChildren = selectForm.options;
+// お前はもう、宣言されている
+// const selectArea = document.getElementsByClassName('form-control')[0];
+const selectChildren = selectArea.options;
 // console.log(selectChildren);
 
 // 開始時刻・終了時刻
@@ -23,6 +23,21 @@ const toggleRestrictState = (flag) => {
 const startTimeForm = timeForms[0];
 const endTimeForm = timeForms[1];
 
+// 早退における、終業時刻の入力を促す
+const encourageInput = () => {
+  if ((selectChildren.selectedIndex - 1) === 2) {
+    if (endTimeForm.value === "") {
+      globalFlag = false;
+      alert("終業時刻を入力してください。");
+      endTimeForm.focus();
+      return globalFlag;
+    } else {
+      globalFlag = true;
+      return globalFlag;
+    }
+  }
+}
+
 // Param: diffNum 何時間後
 const reflectTimeForm = (diffNum) => {
   /**
@@ -31,7 +46,7 @@ const reflectTimeForm = (diffNum) => {
   startTimeForm.addEventListener('input', () => {
     let [h, m] = startTimeForm.value.split(':');
     // console.log(0 + h);
-    if (h < 10){
+    if (h < 10) {
       const oneDigit = Number(h) + diffNum
       /**
        * 数字を指定した桁数まで0埋めする

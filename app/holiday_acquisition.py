@@ -49,28 +49,23 @@ class HolidayAcquire:
         else:
             raise TypeError("User.INDAYの値がありません。")
 
-        # 勤務時間
-        # job_time: float
-        job_time = (
-            db.session.query(RecordPaidHoliday.WORK_TIME)
+        # 勤務時間 job_time: float
+        # 勤務形態 acquisition_key: ['A', 'B', 'C', 'D', 'E']
+        job_time, acquisition_key = (
+            db.session.query(
+                RecordPaidHoliday.WORK_TIME, RecordPaidHoliday.ACQUISITION_TYPE
+            )
             .filter(self.id == RecordPaidHoliday.STAFFID)
             .first()
         )
-        if job_time is not None:
+        if (job_time is not None) or (acquisition_key is not None):
             self.job_time: float = job_time.WORK_TIME
-        else:
-            TypeError("RecordPaidHoliday.WORK_TIMEの値がありません。")
-
-        # 勤務形態['A', 'B', 'C', 'D', 'E']
-        acquisition_key = (
-            db.session.query(RecordPaidHoliday.ACQUISITION_TYPE)
-            .filter(self.id == RecordPaidHoliday.STAFFID)
-            .first()
-        )
-        if acquisition_key is not None:
             self.acquisition_key: str = acquisition_key.ACQUISITION_TYPE
         else:
-            TypeError("PaidHolidayLog.ACQUISITION_TYPEの値がありません。")
+            TypeError("M_RECORD_PAIDHOLIDAYのWORK_TIME、もしくはACQUISITION_TYPEの値がありません。")
+
+        # 年休消費項目
+        #     3, 4, range(10, 16)
 
     """
     acquire: 日数

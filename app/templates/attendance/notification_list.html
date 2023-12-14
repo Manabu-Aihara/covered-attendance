@@ -24,6 +24,8 @@
 <div class="charge-back"><input type="button" value="戻る" id="btnBack" /></div>
 {% endif %}
 
+{# 個別申請一覧のみ表示 #}
+{% if remains %}
 <div class="holiday">
   <select class="term-list">
     <option>年次休暇付与歴</option>
@@ -37,6 +39,7 @@
     <p>残り<span>{{ remains[0] }}日 {{ remains[1] }}時間</span></p>
   </div>
 </div>
+{% endif %}
 
 {% if nlst is none %}
 <p>{{ stf_login.STAFFID }}</p>

@@ -53,7 +53,7 @@ def get_notification_list(STAFFID):
     # 00：00：00処理ユーティリティメソッド
     table_objects = NoZeroTable(NotificationList)
     table_objects.convert_value_to_none(
-        table_objects.select_zero_date_tables("START_TIME", "END_TIME"),
+        table_objects.select_zero_date_tables,
         "START_TIME",
         "END_TIME",
     )
@@ -131,7 +131,7 @@ def get_middle_approval():
     # 00：00：00処理ユーティリティクラス
     table_objects = NoZeroTable(NotificationList)
     table_objects.convert_value_to_none(
-        table_objects.select_zero_date_tables("START_TIME", "END_TIME"),
+        table_objects.select_zero_date_tables,
         "START_TIME",
         "END_TIME",
     )
@@ -293,20 +293,21 @@ def append_approval():
 
     # skypeにて、申請の通知
     # 所属コード
-    # assert (2,) == 2
     team_code = (
-        User.query.with_entities(User.TEAM_CODE)
+        db.session.query(User.TEAM_CODE)
         .filter(User.STAFFID == current_user.STAFFID)
         .first()
     )
 
-    approval_member: Approval = Approval.query.filter(
-        Approval.TEAM_CODE == team_code[0]
-    ).first()
+    approval_member: Approval = (
+        db.session.query(Approval)
+        .filter(Approval.TEAM_CODE == team_code.TEAM_CODE)
+        .first()
+    )
 
     # 承認者SkypeID
     skype_approval_account = (
-        SystemInfo.query.with_entities(SystemInfo.SKYPE_ID)
+        db.session.query(SystemInfo.SKYPE_ID)
         .filter(SystemInfo.STAFFID == approval_member.STAFFID)
         .first()
     )
@@ -325,7 +326,7 @@ def append_approval():
     result_report = "申請が出来ませんでした。"
     try:
         # Skypeシステム（仲介）から承認者へ送信
-        check_skype_account(skype_approval_account[0], approval_member.STAFFID)
+        check_skype_account(skype_approval_account.SKYPE_ID, approval_member.STAFFID)
     except SkypeRelatedException as skype_exception:
         return render_template(
             "error/exception01.html",

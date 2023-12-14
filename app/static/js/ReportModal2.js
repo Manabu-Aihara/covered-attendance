@@ -17,7 +17,7 @@ const JudgeButton = document.getElementsByClassName('judgement');
 //   bottomForm[1].submit();
 //   e.preventDefault();
 // });
-
+globalFlag = true;
 const ModalSubmit_ok = new ModalAppear(backArea[0], modalElement, JudgeButton[0], bottomForm[0]);
 ModalSubmit_ok.callModal("承認します。", "承認されました。");
 const ModalSubmit_ng = new ModalAppear(backArea[0], modalElement, JudgeButton[1], bottomForm[1]);
