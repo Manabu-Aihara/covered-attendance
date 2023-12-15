@@ -59,13 +59,10 @@ class HolidayAcquire:
             .first()
         )
         if (job_time is not None) or (acquisition_key is not None):
-            self.job_time: float = job_time.WORK_TIME
-            self.acquisition_key: str = acquisition_key.ACQUISITION_TYPE
+            self.job_time: float = job_time
+            self.acquisition_key: str = acquisition_key
         else:
             TypeError("M_RECORD_PAIDHOLIDAYのWORK_TIME、もしくはACQUISITION_TYPEの値がありません。")
-
-        # 年休消費項目
-        #     3, 4, range(10, 16)
 
     """
     acquire: 日数
@@ -129,6 +126,8 @@ class HolidayAcquire:
         # func()はダメ
         return func // self.job_time, func % self.job_time
 
+    # 年休消費項目
+    #     3, 4, range(10, 16)
     """
     勤務時間に応じた、申請時間を計算
     @Param
@@ -138,30 +137,51 @@ class HolidayAcquire:
     """
 
     def get_notification_rests(self, notification_id: int) -> float:
-        start_day, end_day, start_time, end_time = (
+        n_code_list: List[int] = [3, 4, 10, 11, 12, 13, 14, 15]
+
+        filters = []
+        filters.append(NotificationList.id == notification_id)
+        filters.append(NotificationList.N_CODE.in_(n_code_list))
+
+        # start_day, end_day, start_time, end_time = (
+        notify_datetimes = (
             db.session.query(
                 NotificationList.START_DAY,
                 NotificationList.END_DAY,
                 NotificationList.START_TIME,
                 NotificationList.END_TIME,
             )
-            .filter(NotificationList.id == notification_id)
+            .filter(and_(*filters))
             .first()
         )
+        if notify_datetimes is None:
+            raise TypeError("年休に関わりのない項目です。")
 
-        end_day = start_day if end_day is None else end_day
+        end_day = (
+            notify_datetimes.START_DAY
+            if notify_datetimes.END_DAY is None
+            else notify_datetimes.END_DAY
+        )
         """
         要注意！！
-        Flaskアプリでは、DBから00：00：00はNoneになるということ なぜかテスト環境では発生しない:原因不明
-        TypeError: combine() argument 2 must be datetime.time, not None
+        routes_approvals::get_notification_listでは、DBから00：00：00はNoneになるということ なぜかテスト環境では発生しない:原因不明
+        TypeError: combine() argument 2 must be datetime.time, not None対策
         """
-        start_time = datetime.min.time() if start_time is None else start_time
-        end_time = datetime.min.time() if end_time is None else end_time
+        start_time = (
+            datetime.min.time()
+            if notify_datetimes.START_TIME is None
+            else notify_datetimes.START_TIME
+        )
+        end_time = (
+            datetime.min.time()
+            if notify_datetimes.END_TIME is None
+            else notify_datetimes.END_TIME
+        )
         # datetime.timeのためにdatetimeに変換
-        comb_start = datetime.combine(start_day, start_time)
+        comb_start = datetime.combine(notify_datetimes.START_DAY, start_time)
         comb_end: datetime = datetime.combine(end_day, end_time)
         # 月をまたぐかもしれないので、単純に.dayで計算できない
-        diff_day: timedelta = end_day - start_day
+        diff_day: timedelta = end_day - notify_datetimes.START_DAY
         # 力技でtimedeltaをintに
         day_side: float = diff_day.total_seconds() // (3600 * 24) + 1
         # こちらは.hourでintに変換
@@ -247,7 +267,8 @@ class HolidayAcquire:
     def sum_notify_times(self) -> float:
         from_list, to_list = self.print_acquisition_data()
         noification_info_list = (
-            db.session.query(NotificationList.id, NotificationList.STATUS)
+            db.session.query(PaidHolidayLog.NOTIFICATION_id, NotificationList.STATUS)
+            .join(PaidHolidayLog, PaidHolidayLog.NOTIFICATION_id == NotificationList.id)
             .filter(
                 and_(
                     NotificationList.STAFFID == self.id,
@@ -257,15 +278,21 @@ class HolidayAcquire:
             .all()
         )
 
-        approval_time_list = list(
-            map(
-                lambda x: self.get_notification_rests(x.id) if x.STATUS == 1 else 0,
-                noification_info_list,
+        try:
+            approval_time_list = list(
+                map(
+                    lambda x: self.get_notification_rests(x.NOTIFICATION_id)
+                    if x.STATUS == 1
+                    else 0,
+                    noification_info_list,
+                )
             )
-        )
-        # approval_time_list = []
-        # for noification_info in noification_info_list:
-        #     # if noification_info.STATUS == 1:
-        #     rest = self.get_notification_rests(noification_info.id)
-        #     approval_time_list.append(rest)
-        return sum(approval_time_list)
+        except TypeError as e:
+            print(e)
+        else:
+            # approval_time_list = []
+            # for noification_info in noification_info_list:
+            #     if noification_info.STATUS == 1:
+            #         rest = self.get_notification_rests(noification_info.id)
+            #         approval_time_list.append(rest)
+            return sum(approval_time_list)

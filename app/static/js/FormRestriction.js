@@ -1,7 +1,6 @@
 // お前はもう、宣言されている
 // const selectArea = document.getElementsByClassName('form-control')[0];
 const selectChildren = selectArea.options;
-// console.log(selectChildren);
 
 // 開始時刻・終了時刻
 const timeForms = document.getElementsByClassName('restrict-form');
@@ -23,64 +22,72 @@ const toggleRestrictState = (flag) => {
 const startTimeForm = timeForms[0];
 const endTimeForm = timeForms[1];
 
-// 早退における、終業時刻の入力を促す
-const encourageInput = () => {
-  if ((selectChildren.selectedIndex - 1) === 2) {
-    if (endTimeForm.value === "") {
-      globalFlag = false;
-      alert("終業時刻を入力してください。");
-      endTimeForm.focus();
-      return globalFlag;
-    } else {
-      globalFlag = true;
-      return globalFlag;
-    }
-  }
-}
+const workTime = document.getElementById('worktime');
 
 // Param: diffNum 何時間後
 const reflectTimeForm = (diffNum) => {
+  // 半休用
+  let halfTime, plus_m;
+  if (Number.isInteger(diffNum) === false) {
+    halfTime = Math.floor(diffNum) / 2;
+    diffNum = halfTime;
+    console.log(`---${diffNum}---`);
+    separate_m = halfTime - Math.floor(halfTime);
+    plus_m = separate_m * 60;
+  }
   /**
-   * input type=date:値の変更の感知にはinput
-   */
+ * input type=date:値の変更の感知にはinput
+ */
   startTimeForm.addEventListener('input', () => {
     let [h, m] = startTimeForm.value.split(':');
-    // console.log(0 + h);
-    if (h < 10) {
-      const oneDigit = Number(h) + diffNum
-      /**
-       * 数字を指定した桁数まで0埋めする
-          https://gray-code.com/javascript/fill-numbers-with-zeros/
-       */
-      endTimeForm.value = `${oneDigit.toString().padStart(2, '0')}:${m}`;
+    // 半休用
+    let over_if = Number(m) + plus_m;
+    console.log(over_if);
+    if (over_if >= 60) {
+      plus_m = over_if - 60;
+      diffNum += 1;
     } else {
-      endTimeForm.value = `${Number(h) + diffNum}:${m}`;
+      if (h < 10) {
+        const oneDigit = Number(h) + diffNum
+        console.log(`***${diffNum}***`);
+        /**
+         * 数字を指定した桁数まで0埋めする
+            https://gray-code.com/javascript/fill-numbers-with-zeros/
+        */
+        endTimeForm.value = `${oneDigit.toString().padStart(2, '0')}:${Number(m) + plus_m}`;
+      } else {
+        endTimeForm.value = `${Number(h) + diffNum}:${Number(m) + plus_m}`;
+      }
     }
   });
 }
 
 const restrictCollection = () => {
-  console.log("Called!")
-  console.log(selectChildren.selectedIndex - 1);
+  // console.log("Called!")
+  console.log(selectChildren.selectedIndex);
 
   // for(let option in selectChildren){
-  //   console.log(option.selectedIndex);
-  for (let i = 0; i < selectChildren.length; i++) {
-    if ((selectChildren.selectedIndex - 1) === 3 || (selectChildren.selectedIndex - 1) === 5 || (selectChildren.selectedIndex - 1) === 7 || (selectChildren.selectedIndex - 1) === 8 || (selectChildren.selectedIndex - 1) === 9 || (selectChildren.selectedIndex - 1) === 17 || (selectChildren.selectedIndex - 1) === 18 || (selectChildren.selectedIndex - 1) === 19 || (selectChildren.selectedIndex - 1) === 20) {
-      toggleRestrictState(true);
-    } else if ((selectChildren.selectedIndex - 1) === 10 || (selectChildren.selectedIndex - 1) === 13) {
-      toggleRestrictState(false);
-      reflectTimeForm(1);
-    } else if ((selectChildren.selectedIndex - 1) === 11 || (selectChildren.selectedIndex - 1) === 14) {
-      toggleRestrictState(false);
-      reflectTimeForm(2);
-    } else if ((selectChildren.selectedIndex - 1) === 12 || (selectChildren.selectedIndex - 1) === 15) {
-      toggleRestrictState(false);
-      reflectTimeForm(3);
-    } else {
-      toggleRestrictState(false);
-    }
+  console.log(selectChildren);
+  // for (let i = 0; i < selectChildren.length; i++) {
+  if ((selectChildren.selectedIndex) === 4 || (selectChildren.selectedIndex) === 6 || (selectChildren.selectedIndex) === 8 || (selectChildren.selectedIndex) === 9 || (selectChildren.selectedIndex) === 17 || (selectChildren.selectedIndex) === 18 || (selectChildren.selectedIndex) === 19 || (selectChildren.selectedIndex) === 20) {
+    toggleRestrictState(true);
+  } else if ((selectChildren.selectedIndex) === 10 || (selectChildren.selectedIndex) === 13) {
+    toggleRestrictState(false);
+    reflectTimeForm(1);
+  } else if ((selectChildren.selectedIndex) === 11 || (selectChildren.selectedIndex) === 14) {
+    toggleRestrictState(false);
+    reflectTimeForm(2);
+  } else if ((selectChildren.selectedIndex) === 12 || (selectChildren.selectedIndex) === 15) {
+    toggleRestrictState(false);
+    reflectTimeForm(3);
+  } else if ((selectChildren.selectedIndex) === 5 || (selectChildren.selectedIndex) === 7) {
+    toggleRestrictState(false);
+    console.log(workTime)
+    reflectTimeForm(workTime.value)
+  } else {
+    toggleRestrictState(false);
   }
+  // }
 }
 
-selectForm.addEventListener('change', restrictCollection);
+selectArea.addEventListener('change', restrictCollection);

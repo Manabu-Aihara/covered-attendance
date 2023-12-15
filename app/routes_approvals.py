@@ -8,7 +8,7 @@ from flask_login.utils import login_required
 
 from app import app, db
 from app.common_func import GetPullDownList
-from app.models import User, Todokede, SystemInfo
+from app.models import User, Todokede, SystemInfo, RecordPaidHoliday
 from app.models_aprv import NotificationList, Approval, PaidHolidayLog
 from app.errors import not_admin
 from app.approval_util import toggle_notification_type, NoZeroTable
@@ -217,9 +217,17 @@ def get_notification_form():
     notification_all = get_notification_content_list()
 
     user_detail = User.query.get(current_user.STAFFID)
+    user_worktime = (
+        db.session.query(RecordPaidHoliday.WORK_TIME)
+        .filter(RecordPaidHoliday.STAFFID == current_user.STAFFID)
+        .first()
+    )
 
     return render_template(
-        "attendance/approval_form.html", n_all=notification_all, stf_login=user_detail
+        "attendance/approval_form.html",
+        n_all=notification_all,
+        worktime=user_worktime.WORK_TIME,
+        stf_login=user_detail,
     )
 
 
@@ -375,11 +383,14 @@ def update_status(id: int, judgement: int) -> None:
 def insert_pay_log(staff_id: int, id: int) -> None:
     holiday_obj = HolidayAcquire(staff_id)
     remain = holiday_obj.print_remains()
-    pay_log_obj = PaidHolidayLog(
-        staff_id, remain - holiday_obj.get_notification_rests(id), id
-    )
-    db.session.add(pay_log_obj)
-    db.session.commit()
+    try:
+        concerned_notify = holiday_obj.get_notification_rests(id)
+    except ValueError as e:
+        print(e)
+    else:
+        pay_log_obj = PaidHolidayLog(staff_id, remain - concerned_notify, id)
+        db.session.add(pay_log_obj)
+        db.session.commit()
 
 
 # 申請に対して、承認
