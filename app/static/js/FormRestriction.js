@@ -22,53 +22,63 @@ const toggleRestrictState = (flag) => {
 const startTimeForm = timeForms[0];
 const endTimeForm = timeForms[1];
 
+// 半休用
 const workTime = document.getElementById('worktime');
+
+const separateTime = () => {
+  let hourSide, minuteSide;
+  halfTime = workTime.value / 2;
+  // 時間
+  hourSide = Math.floor(halfTime);
+  // 分
+  minuteSide = halfTime - Math.floor(halfTime);
+  minuteSide = minuteSide * 60;
+  return [hourSide, minuteSide];
+}
+
+const carryUpTime = (startTimeMinute) => {
+  const [hourSide, minuteSide] = separateTime();
+  integerMinute = Number(startTimeMinute);
+  console.log(`***${startTimeMinute}+${minuteSide}***`);
+  if (integerMinute + minuteSide >= 60) {
+    console.log("繰り上げ");
+    return [hourSide + 1, integerMinute + minuteSide - 60];
+  } else {
+    console.log("繰り上げなし");
+    return [hourSide, integerMinute + minuteSide];
+  }
+}
 
 // Param: diffNum 何時間後
 const reflectTimeForm = (diffNum) => {
-  // 半休用
-  let halfTime, plus_m;
-  if (Number.isInteger(diffNum) === false) {
-    halfTime = Math.floor(diffNum) / 2;
-    diffNum = halfTime;
-    console.log(`---${diffNum}---`);
-    separate_m = halfTime - Math.floor(halfTime);
-    plus_m = separate_m * 60;
-  }
   /**
  * input type=date:値の変更の感知にはinput
  */
   startTimeForm.addEventListener('input', () => {
     let [h, m] = startTimeForm.value.split(':');
-    // 半休用
-    let over_if = Number(m) + plus_m;
-    console.log(over_if);
-    if (over_if >= 60) {
-      plus_m = over_if - 60;
-      diffNum += 1;
+    /**
+     * plus_m: startTimeFormのminutesと+workTimeの半分のminutes
+     * plus_h: plus_mによって、繰り上げの可能性がある
+     */
+    diffNum === 0 ? [plus_h, plus_m] = carryUpTime(m) : [plus_h = 0, plus_m = m];
+
+    const oneDigit = Number(h) + diffNum + Number(plus_h);
+    if (h < 10) {
+      /**
+       * 数字を指定した桁数まで0埋めする
+          https://gray-code.com/javascript/fill-numbers-with-zeros/
+      */
+      endTimeForm.value = `${oneDigit.toString().padStart(2, '0')}:${Number(plus_m)}`;
     } else {
-      if (h < 10) {
-        const oneDigit = Number(h) + diffNum
-        console.log(`***${diffNum}***`);
-        /**
-         * 数字を指定した桁数まで0埋めする
-            https://gray-code.com/javascript/fill-numbers-with-zeros/
-        */
-        endTimeForm.value = `${oneDigit.toString().padStart(2, '0')}:${Number(m) + plus_m}`;
-      } else {
-        endTimeForm.value = `${Number(h) + diffNum}:${Number(m) + plus_m}`;
-      }
+      endTimeForm.value = `${oneDigit}:${Number(plus_m)}`;
     }
   });
 }
 
 const restrictCollection = () => {
-  // console.log("Called!")
   console.log(selectChildren.selectedIndex);
 
-  // for(let option in selectChildren){
   console.log(selectChildren);
-  // for (let i = 0; i < selectChildren.length; i++) {
   if ((selectChildren.selectedIndex) === 4 || (selectChildren.selectedIndex) === 6 || (selectChildren.selectedIndex) === 8 || (selectChildren.selectedIndex) === 9 || (selectChildren.selectedIndex) === 17 || (selectChildren.selectedIndex) === 18 || (selectChildren.selectedIndex) === 19 || (selectChildren.selectedIndex) === 20) {
     toggleRestrictState(true);
   } else if ((selectChildren.selectedIndex) === 10 || (selectChildren.selectedIndex) === 13) {
@@ -82,12 +92,10 @@ const restrictCollection = () => {
     reflectTimeForm(3);
   } else if ((selectChildren.selectedIndex) === 5 || (selectChildren.selectedIndex) === 7) {
     toggleRestrictState(false);
-    console.log(workTime)
-    reflectTimeForm(workTime.value)
+    reflectTimeForm(0)
   } else {
     toggleRestrictState(false);
   }
-  // }
 }
 
 selectArea.addEventListener('change', restrictCollection);

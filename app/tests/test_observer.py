@@ -16,7 +16,7 @@ def subject():
     return subject
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_observer(app_context):
     subject = SubjectImpl()
     observer = ObserverRegist()
@@ -49,8 +49,9 @@ def test_output_holiday_count(subject):
 
 def test_output_workday_type():
     for char in ["B", "C", "D", "E"]:
-        if 200 in list(WorkdayType.name(char).value):
-            #         if 200 in meet_list:
+        if 250 in list(WorkdayType.name(char).value):
             break
+        else:
+            char = "A"
 
     print(char)

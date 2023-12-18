@@ -113,7 +113,7 @@ class SubjectImpl(Subject):
             db.session.query(User.STAFFID).filter(User.INDAY != None).all()
         )
         for staff_id in staff_id_list:
-            # STAFFIDを付ける、otherwise -> staff_id[0]
+            # しっかりカラム名を付ける、otherwise -> staff_id[0]
             holiday_acquire_obj = HolidayAcquire(staff_id.STAFFID)
             base_day = holiday_acquire_obj.convert_base_day()
             if base_day.month == self.notice_month():
@@ -141,8 +141,20 @@ class SubjectImpl(Subject):
         )
         # return super().acquire_holidays()
 
-    # def change_acquire_type(self) -> None:
-    # 年間出勤日数の計算　sum_workday_count: int
+    def change_acquire_type(self) -> None:
+        # 年間出勤日数の計算
+        sum_workday_count: int = 250
+        for char in ["B", "C", "D", "E"]:
+            if sum_workday_count in list(WorkdayType.name(char).value):
+                break
+            else:
+                char = "A"
+        # if char != enable_obj.acquisition_key:
+        #     r_holiday_obj = RecordPaidHoliday(concerned_id)
+        #     r_holiday_obj.ACQUISITION_TYPE = char
+        #     db.session.merge(r_holiday_obj)
+        #     db.session.commit()
+        return char
 
     def execute(self) -> None:
         self.notify()

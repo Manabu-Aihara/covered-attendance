@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from app import db
+from app.models import RecordPaidHoliday
 from app.models_aprv import PaidHolidayLog
 
 # 循環参照回避
@@ -32,3 +33,21 @@ class ObserverRegist(Observer):
             #     db.session.add(add_holidays)
 
             # db.session.commit()
+
+
+class ObserverCheck(Observer):
+    def update(self, subject: Subject) -> None:
+        # notification_state: int = subject.notice_month()
+        if (notification_state := subject.notice_month()) == 3 or (
+            notification_state := subject.notice_month()
+        ) == 9:
+            print(f"Notify!---{notification_state + 1}月年休付与前のチェックが入ります。---")
+            for concerned_id in subject.get_concerned_staff():
+                print(subject.change_acquire_type())
+                # paid_type = subject.change_acquire_type(concerned_id)
+                # if char != enable_obj.acquisition_key:
+                #     r_holiday_obj = RecordPaidHoliday(concerned_id)
+                #     r_holiday_obj.ACQUISITION_TYPE = paid_type
+                #     db.session.merge(r_holiday_obj)
+
+            #     db.session.commit()

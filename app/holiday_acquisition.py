@@ -41,28 +41,33 @@ class HolidayAcquire:
     id: int
 
     def __post_init__(self):
-        target_user = (
-            db.session.query(User.INDAY).filter(User.STAFFID == self.id).first()
-        )
-        if target_user.INDAY is not None:
-            self.in_day = target_user.INDAY
+        try:
+            target_user = (
+                db.session.query(User.INDAY).filter(User.STAFFID == self.id).first()
+            )
+        except TypeError:
+            print(f"ID{self.id}: M_STAFFINFO.INDAYの値がありません。")
         else:
-            raise TypeError("User.INDAYの値がありません。")
+            self.in_day = target_user.INDAY
 
         # 勤務時間 job_time: float
         # 勤務形態 acquisition_key: ['A', 'B', 'C', 'D', 'E']
-        job_time, acquisition_key = (
-            db.session.query(
-                RecordPaidHoliday.WORK_TIME, RecordPaidHoliday.ACQUISITION_TYPE
+        try:
+            job_time, acquisition_key = (
+                db.session.query(
+                    RecordPaidHoliday.WORK_TIME, RecordPaidHoliday.ACQUISITION_TYPE
+                )
+                .filter(self.id == RecordPaidHoliday.STAFFID)
+                .first()
             )
-            .filter(self.id == RecordPaidHoliday.STAFFID)
-            .first()
-        )
-        if (job_time is not None) or (acquisition_key is not None):
+        except TypeError:
+            print(
+                f"ID{self.id}: M_RECORD_PAIDHOLIDAYのWORK_TIME、もしくはACQUISITION_TYPEの値がありません。"
+            )
+        else:
+            # if (job_time is not None) or (acquisition_key is not None):
             self.job_time: float = job_time
             self.acquisition_key: str = acquisition_key
-        else:
-            TypeError("M_RECORD_PAIDHOLIDAYのWORK_TIME、もしくはACQUISITION_TYPEの値がありません。")
 
     """
     acquire: 日数
@@ -290,9 +295,4 @@ class HolidayAcquire:
         except TypeError as e:
             print(e)
         else:
-            # approval_time_list = []
-            # for noification_info in noification_info_list:
-            #     if noification_info.STATUS == 1:
-            #         rest = self.get_notification_rests(noification_info.id)
-            #         approval_time_list.append(rest)
             return sum(approval_time_list)

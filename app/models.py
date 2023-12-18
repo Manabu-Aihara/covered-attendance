@@ -135,6 +135,11 @@ class Busho(db.Model):
     __tablename__ = "M_DEPARTMENT"
     CODE = db.Column(db.Integer, primary_key=True, index=True, nullable=False)
     NAME = db.Column(db.String(50), index=True, nullable=True)
+    """
+        2023/12/18
+        リレーション機能追加
+    """
+    M_RECORD_PAIDHOLIDAYs = db.relationship("RecordPaidHoliday", backref="M_DEPARTMENT")
 
     def __init__(self, CODE):
         self.CODE = CODE
@@ -262,10 +267,10 @@ class Shinsei(db.Model):
     ONCALL = db.Column(db.String(32), index=True, nullable=True)  # オンコール当番
     ONCALL_COUNT = db.Column(db.String(32), index=True, nullable=True)  # オンコール回数
     ENGEL_COUNT = db.Column(db.String(32), index=True, nullable=True)  # エンゼルケア
-    ALCOHOL = db.Column(db.Boolean())
     NOTIFICATION = db.Column(db.String(32), index=True, nullable=True)  # 届出（午前）
     NOTIFICATION2 = db.Column(db.String(32), index=True, nullable=True)  # 届出（午後）
     OVERTIME = db.Column(db.String(32), index=True, nullable=True)  # 残業時間申請
+    ALCOHOL = db.Column(db.Integer, nullable=True)
     REMARK = db.Column(db.String(100), index=True, nullable=True)  # 備考
 
     def __init__(
@@ -311,13 +316,15 @@ class RecordPaidHoliday(db.Model):  # 年休関連
         nullable=False,
     )
     # リレーションが好ましいと思う
-    DEPARTMENT_CODE = db.Column(db.Integer, index=True, nullable=True)  # Busho
-    LNAME = db.Column(db.String(50), index=True, nullable=True)  # User
-    FNAME = db.Column(db.String(50), index=True, nullable=True)  # User
-    LKANA = db.Column(db.String(50), index=True, nullable=True)  # User
-    FKANA = db.Column(db.String(50), index=True, nullable=True)  # User
+    DEPARTMENT_CODE = db.Column(
+        db.Integer, db.ForeignKey("M_DEPARTMENT.CODE"), index=True, nullable=True
+    )  # Busho
+    # LNAME = db.Column(db.String(50), index=True, nullable=True)  # User
+    # FNAME = db.Column(db.String(50), index=True, nullable=True)  # User
+    # LKANA = db.Column(db.String(50), index=True, nullable=True)  # User
+    # FKANA = db.Column(db.String(50), index=True, nullable=True)  # User
     # 入社日
-    INDAY = db.Column(db.DateTime(), index=True, nullable=True)  # User
+    # INDAY = db.Column(db.DateTime(), index=True, nullable=True)  # User
 
     LAST_DATEGRANT = db.Column(db.DateTime(), index=True, nullable=True)  # 今回付与年月日
     NEXT_DATEGRANT = db.Column(db.DateTime(), index=True, nullable=True)  # 次回付与年月日
@@ -333,6 +340,9 @@ class RecordPaidHoliday(db.Model):  # 年休関連
         追加カラム
         """
     ACQUISITION_TYPE = db.Column(db.String(1), nullable=False)  # 年休付与タイプ
+
+    def __init__(self, STAFFID):
+        self.STAFFID = STAFFID
 
 
 class CountAttendance(db.Model):  ##### 年休用設定での勤務日数ダンプ(ページ表示用)

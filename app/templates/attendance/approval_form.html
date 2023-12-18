@@ -4,7 +4,7 @@
 <h3 class="notification-title">届出申請</h3>
 <p><span style="color: red;">※</span>は入力必須です。</p>
 <h4>社員番号{{ stf_login.STAFFID }}：　{{ stf_login.LNAME }}{{ stf_login.FNAME }}</h4>
-<input type="text" value="7.0" id="worktime" />
+<input type="text" value="{{ worktime }}" id="worktime" />
 
 <form method="post" action="/regist" name="notice-form" id="approval">
   <div class="w-25">

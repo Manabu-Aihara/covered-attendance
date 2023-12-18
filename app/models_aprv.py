@@ -61,22 +61,22 @@ class NotificationList(db.Model):
         self.REMARK = REMARK
 
 
-class PaidHolidayModel(db.Model):
-    __tablename__ = "M_PAIDHOLIDAY"
-    STAFFID = db.Column(
-        db.Integer,
-        db.ForeignKey("M_STAFFINFO.STAFFID"),
-        primary_key=True,
-        index=True,
-        nullable=False,
-    )
-    STARTDAY = db.Column(db.Date, primary_key=True, nullable=False)
-    ENDDAY = db.Column(db.Date, primary_key=True, nullable=False)
-    paid_holiday = db.Column(db.Integer, nullable=False)
-    carry_forward = db.Column(db.Integer)
+# class PaidHolidayModel(db.Model):
+#     __tablename__ = "M_PAIDHOLIDAY"
+#     STAFFID = db.Column(
+#         db.Integer,
+#         db.ForeignKey("M_STAFFINFO.STAFFID"),
+#         primary_key=True,
+#         index=True,
+#         nullable=False,
+#     )
+#     STARTDAY = db.Column(db.Date, primary_key=True, nullable=False)
+#     ENDDAY = db.Column(db.Date, primary_key=True, nullable=False)
+#     paid_holiday = db.Column(db.Integer, nullable=False)
+#     carry_forward = db.Column(db.Integer)
 
-    def __init__(self, STAFFID):
-        self.STAFFID = STAFFID
+#     def __init__(self, STAFFID):
+#         self.STAFFID = STAFFID
 
 
 class PaidHolidayLog(db.Model):
