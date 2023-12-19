@@ -8,11 +8,11 @@ from app.models_aprv import PaidHolidayLog
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(20)
+    acquisition_object = HolidayAcquire(30)
     return acquisition_object
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_convert_base_day(get_official_user):
     conv_date = get_official_user.convert_base_day()
     assert conv_date.month == 10
@@ -33,7 +33,7 @@ def test_convert_tuple(get_official_user):
     print(result_tuple)
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_get_notification_rests_raise(get_official_user):
     with pytest.raises(TypeError) as except_info:
         get_official_user.get_notification_rests(31)
@@ -71,13 +71,23 @@ def test_print_class_method(get_official_user):
     print(AcquisitionType.name(get_official_user.acquisition_key[0]))
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_plus_next_holidays(get_official_user):
     test_value = get_official_user.plus_next_holidays()
     print(test_value)
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
+def test_insert_ph_db(get_official_user):
+    test_sum_holiday = get_official_user.get_sum_holiday()
+    pay_log_obj = PaidHolidayLog(
+        get_official_user.id, test_sum_holiday, None, None, "新規作成"
+    )
+    db.session.add(pay_log_obj)
+    db.session.commit()
+
+
+@pytest.mark.skip
 def test_sum_notification(get_official_user):
     test_result = get_official_user.sum_notify_times()
     print(test_result)

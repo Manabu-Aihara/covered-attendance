@@ -1,14 +1,15 @@
 import enum
-from datetime import date, datetime, timedelta, time
+from datetime import date, datetime, timedelta
 from dataclasses import dataclass
 from typing import List, Tuple, Callable
 from collections import OrderedDict
 from monthdelta import monthmod
 from dateutil.relativedelta import relativedelta
+
 from sqlalchemy import and_
 
 from app import db
-from app.models import User, RecordPaidHoliday
+from app.models import User, RecordPaidHoliday, Shinsei
 from app.models_aprv import NotificationList, PaidHolidayLog
 
 
@@ -64,6 +65,12 @@ class HolidayAcquire:
             print(
                 f"ID{self.id}: M_RECORD_PAIDHOLIDAYのWORK_TIME、もしくはACQUISITION_TYPEの値がありません。"
             )
+            # with open("holiday_err.log", "a") as f:
+            #     # pass
+            #     f.write(
+            #         f"\nID{self.id}: M_RECORD_PAIDHOLIDAYのWORK_TIME、もしくはACQUISITION_TYPEの値がありません。"
+            #         # f"{e}"
+            #     )
         else:
             # if (job_time is not None) or (acquisition_key is not None):
             self.job_time: float = job_time
@@ -187,14 +194,19 @@ class HolidayAcquire:
         comb_end: datetime = datetime.combine(end_day, end_time)
         # 月をまたぐかもしれないので、単純に.dayで計算できない
         diff_day: timedelta = end_day - notify_datetimes.START_DAY
-        # 力技でtimedeltaをintに
+        # 力技でtimedeltaをfloatに
         day_side: float = diff_day.total_seconds() // (3600 * 24) + 1
         # こちらは.hourでintに変換
         hour_side = comb_end.hour - comb_start.hour
-        # いずれ30minutesを0.5で表したい
+        # -もあり得る
         minute_side = comb_end.minute - comb_start.minute
-        return day_side * (hour_side if hour_side != 0 else self.job_time) + minute_side
+        minute_side_float: float = minute_side / 60
+        return (
+            day_side * (hour_side if hour_side != 0 else self.job_time)
+            + minute_side_float
+        )
 
+    # AttributeError: 'NoneType' object has no attribute 'REMAIN_TIMES'
     def print_remains(self) -> float:
         last_remain: float = (
             db.session.query(PaidHolidayLog.REMAIN_TIMES)
@@ -253,12 +265,12 @@ class HolidayAcquire:
             else sum(holiday_list[:-1])
         )
 
-        acquisition_obj = HolidayAcquire(self.id)
+        # acquisition_obj = HolidayAcquire(self.id)
         # 残り総合計時間
-        sum_times: float = default_sum_holiday * (acquisition_obj.job_time)
+        sum_times: float = default_sum_holiday * (self.job_time)
         return sum_times
 
-    # 表示用:STARTDAY, ENDDAYのペア
+    # 表示用: STARTDAY, ENDDAYのペア
     def print_acquisition_data(self) -> Tuple[list[date], list[date]]:
         # 取得日、日数のペア
         holiday_dict = self.plus_next_holidays()
@@ -296,3 +308,18 @@ class HolidayAcquire:
             print(e)
         else:
             return sum(approval_time_list)
+
+    def count_workday(self) -> int:
+        from_list, to_list = self.print_acquisition_data()
+        attendance_list = (
+            db.session.query(Shinsei.id)
+            .filter(
+                and_(
+                    Shinsei.STAFFID == self.id,
+                    Shinsei.WORKDAY.between(from_list[-2], to_list[-2]),
+                    Shinsei.STARTTIME != 0,
+                )
+            )
+            .all()
+        )
+        return len(attendance_list)

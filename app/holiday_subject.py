@@ -2,9 +2,11 @@ from __future__ import annotations
 import enum
 from typing import List, Tuple
 from abc import ABC, abstractmethod
+from dateutil.relativedelta import relativedelta
 
 from app import db
 from app.models import User
+from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
 
 from app.holiday_observer import Observer
@@ -99,7 +101,7 @@ class SubjectImpl(Subject):
         # self._state = 9 if (now.month == 9 and now.day == 30) else self._state
         # self._state = 4 if (now.month == 4 and now.day == 1) else self._state
         # self._state = 10 if (now.month == 10 and now.day == 1) else self._state
-        return 4
+        return 9
 
     # def output_holiday_count(self, work_type: AcquisitionType, subscript: int) -> int:
     #     if subscript <= len(work_type.under5y) - 1:
@@ -116,7 +118,10 @@ class SubjectImpl(Subject):
             # しっかりカラム名を付ける、otherwise -> staff_id[0]
             holiday_acquire_obj = HolidayAcquire(staff_id.STAFFID)
             base_day = holiday_acquire_obj.convert_base_day()
-            if base_day.month == self.notice_month():
+            border_end_day = base_day + relativedelta(days=-1)
+            if (base_day.month == self.notice_month()) or (
+                border_end_day.month == self.notice_month()
+            ):
                 concerned_id_list.append(staff_id.STAFFID)
 
         return concerned_id_list
@@ -124,7 +129,13 @@ class SubjectImpl(Subject):
     def acquire_holidays(self, concerned_id: int) -> Tuple[int, float]:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         # 繰り越し日数
-        carry_times: float = holiday_acquire_obj.print_remains()
+        # carry_times: float = holiday_acquire_obj.print_remains()
+        carry_days = (
+            db.session.query(PaidHolidayLog.CARRY_FORWARD)
+            .filter(concerned_id == PaidHolidayLog.STAFFID)
+            .order_by(PaidHolidayLog.id.desc())
+            .first()
+        )
         # 取得日数
         dict_value = holiday_acquire_obj.plus_next_holidays().values()
         # dict_valuesのリスト化
@@ -137,11 +148,12 @@ class SubjectImpl(Subject):
 
         return (
             concerned_id,
-            carry_times + acquisition_days * holiday_acquire_obj.job_time,
+            (carry_days.CARRY_FORWARD + acquisition_days)
+            * holiday_acquire_obj.job_time,
         )
         # return super().acquire_holidays()
 
-    def change_acquire_type(self) -> None:
+    def refer_acquire_type(self) -> None:
         # 年間出勤日数の計算
         sum_workday_count: int = 250
         for char in ["B", "C", "D", "E"]:
@@ -149,11 +161,6 @@ class SubjectImpl(Subject):
                 break
             else:
                 char = "A"
-        # if char != enable_obj.acquisition_key:
-        #     r_holiday_obj = RecordPaidHoliday(concerned_id)
-        #     r_holiday_obj.ACQUISITION_TYPE = char
-        #     db.session.merge(r_holiday_obj)
-        #     db.session.commit()
         return char
 
     def execute(self) -> None:

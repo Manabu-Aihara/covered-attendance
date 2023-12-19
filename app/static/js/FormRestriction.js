@@ -36,6 +36,7 @@ const separateTime = () => {
   return [hourSide, minuteSide];
 }
 
+// 半休用
 const carryUpTime = (startTimeMinute) => {
   const [hourSide, minuteSide] = separateTime();
   integerMinute = Number(startTimeMinute);
@@ -57,6 +58,7 @@ const reflectTimeForm = (diffNum) => {
   startTimeForm.addEventListener('input', () => {
     let [h, m] = startTimeForm.value.split(':');
     /**
+     * 半休
      * plus_m: startTimeFormのminutesと+workTimeの半分のminutes
      * plus_h: plus_mによって、繰り上げの可能性がある
      */
@@ -90,6 +92,7 @@ const restrictCollection = () => {
   } else if ((selectChildren.selectedIndex) === 12 || (selectChildren.selectedIndex) === 15) {
     toggleRestrictState(false);
     reflectTimeForm(3);
+    // 半休
   } else if ((selectChildren.selectedIndex) === 5 || (selectChildren.selectedIndex) === 7) {
     toggleRestrictState(false);
     reflectTimeForm(0)
