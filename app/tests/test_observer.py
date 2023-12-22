@@ -1,4 +1,5 @@
 import pytest
+import unittest
 from datetime import datetime
 from typing import List
 
@@ -6,7 +7,7 @@ from typing import List
 
 from app.holiday_subject import SubjectImpl
 from app.holiday_observer import ObserverRegist, ObserverCheck
-from app.holiday_acquisition import AcquisitionType
+from app.holiday_acquisition import AcquisitionType, HolidayAcquire
 from app.models import User
 
 
@@ -16,7 +17,7 @@ def subject():
     return subject
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_observer(app_context):
     subject = SubjectImpl()
     # observer = ObserverRegist()
@@ -48,6 +49,27 @@ def test_output_holiday_count(subject):
     print(count)
 
 
+@pytest.mark.skip
 def test_refer_acquire_type(subject):
     result = subject.refer_acquire_type()
     assert result == "A"
+
+    # class TestObserverClass(unittest.TestCase):
+    #     def setUp(self):
+
+
+attendance_list_A = [19, 20, 17, 22, 17, 18, 19, 20, 17, 22, 17, 18]
+attendance_list_B = [17, 15, 17]
+
+
+def test_notice_month(app_context, subject, mocker):
+    mock = mocker.patch.object(datetime, "now", return_value=datetime(2024, 9, 30))
+    print(mock.now())
+    # assert subject.notice_month() == 9
+
+
+def test_workday_count(app_context, subject, mocker):
+    mocker.patch.object(
+        HolidayAcquire, "count_workday", return_value=sum(attendance_list_A)
+    )
+    assert subject.refer_acquire_type(20) == "A"

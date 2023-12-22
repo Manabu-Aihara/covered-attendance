@@ -381,6 +381,13 @@ def update_status(id: int, judgement: int) -> None:
 
 
 def insert_pay_log(staff_id: int, id: int) -> None:
+    # 時間休かどうか
+    detail_notification: NotificationList = NotificationList.query.get(id)
+    if detail_notification.N_CODE in [10, 11, 12, 13, 14, 15]:
+        time_rest_flag: bool = True
+    else:
+        time_rest_flag: bool = False
+
     holiday_obj = HolidayAcquire(staff_id)
     remain = holiday_obj.print_remains()
     try:
@@ -388,7 +395,9 @@ def insert_pay_log(staff_id: int, id: int) -> None:
     except ValueError as e:
         print(e)
     else:
-        pay_log_obj = PaidHolidayLog(staff_id, remain - concerned_notify, id)
+        pay_log_obj = PaidHolidayLog(
+            staff_id, remain - concerned_notify, id, time_rest_flag
+        )
         db.session.add(pay_log_obj)
         db.session.commit()
 
@@ -424,7 +433,7 @@ def change_status_judge(id, STAFFID, status: int):
     # こっちからでも出来なくはない
     # skype_user_obj = make_skype_object(approval_wait_user.MAIL, approval_wait_user.MICRO_PASS)
 
-    ps = "データベーステーブルSystemInfoのSKYPE_IDを確認してください。"
+    ps = "データベーステーブルM_SYSTEMINFOのSKYPE_IDを確認してください。"
     result_report = "承認が完了しませんでした。"
     try:
         check_skype_account(approval_wait_user[0], approval_wait_user[1])

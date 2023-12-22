@@ -91,14 +91,22 @@ class PaidHolidayLog(db.Model):
     NOTIFICATION_id = db.Column(
         db.Integer, db.ForeignKey("D_NOTIFICATION_LIST.id"), index=True
     )
+    TIME_REST_FLAG = db.Column(db.Boolean, nullable=True)
     CARRY_FORWARD = db.Column(db.Float, nullable=True)
     REMARK = db.Column(db.String(256), nullable=True)
 
     def __init__(
-        self, STAFFID, REMAIN_TIMES, NOTIFICATION_id, CARRY_FORWARD=None, REMARK=None
+        self,
+        STAFFID,
+        REMAIN_TIMES,
+        NOTIFICATION_id,
+        TIME_REST_FLAG,
+        CARRY_FORWARD=None,
+        REMARK=None,
     ):
         self.STAFFID = STAFFID
         self.REMAIN_TIMES = REMAIN_TIMES
+        self.TIME_REST_FLAG = TIME_REST_FLAG
         self.NOTIFICATION_id = NOTIFICATION_id
         self.CARRY_FORWARD = CARRY_FORWARD
         self.REMARK = REMARK

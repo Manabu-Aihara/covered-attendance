@@ -1,5 +1,6 @@
 import enum
 from datetime import date, datetime, timedelta
+import calendar
 from dataclasses import dataclass
 from typing import List, Tuple, Callable
 from collections import OrderedDict
@@ -120,13 +121,13 @@ class HolidayAcquire:
     # [self.in_day.date()] + self.get_acquisition_list(base_day)
 
     # 入職日支給日数
-    def acquire_start_holidays(self) -> OrderedDict[date, int]:
+    def acquire_inday_holidays(self) -> OrderedDict[date, int]:
         base_day = self.convert_base_day()
         day_list = [self.in_day.date()] + self.get_acquisition_list(base_day)
         # monthmod(date.today(), base_day)[0].months < 6:
         if monthmod(self.in_day, base_day)[0].months <= 2:
             acquisition_days = 2
-        elif monthmod(self.in_day, base_day)[0].months <= 3:
+        elif monthmod(self.in_day, base_day)[0].months == 3:
             acquisition_days = 1
         elif monthmod(self.in_day, base_day)[0].months > 3:
             acquisition_days = 0
@@ -227,7 +228,7 @@ class HolidayAcquire:
     def plus_next_holidays(self) -> OrderedDict[date, int]:
         base_day = self.convert_base_day()
         day_list = [self.in_day.date()] + self.get_acquisition_list(base_day)
-        holiday_pair = self.acquire_start_holidays()
+        holiday_pair = self.acquire_inday_holidays()
 
         for i, acquisition_day in enumerate(
             AcquisitionType.name(self.acquisition_key).under5y
@@ -272,26 +273,29 @@ class HolidayAcquire:
 
     # 表示用: STARTDAY, ENDDAYのペア
     def print_acquisition_data(self) -> Tuple[list[date], list[date]]:
-        # 取得日、日数のペア
-        holiday_dict = self.plus_next_holidays()
+        base_day = self.convert_base_day()
+        day_list = [self.in_day.date()] + self.get_acquisition_list(base_day)
 
         end_day_list = [
-            end_day + relativedelta(years=1, days=-1) for end_day in holiday_dict.keys()
+            end_day + relativedelta(years=1, days=-1) for end_day in day_list
         ]
-        end_day_list[0] = ""
-        return (list(holiday_dict.keys()), end_day_list)
+        end_day_list[0] = "入職日"
+        return (day_list, end_day_list)
 
-    def sum_notify_times(self) -> float:
+    def sum_notify_times(self, time_flag=False) -> float:
         from_list, to_list = self.print_acquisition_data()
+        filters = []
+        filters.append(NotificationList.STAFFID == self.id)
+        filters.append(
+            NotificationList.NOTICE_DAYTIME.between(from_list[-2], to_list[-2])
+        )
+        if time_flag is True:
+            filters.append(PaidHolidayLog.TIME_REST_FLAG == 1)
+
         noification_info_list = (
             db.session.query(PaidHolidayLog.NOTIFICATION_id, NotificationList.STATUS)
             .join(PaidHolidayLog, PaidHolidayLog.NOTIFICATION_id == NotificationList.id)
-            .filter(
-                and_(
-                    NotificationList.STAFFID == self.id,
-                    NotificationList.NOTICE_DAYTIME.between(from_list[-2], to_list[-2]),
-                )
-            )
+            .filter(and_(*filters))
             .all()
         )
 
@@ -307,19 +311,48 @@ class HolidayAcquire:
         except TypeError as e:
             print(e)
         else:
+            # Trueの場合時間休だけの総合計時間
             return sum(approval_time_list)
 
-    def count_workday(self) -> int:
+    # Pythonで任意の日付がその月の第何週目かを取得
+    # https://note.nkmk.me/python-calendar-datetime-nth-dow/
+    def get_nth_dow(self) -> int:
+        return (self.in_day.day - 1) // 7 + 1
+
+    def count_workday(self) -> List[int]:
+        base_day = self.convert_base_day()
         from_list, to_list = self.print_acquisition_data()
-        attendance_list = (
-            db.session.query(Shinsei.id)
-            .filter(
-                and_(
-                    Shinsei.STAFFID == self.id,
-                    Shinsei.WORKDAY.between(from_list[-2], to_list[-2]),
-                    Shinsei.STARTTIME != 0,
-                )
-            )
-            .all()
-        )
-        return len(attendance_list)
+
+        filters = []
+        filters.append(Shinsei.STAFFID == self.id)
+
+        # 入職日年休付与以外受けていない者も含む
+        if (base_day.day == 1) or (self.get_nth_dow() == 1):
+            from_prev_last = from_list[-2]
+        # 入職日年休付与以外受けていない者
+        elif (monthmod(date.today(), self.in_day)[0].months < 4) and (
+            self.get_nth_dow() != 1
+        ):
+            # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
+            from_prev_last = from_list[-2] + relativedelta(months=+1)
+
+        filters.append(Shinsei.WORKDAY.between(from_prev_last, to_list[-2]))
+
+        filters.append(Shinsei.STARTTIME != 0)
+
+        attendance_list = db.session.query(Shinsei.id).filter(and_(*filters)).all()
+        return attendance_list
+
+    # 入職日年休付与以外受けていない者
+    def count_workday_half_year(self) -> int:
+        base_day = self.convert_base_day()
+
+        workday_term_count = self.count_workday()
+
+        # 入職月〜基準月1ヶ月前
+        diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
+        # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
+        diff_month -= 1 if self.get_nth_dow() != 1 else diff_month
+
+        # 入職月〜基準月1ヶ月前の範囲を12ヶ月分にしたもの
+        return workday_term_count * (12 / diff_month)

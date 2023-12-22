@@ -33,17 +33,15 @@ class ModalAppear {
       }
     }
 
-    // const formPath = /approval-form$/;
+    const formPath = /approval-form$/;
     this.callModal = function (arg1, arg2) {
       myself.button_item.addEventListener('click', (e) => {
         e.preventDefault();
-        // if (formPath.test(location.pathname)) {
-        // selectArea, startDayArea: ValidationCheck.jsより
-        blurArea(e, startDayArea) ? blurArea(e, selectArea) : globalFlag = false;
-        // blurArea(e, selectArea) ? blurArea(e, startDayArea) : globalFlag = false;
-        // FormRestruction.jsより
-        encourageInput();
-        // }
+        if (formPath.test(location.pathname)) {
+          // selectArea, startDayArea: ValidationCheck.jsより
+          blurArea(e, startDayArea) ? blurArea(e, selectArea) : globalFlag = false;
+          // blurArea(e, selectArea) ? blurArea(e, startDayArea) : globalFlag = false;
+        }
         appearModalSubmit(arg1, arg2);
       });
     }

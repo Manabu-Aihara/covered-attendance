@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime
 
 from app import db
 from app.holiday_acquisition import HolidayAcquire, AcquisitionType
@@ -8,13 +9,14 @@ from app.models_aprv import PaidHolidayLog
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(30)
+    acquisition_object = HolidayAcquire(20)
     return acquisition_object
 
 
 # @pytest.mark.skip
 def test_convert_base_day(get_official_user):
     conv_date = get_official_user.convert_base_day()
+    print(conv_date)
     assert conv_date.month == 10
 
 
@@ -46,23 +48,6 @@ def test_get_notification_rests(get_official_user):
     print(result_times)
 
 
-# @pytest.mark.skip
-# def test_insert_ph_db(get_official_user):
-#     start_list, end_list, acquisition_list = get_official_user.print_holidays_data(
-#         AcquisitionType.A.under5y, AcquisitionType.A.onward
-#     )
-#     for start_day, end_day, acquisition in zip(start_list, end_list, acquisition_list):
-#         paid_holiday_obj = PaidHolidayModel(20)
-#         paid_holiday_obj.STAFFID = 20
-#         paid_holiday_obj.STARTDAY = start_day
-#         paid_holiday_obj.ENDDAY = end_day
-#         paid_holiday_obj.paid_holiday = acquisition
-#         print(paid_holiday_obj)
-#     db.session.add(paid_holiday_obj)
-
-# db.session.commit()
-
-
 @pytest.mark.skip
 def test_print_class_method(get_official_user):
     # print(AcquisitionType.A.__dict__["onward"])
@@ -71,14 +56,14 @@ def test_print_class_method(get_official_user):
     print(AcquisitionType.name(get_official_user.acquisition_key[0]))
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_plus_next_holidays(get_official_user):
     test_value = get_official_user.plus_next_holidays()
     print(test_value)
 
 
 @pytest.mark.skip
-def test_insert_ph_db(get_official_user):
+def test_insert_new_user(get_official_user):
     test_sum_holiday = get_official_user.get_sum_holiday()
     pay_log_obj = PaidHolidayLog(
         get_official_user.id, test_sum_holiday, None, None, "新規作成"
@@ -87,20 +72,39 @@ def test_insert_ph_db(get_official_user):
     db.session.commit()
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_sum_notification(get_official_user):
-    test_result = get_official_user.sum_notify_times()
-    print(test_result)
+    test_result = get_official_user.sum_notify_times(True)
+    assert test_result == 3.0
 
 
 @pytest.mark.skip
-def test_print_remains(get_official_user):
+def test_dummy_plus_next_holiday(get_official_user, mocker):
+    # mocker.patch("get_official_user.convert_base_day", return_value=4)
+    mocker.patch.object(
+        HolidayAcquire, "convert_base_day", return_value=datetime(2019, 4, 1)
+    )
+    print(get_official_user.plus_next_holidays())
+
+
+# @pytest.mark.skip
+def test_print_remains(get_official_user, mocker):
     last_remain = get_official_user.print_remains()
-    assert last_remain == 39
+    mocker.patch.object(
+        HolidayAcquire,
+        "sum_notify_times",
+        side_effect=[get_official_user.sum_notify_times() * 8, 50.0],
+    )
+    result = (
+        last_remain
+        - get_official_user.sum_notify_times()
+        - get_official_user.sum_notify_times(True)
+    )
+    print(result)
 
 
 @pytest.mark.skip
-def test_paid_log_db(get_official_user):
+def test_insert_notification_row(get_official_user):
     remain = get_official_user.print_remains()
     # print(get_official_user.get_notification_rests(53))
     pay_log_obj = PaidHolidayLog(
@@ -110,10 +114,16 @@ def test_paid_log_db(get_official_user):
     db.session.commit()
 
 
+@pytest.mark.skip
+def test_get_nth_dow(get_official_user):
+    nth_week = get_official_user.get_nth_dow()
+    print(nth_week)
+
+
 # おニューカレンダーテスト
 @pytest.fixture
 def make_new_calendar():
-    new_calendar = NewCalendar(2023, 9)
+    new_calendar = NewCalendar(2023, 12)
     return new_calendar
 
 

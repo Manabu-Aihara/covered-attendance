@@ -64,15 +64,15 @@ const reflectTimeForm = (diffNum) => {
      */
     diffNum === 0 ? [plus_h, plus_m] = carryUpTime(m) : [plus_h = 0, plus_m = m];
 
-    const oneDigit = Number(h) + diffNum + Number(plus_h);
-    if (h < 10) {
+    if (h < 10 || plus_m < 10) {
+      const oneDigit = Number(h) + diffNum + Number(plus_h);
       /**
        * 数字を指定した桁数まで0埋めする
           https://gray-code.com/javascript/fill-numbers-with-zeros/
       */
-      endTimeForm.value = `${oneDigit.toString().padStart(2, '0')}:${Number(plus_m)}`;
+      endTimeForm.value = `${oneDigit.toString().padStart(2, '0')}:${plus_m.toString().padStart(2, '0')}`;
     } else {
-      endTimeForm.value = `${oneDigit}:${Number(plus_m)}`;
+      endTimeForm.value = `${oneDigit}:${plus_m}`;
     }
   });
 }

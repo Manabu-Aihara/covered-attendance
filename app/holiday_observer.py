@@ -55,22 +55,32 @@ class ObserverCheck(Observer):
             for concerned_id in subject.get_concerned_staff():
                 holiday_acquire_obj = HolidayAcquire(concerned_id)
                 # 最終残り日数を繰り越しにする
-                carry_times = holiday_acquire_obj.print_remains()
-                # print(carry_times)
-                holiday_log_data = PaidHolidayLog(
-                    concerned_id,
-                    0,
-                    None,
-                    carry_times / holiday_acquire_obj.job_time,
-                    "前回からの繰り越し",
+                truncate_times = (
+                    holiday_acquire_obj.sum_notify_times(True)
+                    % holiday_acquire_obj.job_time
                 )
-                db.session.add(holiday_log_data)
+                carry_times = (
+                    holiday_acquire_obj.print_remains()
+                    - holiday_acquire_obj.sum_notify_times()
+                    - truncate_times
+                )
+                print(carry_times)
+                # holiday_log_data = PaidHolidayLog(
+                #     concerned_id,
+                #     0,
+                #     None,
+                #     carry_times,
+                #     "前回からの繰り越し",
+                # )
+                # db.session.add(holiday_log_data)
 
-                # paid_type = subject.refer_acquire_type(concerned_id)
-                # print(paid_type)
-                # if paid_type != holiday_acquire_obj.acquisition_key:
-                #     r_holiday_obj = RecordPaidHoliday(concerned_id)
-                #     r_holiday_obj.ACQUISITION_TYPE = paid_type
-                #     db.session.merge(r_holiday_obj)
+                paid_type = subject.refer_acquire_type(concerned_id)
+                print(paid_type)
+                if (holiday_acquire_obj.acquisition_key is None) or (
+                    holiday_acquire_obj.acquisition_key != paid_type
+                ):
+                    r_holiday_obj = RecordPaidHoliday(concerned_id)
+                    r_holiday_obj.ACQUISITION_TYPE = paid_type
+                    db.session.merge(r_holiday_obj)
 
-            db.session.commit()
+            # db.session.commit()

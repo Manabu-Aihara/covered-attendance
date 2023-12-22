@@ -2,6 +2,7 @@ from __future__ import annotations
 import enum
 from typing import List, Tuple
 from abc import ABC, abstractmethod
+from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 
 from app import db
@@ -96,12 +97,12 @@ class SubjectImpl(Subject):
             observer.update(self)
 
     def notice_month(self) -> int:
-        # now = datetime.now()
-        # self._state = 3 if (now.month == 3 and now.day == 31) else self._state
-        # self._state = 9 if (now.month == 9 and now.day == 30) else self._state
-        # self._state = 4 if (now.month == 4 and now.day == 1) else self._state
-        # self._state = 10 if (now.month == 10 and now.day == 1) else self._state
-        return 9
+        now = datetime.now()
+        self._state = 3 if (now.month == 3 and now.day == 31) else self._state
+        self._state = 9 if (now.month == 9 and now.day == 30) else self._state
+        self._state = 4 if (now.month == 4 and now.day == 1) else self._state
+        self._state = 10 if (now.month == 10 and now.day == 1) else self._state
+        return self._state
 
     # def output_holiday_count(self, work_type: AcquisitionType, subscript: int) -> int:
     #     if subscript <= len(work_type.under5y) - 1:
@@ -153,9 +154,16 @@ class SubjectImpl(Subject):
         )
         # return super().acquire_holidays()
 
-    def refer_acquire_type(self) -> None:
+    def refer_acquire_type(self, concerned_id: int) -> str:
+        holiday_acquire_obj = HolidayAcquire(concerned_id)
+        base_day = holiday_acquire_obj.convert_base_day()
         # 年間出勤日数の計算
-        sum_workday_count: int = 250
+        sum_workday_count: int
+        if date.today() > holiday_acquire_obj.get_acquisition_list(base_day)[0]:
+            sum_workday_count = holiday_acquire_obj.count_workday_half_year()
+        else:
+            sum_workday_count = holiday_acquire_obj.count_workday()
+
         for char in ["B", "C", "D", "E"]:
             if sum_workday_count in list(WorkdayType.name(char).value):
                 break
