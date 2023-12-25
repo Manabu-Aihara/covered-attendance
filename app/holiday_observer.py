@@ -55,7 +55,9 @@ class ObserverCheck(Observer):
             for concerned_id in subject.get_concerned_staff():
                 holiday_acquire_obj = HolidayAcquire(concerned_id)
                 # 最終残り日数を繰り越しにする
+                # これは切り捨てる部分
                 truncate_times = (
+                    # Trueを付けたら時間休のみの合計
                     holiday_acquire_obj.sum_notify_times(True)
                     % holiday_acquire_obj.job_time
                 )
@@ -76,11 +78,11 @@ class ObserverCheck(Observer):
 
                 paid_type = subject.refer_acquire_type(concerned_id)
                 print(paid_type)
-                if (holiday_acquire_obj.acquisition_key is None) or (
-                    holiday_acquire_obj.acquisition_key != paid_type
-                ):
-                    r_holiday_obj = RecordPaidHoliday(concerned_id)
-                    r_holiday_obj.ACQUISITION_TYPE = paid_type
-                    db.session.merge(r_holiday_obj)
+                # if (holiday_acquire_obj.acquisition_key is None) or (
+                #     holiday_acquire_obj.acquisition_key != paid_type
+                # ):
+                #     r_holiday_obj = RecordPaidHoliday(concerned_id)
+                #     r_holiday_obj.ACQUISITION_TYPE = paid_type
+                #     db.session.merge(r_holiday_obj)
 
             # db.session.commit()

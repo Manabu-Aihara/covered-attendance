@@ -1,5 +1,4 @@
 import pytest
-import unittest
 from datetime import datetime
 from typing import List
 
@@ -9,25 +8,6 @@ from app.holiday_subject import SubjectImpl
 from app.holiday_observer import ObserverRegist, ObserverCheck
 from app.holiday_acquisition import AcquisitionType, HolidayAcquire
 from app.models import User
-
-
-@pytest.fixture
-def subject():
-    subject = SubjectImpl()
-    return subject
-
-
-@pytest.mark.skip
-def test_observer(app_context):
-    subject = SubjectImpl()
-    # observer = ObserverRegist()
-    observer = ObserverCheck()
-
-    subject.attach(observer)
-    # print(subject.get_concerned_staff())
-    # print(subject.acquire_holidays(20))
-
-    print(subject.execute())
 
 
 @pytest.mark.skip
@@ -41,6 +21,12 @@ def test_print_db(app_context):
     print(acquisition_type_list)
 
 
+@pytest.fixture(scope="session")
+def subject():
+    subject = SubjectImpl()
+    return subject
+
+
 @pytest.mark.skip
 def test_output_holiday_count(subject):
     # @param AcquisitionType
@@ -49,27 +35,58 @@ def test_output_holiday_count(subject):
     print(count)
 
 
-@pytest.mark.skip
-def test_refer_acquire_type(subject):
-    result = subject.refer_acquire_type()
-    assert result == "A"
-
-    # class TestObserverClass(unittest.TestCase):
-    #     def setUp(self):
-
-
 attendance_list_A = [19, 20, 17, 22, 17, 18, 19, 20, 17, 22, 17, 18]
-attendance_list_B = [17, 15, 17]
+attendance_list_B = [17, 15, 17]  # 新人さん、後で×4
 
 
-def test_notice_month(app_context, subject, mocker):
-    mock = mocker.patch.object(datetime, "now", return_value=datetime(2024, 9, 30))
-    print(mock.now())
-    # assert subject.notice_month() == 9
+@pytest.fixture
+def get_concerned_id(app_context, subject, mocker):
+    mocker.patch.object(subject, "notice_month", return_value=3)
+    concerned_members = subject.get_concerned_staff()
+    return concerned_members
 
 
-def test_workday_count(app_context, subject, mocker):
+# @pytest.mark.skip
+def test_workday_count(app_context, subject, get_concerned_id, mocker):
     mocker.patch.object(
         HolidayAcquire, "count_workday", return_value=sum(attendance_list_A)
     )
-    assert subject.refer_acquire_type(20) == "A"
+    mocker.patch.object(
+        HolidayAcquire,
+        "count_workday_half_year",
+        return_value=sum(attendance_list_B) * 4,
+    )
+    for id in get_concerned_id:
+        print(subject.refer_acquire_type(id))
+
+
+def func_now():
+    return datetime.now()
+
+
+@pytest.fixture(scope="session")
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
+def fake_date():
+    # assert func_now() == datetime(2024, 3, 31)
+    # return func_now()
+    # assert subject.notice_month() == 3
+    print("前処理： function")
+    yield func_now()
+    print("後処理： function")
+
+
+# @pytest.mark.skip
+# @pytest.mark.usefixtures("fake_date")
+# class ObserverTest:
+#     def suite_test():
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
+def test_observer(app_context):
+    subject = SubjectImpl()
+    # observer = ObserverRegist()
+    observer = ObserverCheck()
+
+    subject.attach(observer)
+    # print(subject.get_concerned_staff())
+    # print(subject.acquire_holidays(20))
+    print(datetime.now())
+    print(subject.execute())

@@ -282,6 +282,14 @@ class HolidayAcquire:
         end_day_list[0] = "入職日"
         return (day_list, end_day_list)
 
+    """
+    有休申請に対する、合計時間
+    @Param
+        time_flag: bool 時間休のみなら、True
+    @Return
+        : float
+        """
+
     def sum_notify_times(self, time_flag=False) -> float:
         from_list, to_list = self.print_acquisition_data()
         filters = []
@@ -341,7 +349,7 @@ class HolidayAcquire:
         filters.append(Shinsei.STARTTIME != 0)
 
         attendance_list = db.session.query(Shinsei.id).filter(and_(*filters)).all()
-        return attendance_list
+        return len(attendance_list)
 
     # 入職日年休付与以外受けていない者
     def count_workday_half_year(self) -> int:
@@ -352,7 +360,8 @@ class HolidayAcquire:
         # 入職月〜基準月1ヶ月前
         diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
         # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
-        diff_month -= 1 if self.get_nth_dow() != 1 else diff_month
+        diff_month += 1 if self.get_nth_dow() == 1 else diff_month
 
         # 入職月〜基準月1ヶ月前の範囲を12ヶ月分にしたもの
         return workday_term_count * (12 / diff_month)
+        # return diff_month

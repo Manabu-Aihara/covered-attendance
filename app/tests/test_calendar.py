@@ -9,7 +9,7 @@ from app.models_aprv import PaidHolidayLog
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(20)
+    acquisition_object = HolidayAcquire(31)
     return acquisition_object
 
 
@@ -17,10 +17,10 @@ def get_official_user(app_context):
 def test_convert_base_day(get_official_user):
     conv_date = get_official_user.convert_base_day()
     print(conv_date)
-    assert conv_date.month == 10
+    assert conv_date.month == 4
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_get_acquisition_list(get_official_user):
     base_day = get_official_user.convert_base_day()
     test_all_list = [
@@ -63,6 +63,25 @@ def test_plus_next_holidays(get_official_user):
 
 
 @pytest.mark.skip
+def test_dummy_plus_next_holiday(get_official_user, mocker):
+    mocker.patch.object(
+        HolidayAcquire, "convert_base_day", return_value=datetime(2019, 4, 1)
+    )
+    print(get_official_user.plus_next_holidays())
+
+
+@pytest.mark.skip
+def test_insert_notification_row(get_official_user):
+    remain = get_official_user.print_remains()
+    # print(get_official_user.get_notification_rests(53))
+    pay_log_obj = PaidHolidayLog(
+        20, remain - get_official_user.get_notification_rests(53), 53
+    )
+    db.session.add(pay_log_obj)
+    db.session.commit()
+
+
+@pytest.mark.skip
 def test_insert_new_user(get_official_user):
     test_sum_holiday = get_official_user.get_sum_holiday()
     pay_log_obj = PaidHolidayLog(
@@ -72,22 +91,19 @@ def test_insert_new_user(get_official_user):
     db.session.commit()
 
 
-# @pytest.mark.skip
-def test_sum_notification(get_official_user):
+@pytest.mark.skip
+def test_sum_notify_times(get_official_user):
     test_result = get_official_user.sum_notify_times(True)
     assert test_result == 3.0
 
 
 @pytest.mark.skip
-def test_dummy_plus_next_holiday(get_official_user, mocker):
-    # mocker.patch("get_official_user.convert_base_day", return_value=4)
-    mocker.patch.object(
-        HolidayAcquire, "convert_base_day", return_value=datetime(2019, 4, 1)
-    )
-    print(get_official_user.plus_next_holidays())
+def test_count_workday(get_official_user):
+    test_count = get_official_user.count_workday()
+    assert test_count == 2
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_print_remains(get_official_user, mocker):
     last_remain = get_official_user.print_remains()
     mocker.patch.object(
@@ -103,15 +119,10 @@ def test_print_remains(get_official_user, mocker):
     print(result)
 
 
-@pytest.mark.skip
-def test_insert_notification_row(get_official_user):
-    remain = get_official_user.print_remains()
-    # print(get_official_user.get_notification_rests(53))
-    pay_log_obj = PaidHolidayLog(
-        20, remain - get_official_user.get_notification_rests(53), 53
-    )
-    db.session.add(pay_log_obj)
-    db.session.commit()
+def test_count_workday_half_year(get_official_user, mocker):
+    mocker.patch.object(HolidayAcquire, "count_workday", return_value=49)
+    result_count = get_official_user.count_workday_half_year()
+    print(result_count)
 
 
 @pytest.mark.skip

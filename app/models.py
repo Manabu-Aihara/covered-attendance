@@ -270,7 +270,7 @@ class Shinsei(db.Model):
     NOTIFICATION = db.Column(db.String(32), index=True, nullable=True)  # 届出（午前）
     NOTIFICATION2 = db.Column(db.String(32), index=True, nullable=True)  # 届出（午後）
     OVERTIME = db.Column(db.String(32), index=True, nullable=True)  # 残業時間申請
-    ALCOHOL = db.Column(db.Integer, nullable=True)
+    ALCOHOL = db.Column(db.Integer)
     REMARK = db.Column(db.String(100), index=True, nullable=True)  # 備考
 
     def __init__(
@@ -284,10 +284,10 @@ class Shinsei(db.Model):
         ONCALL,
         ONCALL_COUNT,
         ENGEL_COUNT,
-        ALCOHOL,
         NOTIFICATION,
         NOTIFICATION2,
         OVERTIME,
+        ALCOHOL,
         REMARK,
     ):
         self.STAFFID = STAFFID
@@ -299,10 +299,10 @@ class Shinsei(db.Model):
         self.ONCALL = ONCALL
         self.ONCALL_COUNT = ONCALL_COUNT
         self.ENGEL_COUNT = ENGEL_COUNT
-        self.ALCOHOL = ALCOHOL
         self.NOTIFICATION = NOTIFICATION
         self.NOTIFICATION2 = NOTIFICATION2
         self.OVERTIME = OVERTIME
+        self.ALCOHOL = ALCOHOL
         self.REMARK = REMARK
 
 

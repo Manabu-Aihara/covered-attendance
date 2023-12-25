@@ -159,7 +159,7 @@ class SubjectImpl(Subject):
         base_day = holiday_acquire_obj.convert_base_day()
         # 年間出勤日数の計算
         sum_workday_count: int
-        if date.today() > holiday_acquire_obj.get_acquisition_list(base_day)[0]:
+        if date.today() < holiday_acquire_obj.get_acquisition_list(base_day)[0]:
             sum_workday_count = holiday_acquire_obj.count_workday_half_year()
         else:
             sum_workday_count = holiday_acquire_obj.count_workday()
