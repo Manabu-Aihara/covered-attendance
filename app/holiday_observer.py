@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from app import db
 from app.models import RecordPaidHoliday
 from app.models_aprv import PaidHolidayLog
-from app.holiday_acquisition import HolidayAcquire
 
 # 循環参照回避
 if TYPE_CHECKING:
@@ -34,13 +33,16 @@ class ObserverRegist(Observer):
                 result_tuple: tuple = subject.acquire_holidays(concerned_id)
                 print(result_tuple)
                 # add_holidays = PaidHolidayLog(
+                #     # スタッフID
                 #     result_tuple[0],
+                #     # 残り日数（繰り越し付き）
                 #     result_tuple[1],
                 #     None,
                 #     None,
+                #     0,
                 #     f"{now.strftime('%Y/%m/%d')}付与",
                 # )
-                # db.session.add(add_holidays)
+                db.session.add(add_holidays)
 
             # db.session.commit()
 
@@ -53,23 +55,12 @@ class ObserverCheck(Observer):
         ) == 9:
             print(f"Notify!---{notification_state + 1}月年休付与前のチェックが入ります。---")
             for concerned_id in subject.get_concerned_staff():
-                holiday_acquire_obj = HolidayAcquire(concerned_id)
-                # 最終残り日数を繰り越しにする
-                # これは切り捨てる部分
-                truncate_times = (
-                    # Trueを付けたら時間休のみの合計
-                    holiday_acquire_obj.sum_notify_times(True)
-                    % holiday_acquire_obj.job_time
-                )
-                carry_times = (
-                    holiday_acquire_obj.print_remains()
-                    - holiday_acquire_obj.sum_notify_times()
-                    - truncate_times
-                )
-                print(carry_times)
+                carry_times = subject.calcurete_carry_days(concerned_id)
+                print(f"{concerned_id}: {carry_times}")
                 # holiday_log_data = PaidHolidayLog(
                 #     concerned_id,
                 #     0,
+                #     None,
                 #     None,
                 #     carry_times,
                 #     "前回からの繰り越し",

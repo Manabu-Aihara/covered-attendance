@@ -2,12 +2,10 @@ import pytest
 from datetime import datetime
 from typing import List
 
-# from sqlalchemy import notin_
-
+from app.models import User
 from app.holiday_subject import SubjectImpl
 from app.holiday_observer import ObserverRegist, ObserverCheck
 from app.holiday_acquisition import AcquisitionType, HolidayAcquire
-from app.models import User
 
 
 @pytest.mark.skip
@@ -35,50 +33,7 @@ def test_output_holiday_count(subject):
     print(count)
 
 
-attendance_list_A = [19, 20, 17, 22, 17, 18, 19, 20, 17, 22, 17, 18]
-attendance_list_B = [17, 15, 17]  # 新人さん、後で×4
-
-
-@pytest.fixture
-def get_concerned_id(app_context, subject, mocker):
-    mocker.patch.object(subject, "notice_month", return_value=3)
-    concerned_members = subject.get_concerned_staff()
-    return concerned_members
-
-
-# @pytest.mark.skip
-def test_workday_count(app_context, subject, get_concerned_id, mocker):
-    mocker.patch.object(
-        HolidayAcquire, "count_workday", return_value=sum(attendance_list_A)
-    )
-    mocker.patch.object(
-        HolidayAcquire,
-        "count_workday_half_year",
-        return_value=sum(attendance_list_B) * 4,
-    )
-    for id in get_concerned_id:
-        print(subject.refer_acquire_type(id))
-
-
-def func_now():
-    return datetime.now()
-
-
-@pytest.fixture(scope="session")
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
-def fake_date():
-    # assert func_now() == datetime(2024, 3, 31)
-    # return func_now()
-    # assert subject.notice_month() == 3
-    print("前処理： function")
-    yield func_now()
-    print("後処理： function")
-
-
-# @pytest.mark.skip
-# @pytest.mark.usefixtures("fake_date")
-# class ObserverTest:
-#     def suite_test():
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_observer(app_context):
     subject = SubjectImpl()
@@ -86,7 +41,22 @@ def test_observer(app_context):
     observer = ObserverCheck()
 
     subject.attach(observer)
-    # print(subject.get_concerned_staff())
-    # print(subject.acquire_holidays(20))
+
     print(datetime.now())
     print(subject.execute())
+
+
+@pytest.fixture
+# @pytest.mark.freeze_time(datetime(2024, 3, 31))
+def concerned_id_list(app_context, subject, mocker):
+    mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
+    print(datetime.now())
+    return subject.get_concerned_staff()
+
+
+# @pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
+def test_refer_acquire_type(app_context, subject, concerned_id_list, mocker):
+    mocker.patch.object(HolidayAcquire, "count_workday", side_effect=[200, 65, 30])
+    for concerned_id in concerned_id_list:
+        print(f"{concerned_id}: {subject.refer_acquire_type(concerned_id)}")

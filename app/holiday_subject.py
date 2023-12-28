@@ -54,6 +54,12 @@ class Subject(ABC):
     def acquire_holidays(self):
         raise NotImplementedError
 
+    def refer_acquire_type(self):
+        raise NotImplementedError
+
+    def calcurete_carry_days(self):
+        raise NotImplementedError
+
     def execute(self) -> None:
         raise NotImplementedError
 
@@ -62,6 +68,7 @@ class SubjectImpl(Subject):
     """
     The Subject owns some important state and notifies observers when the state
     changes.
+    今回起動する特定の日付の月に使用
     """
 
     _state: int = None
@@ -127,38 +134,59 @@ class SubjectImpl(Subject):
 
         return concerned_id_list
 
+    """
+    年休付与、4月、10月に起動
+    @Param
+        concerned_id: int 該当者ID
+    @Return
+        : Tuple<int, float> IDと日数（繰り越し含む）
+        """
+
     def acquire_holidays(self, concerned_id: int) -> Tuple[int, float]:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         # 繰り越し日数
-        # carry_times: float = holiday_acquire_obj.print_remains()
-        carry_days = (
-            db.session.query(PaidHolidayLog.CARRY_FORWARD)
-            .filter(concerned_id == PaidHolidayLog.STAFFID)
-            .order_by(PaidHolidayLog.id.desc())
-            .first()
-        )
-        # 取得日数
-        dict_value = holiday_acquire_obj.plus_next_holidays().values()
-        # dict_valuesのリスト化
-        acquisition_days: int = list(dict_value)[-1]
-        # もしくは
-        # base_day = holiday_acquire_obj.convert_base_day()
-        # length: int = len(holiday_acquire_obj.get_acquisition_list(base_day))
-        # 取得日数
-        # acquisition_days = self.output_holiday_count(work_type, length)
+        try:
+            carry_times = (
+                db.session.query(PaidHolidayLog.CARRY_FORWARD)
+                .filter(concerned_id == PaidHolidayLog.STAFFID)
+                .order_by(PaidHolidayLog.id.desc())
+                .first()
+            )
+        except TypeError:
+            print(f"{concerned_id}: まだ年休付与はありません。")
+        else:
+            # 取得日数
+            dict_value = holiday_acquire_obj.plus_next_holidays().values()
+            # dict_valuesのリスト化
+            acquisition_days: int = list(dict_value)[-1]
+            # もしくは
+            # base_day = holiday_acquire_obj.convert_base_day()
+            # length: int = len(holiday_acquire_obj.get_acquisition_list(base_day))
+            # 取得日数
+            # acquisition_days = self.output_holiday_count(work_type, length)
 
-        return (
-            concerned_id,
-            (carry_days.CARRY_FORWARD + acquisition_days)
-            * holiday_acquire_obj.job_time,
-        )
+            return (
+                concerned_id,
+                (carry_times.CARRY_FORWARD + acquisition_days)
+                * holiday_acquire_obj.job_time,
+            )
         # return super().acquire_holidays()
+
+    """
+    出勤日数から、年休付与タイプを参照
+    3月、9月に起動
+    @Param
+        concerned_id: int
+    @Return
+        : str
+        """
 
     def refer_acquire_type(self, concerned_id: int) -> str:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         base_day = holiday_acquire_obj.convert_base_day()
         # 年間出勤日数の計算
         sum_workday_count: int
+        # HolidayAcquire::get_acquisition_list(base_day)[0] -> 入職日除く最初の付与日
         if date.today() < holiday_acquire_obj.get_acquisition_list(base_day)[0]:
             sum_workday_count = holiday_acquire_obj.count_workday_half_year()
         else:
@@ -170,6 +198,25 @@ class SubjectImpl(Subject):
             else:
                 char = "A"
         return char
+
+    def calcurete_carry_days(self, concerned_id: int) -> float:
+        holiday_acquire_obj = HolidayAcquire(concerned_id)
+        try:
+            remain_times = holiday_acquire_obj.print_remains()
+        except TypeError as e:
+            print(e)
+        else:
+            # 最終残り日数を繰り越しにする
+            # これは切り捨てる部分
+            truncate_times = (
+                # Trueを付けたら時間休のみの合計
+                holiday_acquire_obj.sum_notify_times(True)
+                % holiday_acquire_obj.job_time
+            )
+            carry_times = (
+                remain_times - holiday_acquire_obj.sum_notify_times() - truncate_times
+            )
+            return carry_times
 
     def execute(self) -> None:
         self.notify()

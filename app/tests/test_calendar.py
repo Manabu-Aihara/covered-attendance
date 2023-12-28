@@ -63,14 +63,6 @@ def test_plus_next_holidays(get_official_user):
 
 
 @pytest.mark.skip
-def test_dummy_plus_next_holiday(get_official_user, mocker):
-    mocker.patch.object(
-        HolidayAcquire, "convert_base_day", return_value=datetime(2019, 4, 1)
-    )
-    print(get_official_user.plus_next_holidays())
-
-
-@pytest.mark.skip
 def test_insert_notification_row(get_official_user):
     remain = get_official_user.print_remains()
     # print(get_official_user.get_notification_rests(53))
@@ -119,16 +111,37 @@ def test_print_remains(get_official_user, mocker):
     print(result)
 
 
+@pytest.mark.skip
 def test_count_workday_half_year(get_official_user, mocker):
     mocker.patch.object(HolidayAcquire, "count_workday", return_value=49)
     result_count = get_official_user.count_workday_half_year()
     print(result_count)
 
 
-@pytest.mark.skip
+# attendance_list_A = [19, 20, 17, 22, 17, 18, 19, 20, 17, 22, 17, 18]
+attendance_list_B = [17, 15, 17]  # 新人さん、後で×4
+attendance_list_C = [12, 10, 12, 12, 10, 11]
+
+
+# @pytest.mark.skip
 def test_get_nth_dow(get_official_user):
     nth_week = get_official_user.get_nth_dow()
-    print(nth_week)
+    assert nth_week == 1
+
+
+def test_get_diff_month(get_official_user):
+    test_diff = get_official_user.get_diff_month()
+    assert test_diff == 2
+
+
+# @pytest.mark.skip
+def test_count_workday_half(get_official_user, mocker):
+    mocker.patch.object(
+        HolidayAcquire, "count_workday", return_value=sum(attendance_list_C[1:])
+    )
+    # mocker.patch.object(HolidayAcquire, "get_diff_month", return_value=5)
+    test_workday = get_official_user.count_workday_half_year()
+    print(test_workday)
 
 
 # おニューカレンダーテスト

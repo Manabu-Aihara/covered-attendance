@@ -1,6 +1,5 @@
 import enum
 from datetime import date, datetime, timedelta
-import calendar
 from dataclasses import dataclass
 from typing import List, Tuple, Callable
 from collections import OrderedDict
@@ -50,7 +49,7 @@ class HolidayAcquire:
         except TypeError:
             print(f"ID{self.id}: M_STAFFINFO.INDAYの値がありません。")
         else:
-            self.in_day = target_user.INDAY
+            self.in_day: datetime = target_user.INDAY
 
         # 勤務時間 job_time: float
         # 勤務形態 acquisition_key: ['A', 'B', 'C', 'D', 'E']
@@ -102,7 +101,14 @@ class HolidayAcquire:
             change_day = self.in_day.replace(month=4, day=1)
             return change_day
 
-    # 付与日のリストを返す
+    """
+    付与日のリストを返す
+    @Param
+        base_day: datetime 基準日
+    @Return
+        : List<date>
+    """
+
     def get_acquisition_list(self, base_day: datetime) -> List[date]:
         holidays_get_list = []
         holidays_get_list.append(base_day.date())
@@ -120,20 +126,33 @@ class HolidayAcquire:
     # base_day = self.convert_base_day()
     # [self.in_day.date()] + self.get_acquisition_list(base_day)
 
-    # 入職日支給日数
+    """
+    @Return
+        : OrderedDict<date, int> 入職日と支給日数
+        """
+
     def acquire_inday_holidays(self) -> OrderedDict[date, int]:
         base_day = self.convert_base_day()
-        day_list = [self.in_day.date()] + self.get_acquisition_list(base_day)
-        # monthmod(date.today(), base_day)[0].months < 6:
+        # 入職日から基準日まで2ヶ月以内
         if monthmod(self.in_day, base_day)[0].months <= 2:
             acquisition_days = 2
+        # 入職日から基準日まで3ヶ月
         elif monthmod(self.in_day, base_day)[0].months == 3:
             acquisition_days = 1
+        # 入職日から基準日まで3ヶ月以上
         elif monthmod(self.in_day, base_day)[0].months > 3:
             acquisition_days = 0
 
-        first_data = [(day_list[0], acquisition_days)]
+        first_data = [(self.in_day, acquisition_days)]
         return OrderedDict(first_data)
+
+    """
+    時間を日数と時間に直す表示用
+    @Param
+        func: Callable<, float> クラス内メソッド
+    @Return
+        : Tuple<int, float> 日数と時間
+        """
 
     def convert_tuple(self, func: Callable[..., float]) -> Tuple[int, float]:
         # func()はダメ
@@ -150,8 +169,10 @@ class HolidayAcquire:
     """
 
     def get_notification_rests(self, notification_id: int) -> float:
+        # 年休対象項目ID（M_NOTIFICATION）
         n_code_list: List[int] = [3, 4, 10, 11, 12, 13, 14, 15]
 
+        # 条件フィルター
         filters = []
         filters.append(NotificationList.id == notification_id)
         filters.append(NotificationList.N_CODE.in_(n_code_list))
@@ -167,9 +188,11 @@ class HolidayAcquire:
             .filter(and_(*filters))
             .first()
         )
+        # 条件2番目に引っかからなかった場合
         if notify_datetimes is None:
             raise TypeError("年休に関わりのない項目です。")
 
+        # 申請開始日、終了日が同じ場合
         end_day = (
             notify_datetimes.START_DAY
             if notify_datetimes.END_DAY is None
@@ -207,20 +230,24 @@ class HolidayAcquire:
             + minute_side_float
         )
 
-    # AttributeError: 'NoneType' object has no attribute 'REMAIN_TIMES'
+    """
+    残り日数というより、時間で表記
+    """
+
     def print_remains(self) -> float:
-        last_remain: float = (
+        last_remain = (
             db.session.query(PaidHolidayLog.REMAIN_TIMES)
             .filter(self.id == PaidHolidayLog.STAFFID)
             .order_by(PaidHolidayLog.id.desc())
             .first()
-        ).REMAIN_TIMES
-        return last_remain
+        )
+        if last_remain is None:
+            raise TypeError(f"{self.id}: まだ年休付与はありません。")
+        else:
+            return last_remain.REMAIN_TIMES
 
     """
     入職日＋以降の年休付与日数
-    @Param
-        frame: AcquisitionType  勤務形態
     @Return
         holiday_pair: OrderedDict<date, int>
     """
@@ -228,8 +255,10 @@ class HolidayAcquire:
     def plus_next_holidays(self) -> OrderedDict[date, int]:
         base_day = self.convert_base_day()
         day_list = [self.in_day.date()] + self.get_acquisition_list(base_day)
+        # 入職日と支給日数をリストの最初に
         holiday_pair = self.acquire_inday_holidays()
 
+        # 入職5年くらい以内、AcquisitionType見て
         for i, acquisition_day in enumerate(
             AcquisitionType.name(self.acquisition_key).under5y
         ):
@@ -238,6 +267,7 @@ class HolidayAcquire:
             else:
                 holiday_pair[day_list[i + 1]] = acquisition_day
 
+        # 入職5年くらい以上
         if len(day_list) > len(AcquisitionType.name(self.acquisition_key).under5y):
             for day in day_list[7:]:
                 holiday_pair[day] = AcquisitionType.name(self.acquisition_key).onward
@@ -245,11 +275,9 @@ class HolidayAcquire:
         return holiday_pair
 
     """
-    @Param
-        staff_id: int
-        carry_days: date
+    2年遡っての有効日数、使ってないかも
     @Return
-        残り時間: float
+        : float
         """
 
     def get_sum_holiday(self) -> float:
@@ -327,6 +355,11 @@ class HolidayAcquire:
     def get_nth_dow(self) -> int:
         return (self.in_day.day - 1) // 7 + 1
 
+    """
+    出退勤による勤務日数、範囲は今回付与日から次回付与日前日
+    3月、9月に起動
+    """
+
     def count_workday(self) -> List[int]:
         base_day = self.convert_base_day()
         from_list, to_list = self.print_acquisition_data()
@@ -338,30 +371,29 @@ class HolidayAcquire:
         if (base_day.day == 1) or (self.get_nth_dow() == 1):
             from_prev_last = from_list[-2]
         # 入職日年休付与以外受けていない者
-        elif (monthmod(date.today(), self.in_day)[0].months < 4) and (
+        elif (monthmod(date.today(), self.in_day)[0].months < 6) and (
             self.get_nth_dow() != 1
         ):
             # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
             from_prev_last = from_list[-2] + relativedelta(months=+1)
 
         filters.append(Shinsei.WORKDAY.between(from_prev_last, to_list[-2]))
-
         filters.append(Shinsei.STARTTIME != 0)
 
         attendance_list = db.session.query(Shinsei.id).filter(and_(*filters)).all()
         return len(attendance_list)
 
     # 入職日年休付与以外受けていない者
-    def count_workday_half_year(self) -> int:
+    def get_diff_month(self) -> int:
         base_day = self.convert_base_day()
-
-        workday_term_count = self.count_workday()
 
         # 入職月〜基準月1ヶ月前
         diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
         # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
-        diff_month += 1 if self.get_nth_dow() == 1 else diff_month
+        diff_month + 1 if self.get_nth_dow() == 1 else diff_month
 
+        return diff_month
+
+    def count_workday_half_year(self) -> float:
         # 入職月〜基準月1ヶ月前の範囲を12ヶ月分にしたもの
-        return workday_term_count * (12 / diff_month)
-        # return diff_month
+        return self.count_workday() * (12 / self.get_diff_month())

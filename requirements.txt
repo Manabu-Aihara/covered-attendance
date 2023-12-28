@@ -20,6 +20,7 @@ Flask-Migrate==4.0.5
 Flask-Moment==1.0.5
 Flask-SQLAlchemy==3.1.1
 Flask-WTF==1.2.1
+freezegun==1.4.0
 greenlet==3.0.0
 gunicorn==21.2.0
 idna==3.4
@@ -39,6 +40,8 @@ pydantic==2.4.2
 pydantic_core==2.10.1
 PyMySQL==1.1.0
 pytest==7.4.2
+pytest-freezegun==0.4.2
+pytest-mock==3.12.0
 python-dateutil==2.8.2
 python-dotenv==1.0.0
 requests==2.31.0
