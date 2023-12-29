@@ -1,11 +1,11 @@
 import pytest
 import datetime
+from typing import List
 
 from app import db
 from app.models_aprv import NotificationList, Approval
-from app.models import User
-
-# sample_end_datetime = datetime(2023, 9, 30, 1, 1, 59)
+from app.models import User, RecordPaidHoliday
+from app.holiday_acquisition import HolidayAcquire
 
 
 @pytest.mark.skip
@@ -31,6 +31,7 @@ def test_select_notification_data(app_context):
     assert len(one_notification_data) == 2
 
 
+@pytest.mark.skip
 def test_get_staff_data(app_context):
     # 所属コード
     team_code = (
@@ -46,3 +47,14 @@ def test_get_staff_data(app_context):
 
     assert isinstance(approval_member, Approval)
     # assert team_code == 2
+
+
+def test_ha_db(app_context):
+    target_user_info: List[int, int] = (
+        db.session.query(RecordPaidHoliday.STAFFID, RecordPaidHoliday.WORK_TIME)
+        .filter(
+            HolidayAcquire(RecordPaidHoliday.STAFFID).convert_base_day().month == int(4)
+        )
+        .all()
+    )
+    print(target_user_info)

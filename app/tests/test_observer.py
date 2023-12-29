@@ -19,20 +19,21 @@ def test_print_db(app_context):
     print(acquisition_type_list)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(autouse=True, scope="session")
 def subject():
     subject = SubjectImpl()
     return subject
 
 
 @pytest.mark.skip
-def test_output_holiday_count(subject):
+def test_output_holiday_count():
     # @param AcquisitionType
     # @return int
     count = subject.output_holiday_count(AcquisitionType.B, 5)
     print(count)
 
 
+# ほぼ本番のやつ
 @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_observer(app_context):
@@ -46,17 +47,14 @@ def test_observer(app_context):
     print(subject.execute())
 
 
-@pytest.fixture
-# @pytest.mark.freeze_time(datetime(2024, 3, 31))
-def concerned_id_list(app_context, subject, mocker):
-    mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
-    print(datetime.now())
-    return subject.get_concerned_staff()
-
-
 # @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
-def test_refer_acquire_type(app_context, subject, concerned_id_list, mocker):
-    mocker.patch.object(HolidayAcquire, "count_workday", side_effect=[200, 65, 30])
-    for concerned_id in concerned_id_list:
+def test_refer_acquire_type(app_context, subject, mocker):
+    mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
+    print(datetime.now())
+    mocker.patch.object(HolidayAcquire, "count_workday", return_value=200)
+    mocker.patch.object(
+        HolidayAcquire, "count_workday_half_year", side_effect=[160, 230]
+    )
+    for concerned_id in subject.get_concerned_staff():
         print(f"{concerned_id}: {subject.refer_acquire_type(concerned_id)}")

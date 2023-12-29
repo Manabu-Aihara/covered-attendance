@@ -98,6 +98,7 @@ def test_count_workday(get_official_user):
 @pytest.mark.skip
 def test_print_remains(get_official_user, mocker):
     last_remain = get_official_user.print_remains()
+    # 適当な申請日数合計を2つ
     mocker.patch.object(
         HolidayAcquire,
         "sum_notify_times",

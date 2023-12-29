@@ -42,27 +42,25 @@ class HolidayAcquire:
     id: int
 
     def __post_init__(self):
-        try:
-            target_user = (
-                db.session.query(User.INDAY).filter(User.STAFFID == self.id).first()
-            )
-        except TypeError:
-            print(f"ID{self.id}: M_STAFFINFO.INDAYの値がありません。")
+        target_user = (
+            db.session.query(User.INDAY).filter(User.STAFFID == self.id).first()
+        )
+        if target_user.INDAY is None:
+            TypeError(f"ID{self.id}: M_STAFFINFO.INDAYの値がありません。")
         else:
             self.in_day: datetime = target_user.INDAY
 
         # 勤務時間 job_time: float
         # 勤務形態 acquisition_key: ['A', 'B', 'C', 'D', 'E']
-        try:
-            job_time, acquisition_key = (
-                db.session.query(
-                    RecordPaidHoliday.WORK_TIME, RecordPaidHoliday.ACQUISITION_TYPE
-                )
-                .filter(self.id == RecordPaidHoliday.STAFFID)
-                .first()
+        holiday_info = (
+            db.session.query(
+                RecordPaidHoliday.WORK_TIME, RecordPaidHoliday.ACQUISITION_TYPE
             )
-        except TypeError:
-            print(
+            .filter(self.id == RecordPaidHoliday.STAFFID)
+            .first()
+        )
+        if holiday_info is None:
+            TypeError(
                 f"ID{self.id}: M_RECORD_PAIDHOLIDAYのWORK_TIME、もしくはACQUISITION_TYPEの値がありません。"
             )
             # with open("holiday_err.log", "a") as f:
@@ -73,8 +71,8 @@ class HolidayAcquire:
             #     )
         else:
             # if (job_time is not None) or (acquisition_key is not None):
-            self.job_time: float = job_time
-            self.acquisition_key: str = acquisition_key
+            self.job_time: float = holiday_info.WORK_TIME
+            self.acquisition_key: str = holiday_info.ACQUISITION_TYPE
 
     """
     acquire: 日数
@@ -242,7 +240,7 @@ class HolidayAcquire:
             .first()
         )
         if last_remain is None:
-            raise TypeError(f"{self.id}: まだ年休付与はありません。")
+            raise TypeError(f"ID{self.id}: まだ年休付与はありません。")
         else:
             return last_remain.REMAIN_TIMES
 
@@ -384,6 +382,11 @@ class HolidayAcquire:
         return len(attendance_list)
 
     # 入職日年休付与以外受けていない者
+    """
+    @Return
+        : int 入職月（場合によって+1）と基準月との差、2〜5
+        """
+
     def get_diff_month(self) -> int:
         base_day = self.convert_base_day()
 

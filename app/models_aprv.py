@@ -85,11 +85,14 @@ class PaidHolidayLog(db.Model):
         db.Integer, primary_key=True, autoincrement=True, index=True, nullable=False
     )
     STAFFID = db.Column(
-        db.Integer, db.ForeignKey("M_STAFFINFO.STAFFID"), index=True, nullable=False
+        db.Integer,
+        db.ForeignKey("M_RECORD_PAIDHOLIDAY.STAFFID"),
+        index=True,
+        nullable=False,
     )
     REMAIN_TIMES = db.Column(db.Float, nullable=False)
     NOTIFICATION_id = db.Column(
-        db.Integer, db.ForeignKey("D_NOTIFICATION_LIST.id"), index=True
+        db.Integer, db.ForeignKey("D_NOTIFICATION_LIST.id"), index=True, nullable=True
     )
     TIME_REST_FLAG = db.Column(db.Boolean, nullable=True)
     CARRY_FORWARD = db.Column(db.Float, nullable=True)

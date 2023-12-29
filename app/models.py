@@ -67,12 +67,8 @@ class User(db.Model):
     """    2023/11/27
         リレーション機能追加
         """
-    # M_PAIDHOLIDAYs = db.relationship("PaidHolidayModel", backref="M_PAIDHOLIDAY")
-    """    2023/12/4
-        リレーション機能追加
-        """
-    D_PAIDHOLIDAY_LOGs = db.relationship("PaidHolidayLog", backref="M_STAFFINFO")
 
+    # M_PAIDHOLIDAYs = db.relationship("PaidHolidayModel", backref="M_PAIDHOLIDAY")
     def __init__(self, STAFFID):
         self.STAFFID = STAFFID
 
@@ -340,6 +336,12 @@ class RecordPaidHoliday(db.Model):  # 年休関連
         追加カラム
         """
     ACQUISITION_TYPE = db.Column(db.String(1), nullable=False)  # 年休付与タイプ
+    """    2023/12/4
+        リレーション機能追加
+        """
+    D_PAIDHOLIDAY_LOGs = db.relationship(
+        "PaidHolidayLog", backref="M_RECORD_PAIDHOLIDAY"
+    )
 
     def __init__(self, STAFFID):
         self.STAFFID = STAFFID

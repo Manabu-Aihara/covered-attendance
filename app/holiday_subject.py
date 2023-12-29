@@ -153,7 +153,7 @@ class SubjectImpl(Subject):
                 .first()
             )
         except TypeError:
-            print(f"{concerned_id}: まだ年休付与はありません。")
+            print(f"ID{concerned_id}: まだ年休付与はありません。")
         else:
             # 取得日数
             dict_value = holiday_acquire_obj.plus_next_holidays().values()
@@ -210,7 +210,8 @@ class SubjectImpl(Subject):
             # これは切り捨てる部分
             truncate_times = (
                 # Trueを付けたら時間休のみの合計
-                holiday_acquire_obj.sum_notify_times(True)
+                holiday_acquire_obj.job_time
+                - holiday_acquire_obj.sum_notify_times(True)
                 % holiday_acquire_obj.job_time
             )
             carry_times = (
