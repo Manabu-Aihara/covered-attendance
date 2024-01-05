@@ -11,6 +11,7 @@ from sqlalchemy import and_
 from app import db
 from app.models import User, RecordPaidHoliday, Shinsei
 from app.models_aprv import NotificationList, PaidHolidayLog
+from app.holiday_logging import get_logger
 
 
 # コンストラクタを作って、その引数に、各項目に与えた値の
@@ -33,7 +34,10 @@ class AcquisitionType(enum.Enum):
     # 例: AからAcquisition.Aを引き出す
     @classmethod
     def name(cls, name: str) -> str:
-        return cls._member_map_[name]
+        if name == "":
+            raise KeyError("M_RECORD_PAIDHOLIDAY、ACQUISITION_TYPEの値が見つかりません。")
+        else:
+            return cls._member_map_[name]
 
 
 @dataclass
@@ -53,6 +57,7 @@ class HolidayAcquire:
         # 勤務時間 job_time: float
         # 勤務形態 acquisition_key: ['A', 'B', 'C', 'D', 'E']
         holiday_info = (
+            # job_time, acquisition_key = (
             db.session.query(
                 RecordPaidHoliday.WORK_TIME, RecordPaidHoliday.ACQUISITION_TYPE
             )
@@ -60,7 +65,8 @@ class HolidayAcquire:
             .first()
         )
         if holiday_info is None:
-            TypeError(
+            # if (job_time is None) or (acquisition_key is None):
+            raise TypeError(
                 f"ID{self.id}: M_RECORD_PAIDHOLIDAYのWORK_TIME、もしくはACQUISITION_TYPEの値がありません。"
             )
             # with open("holiday_err.log", "a") as f:
@@ -70,9 +76,10 @@ class HolidayAcquire:
             #         # f"{e}"
             #     )
         else:
-            # if (job_time is not None) or (acquisition_key is not None):
             self.job_time: float = holiday_info.WORK_TIME
             self.acquisition_key: str = holiday_info.ACQUISITION_TYPE
+            # self.job_time: float = job_time
+            # self.acquisition_key: str = acquisition_key
 
     """
     acquire: 日数
@@ -256,21 +263,28 @@ class HolidayAcquire:
         # 入職日と支給日数をリストの最初に
         holiday_pair = self.acquire_inday_holidays()
 
-        # 入職5年くらい以内、AcquisitionType見て
-        for i, acquisition_day in enumerate(
-            AcquisitionType.name(self.acquisition_key).under5y
-        ):
-            if i == len(day_list) - 1:
-                break
-            else:
-                holiday_pair[day_list[i + 1]] = acquisition_day
+        try:
+            # 入職5年くらい以内、AcquisitionType見て
+            for i, acquisition_day in enumerate(
+                AcquisitionType.name(self.acquisition_key).under5y
+            ):
+                if i == len(day_list) - 1:
+                    break
+                else:
+                    holiday_pair[day_list[i + 1]] = acquisition_day
 
-        # 入職5年くらい以上
-        if len(day_list) > len(AcquisitionType.name(self.acquisition_key).under5y):
-            for day in day_list[7:]:
-                holiday_pair[day] = AcquisitionType.name(self.acquisition_key).onward
-
-        return holiday_pair
+            # 入職5年くらい以上
+            if len(day_list) > len(AcquisitionType.name(self.acquisition_key).under5y):
+                for day in day_list[7:]:
+                    holiday_pair[day] = AcquisitionType.name(
+                        self.acquisition_key
+                    ).onward
+        except KeyError as e:
+            # print(f"ID{self.id}: {e}")
+            logger = get_logger(__name__, "ERROR")
+            logger.exception(f"ID{self.id}: {e}", exc_info=False)
+        else:
+            return holiday_pair
 
     """
     2年遡っての有効日数、使ってないかも
@@ -333,7 +347,7 @@ class HolidayAcquire:
             .all()
         )
 
-        try:
+        try:  # get_notification_restsでとりあえず投げている
             approval_time_list = list(
                 map(
                     lambda x: self.get_notification_rests(x.NOTIFICATION_id)
@@ -345,7 +359,7 @@ class HolidayAcquire:
         except TypeError as e:
             print(e)
         else:
-            # Trueの場合時間休だけの総合計時間
+            # Trueの場合、時間休だけの総合計時間
             return sum(approval_time_list)
 
     # Pythonで任意の日付がその月の第何週目かを取得
@@ -393,7 +407,7 @@ class HolidayAcquire:
         # 入職月〜基準月1ヶ月前
         diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
         # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
-        diff_month + 1 if self.get_nth_dow() == 1 else diff_month
+        diff_month += 1 if self.get_nth_dow() == 1 else diff_month
 
         return diff_month
 

@@ -9,6 +9,7 @@ from app import db
 from app.models import User
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
+from app.holiday_logging import get_logger
 
 from app.holiday_observer import Observer
 
@@ -195,8 +196,10 @@ class SubjectImpl(Subject):
         for char in ["B", "C", "D", "E"]:
             if sum_workday_count in list(WorkdayType.name(char).value):
                 break
-            else:
+            elif sum_workday_count >= 217:
                 char = "A"
+            else:
+                raise Exception("出勤記録に誤りがあるかもしれません。")
         return char
 
     def calcurete_carry_days(self, concerned_id: int) -> float:
@@ -204,7 +207,9 @@ class SubjectImpl(Subject):
         try:
             remain_times = holiday_acquire_obj.print_remains()
         except TypeError as e:
-            print(e)
+            # print(e)
+            logger = get_logger(__name__, "ERROR")
+            logger.exception(f"ID{concerned_id}: {e}", exc_info=False)
         else:
             # 最終残り日数を繰り越しにする
             # これは切り捨てる部分

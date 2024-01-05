@@ -1,11 +1,50 @@
 import pytest
+import datetime
 
-from app.common_func import GetPullDownList
-from app.models import Todokede
+from app import db
+from app.models import Todokede, User
 from app.models_aprv import NotificationList, Approval
 from app.routes_approvals import get_notification_list
 from app.approval_util import toggle_notification_type, select_zero_date, NoZeroTable
 from app.pulldown_util import get_pulldown_list
+
+
+@pytest.mark.skip
+def test_sample_add_notification_data(app_context):
+    notification_1 = NotificationList(
+        30,
+        8,
+        datetime.datetime.now().date(),
+        datetime.datetime.now().time(),
+        datetime.datetime.now().date() + datetime.timedelta(days=3),
+        datetime.datetime.now().time(),
+        "軒下の雪で",
+    )
+    db.session.add(notification_1)
+    db.session.commit()
+
+
+@pytest.mark.skip
+def test_select_notification_data(app_context):
+    one_notification_data = NotificationList.query.filter(
+        NotificationList.STAFFID == 20
+    ).all()
+    assert len(one_notification_data) == 2
+
+
+@pytest.mark.skip
+def test_get_staff_data(app_context):
+    # 所属コード
+    team_code = (
+        User.query.with_entities(User.TEAM_CODE).filter(User.STAFFID == 201).first()
+    )
+
+    approval_member: Approval = Approval.query.filter(
+        Approval.TEAM_CODE == team_code[0]
+    ).first()
+
+    assert isinstance(approval_member, Approval)
+    # assert team_code == 2
 
 
 @pytest.mark.skip
@@ -41,6 +80,11 @@ def test_get_empty_object(app_context):
     assert isinstance(approval_non_member, Approval)
 
 
+"""
+    時刻表示関連ユーティリティ
+    """
+
+
 @pytest.mark.skip
 def test_select_zero_date(app_context):
     result_query = select_zero_date(
@@ -66,10 +110,3 @@ def test_convert_zero_to_none(app_context):
         "START_TIME",
         "END_TIME",
     )
-
-
-@pytest.mark.skip
-def test_get_pulldown(app_context):
-    pulldown_tables = get_pulldown_list()
-    department = pulldown_tables[0]
-    print(department)
