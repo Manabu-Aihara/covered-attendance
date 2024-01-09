@@ -15,7 +15,7 @@ from app.holiday_observer import Observer
 
 
 class WorkdayType(enum.Enum):
-    A = 217
+    # A = 217
     B = range(169, 217)
     C = range(121, 169)
     D = range(73, 121)
@@ -45,7 +45,7 @@ class Subject(ABC):
         """
         pass
 
-    @abstractmethod
+    # @abstractmethod
     def notify(self) -> None:
         """
         Notify all observers about an event.
@@ -198,18 +198,20 @@ class SubjectImpl(Subject):
                 break
             elif sum_workday_count >= 217:
                 char = "A"
-            else:
-                raise Exception("出勤記録に誤りがあるかもしれません。")
+
+        if sum_workday_count < 48:
+            raise ValueError("出勤記録に誤りがあるかもしれません。")
+
         return char
 
-    def calcurete_carry_days(self, concerned_id: int) -> float:
+    def calcurate_carry_days(self, concerned_id: int) -> float:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         try:
             remain_times = holiday_acquire_obj.print_remains()
         except TypeError as e:
-            # print(e)
-            logger = get_logger(__name__, "ERROR")
-            logger.exception(f"ID{concerned_id}: {e}", exc_info=False)
+            print(e)
+            # logger = get_logger(__name__, "ERROR")
+            # logger.exception(f"ID{concerned_id}: {e}", exc_info=False)
         else:
             # 最終残り日数を繰り越しにする
             # これは切り捨てる部分

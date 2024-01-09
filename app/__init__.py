@@ -14,22 +14,22 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 from datetime import timedelta
 import logging
 
-# loggerを定義
-logger = logging.getLogger(__name__)
+# # loggerを定義
+# logger = logging.getLogger(__name__)
 
-# loggerのログレベルを設定
-logger.setLevel(logging.WARNING)
+# # loggerのログレベルを設定
+# logger.setLevel(logging.WARNING)
 
-# loggerのフォーマット、出力先ファイルを定義
-formatter = logging.Formatter("%(asctime)s - %(levelname)s:%(name)s - %(message)s")
-file_handler = logging.FileHandler("test.log")
-file_handler.setFormatter(formatter)
+# # loggerのフォーマット、出力先ファイルを定義
+# formatter = logging.Formatter("%(asctime)s - %(levelname)s:%(name)s - %(message)s")
+# file_handler = logging.FileHandler("test.log")
+# file_handler.setFormatter(formatter)
 
-# loggerのフォーマット、出力先ファイルを設定
-logger.addHandler(file_handler)
+# # loggerのフォーマット、出力先ファイルを設定
+# logger.addHandler(file_handler)
 
-logger.warning("warning")
-logger.error("error")
+# logger.warning("warning")
+# logger.error("error")
 
 
 LOGFILE_NAME = "DEBUG.log"

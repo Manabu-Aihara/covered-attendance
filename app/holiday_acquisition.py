@@ -247,7 +247,7 @@ class HolidayAcquire:
             .first()
         )
         if last_remain is None:
-            raise TypeError(f"ID{self.id}: まだ年休付与はありません。")
+            raise TypeError("まだ年休付与はありません。")
         else:
             return last_remain.REMAIN_TIMES
 

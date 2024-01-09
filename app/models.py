@@ -335,7 +335,7 @@ class RecordPaidHoliday(db.Model):  # 年休関連
     """    2023/12/5
         追加カラム
         """
-    ACQUISITION_TYPE = db.Column(db.String(1), nullable=False)  # 年休付与タイプ
+    ACQUISITION_TYPE = db.Column(db.String(1))  # 年休付与タイプ
     """    2023/12/4
         リレーション機能追加
         """

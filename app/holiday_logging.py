@@ -12,10 +12,10 @@ def get_logger(name: str, level: str):
 
     # 出力先を指定している
     date_now = datetime.now()
-    logfile = f"holiday{date_now.strftime('%Y%m%d-%H%M')}.log"
+    logfile = f"holiday{date_now.strftime('%Y%m%d')}.log"
     handler = logging.FileHandler(logfile)
 
-    # そのハンドラの対象のレベルを設定する(今回はDEBUG以上)
+    # そのハンドラの対象のレベルを設定する
     handler.setLevel(level)
 
     # どんなフォーマットにするかを指定する。公式に使える変数は書いてますね。
