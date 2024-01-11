@@ -35,7 +35,7 @@ def test_convert_tuple(get_official_user):
 
 
 # 年休関係ない申請例外
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_raise_notification_rests(get_official_user):
     with pytest.raises(TypeError) as except_info:
         get_official_user.get_notification_rests(31)
@@ -47,6 +47,12 @@ def test_raise_notification_rests(get_official_user):
 def test_get_notification_rests(get_official_user):
     result_times = get_official_user.get_notification_rests(7)
     print(result_times)
+
+
+def test_raise_print_remains(get_official_user):
+    with pytest.raises(TypeError) as except_info:
+        get_official_user.print_remains()
+    print(except_info.value)
 
 
 # クラスメソッド、Enum

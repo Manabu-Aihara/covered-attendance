@@ -1,6 +1,6 @@
 from __future__ import annotations
 import enum
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from abc import ABC, abstractmethod
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
@@ -182,7 +182,7 @@ class SubjectImpl(Subject):
         : str
         """
 
-    def refer_acquire_type(self, concerned_id: int) -> str:
+    def refer_acquire_type(self, concerned_id: int) -> Tuple[Optional[str], str]:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         base_day = holiday_acquire_obj.convert_base_day()
         # 年間出勤日数の計算
@@ -199,17 +199,18 @@ class SubjectImpl(Subject):
             elif sum_workday_count >= 217:
                 char = "A"
 
-        if sum_workday_count < 48:
+        if sum_workday_count < 48 or not isinstance(sum_workday_count, int):
             raise ValueError("出勤記録に誤りがあるかもしれません。")
 
-        return char
+        return holiday_acquire_obj.acquisition_key, char
 
     def calcurate_carry_days(self, concerned_id: int) -> float:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         try:
             remain_times = holiday_acquire_obj.print_remains()
         except TypeError as e:
-            print(e)
+            # print(e)
+            raise e
             # logger = get_logger(__name__, "ERROR")
             # logger.exception(f"ID{concerned_id}: {e}", exc_info=False)
         else:
@@ -221,10 +222,8 @@ class SubjectImpl(Subject):
                 - holiday_acquire_obj.sum_notify_times(True)
                 % holiday_acquire_obj.job_time
             )
-            carry_times = (
-                remain_times - holiday_acquire_obj.sum_notify_times() - truncate_times
-            )
-            return carry_times
+            carry_times = remain_times - truncate_times
+            return carry_times / holiday_acquire_obj.job_time
 
     def execute(self) -> None:
         self.notify()

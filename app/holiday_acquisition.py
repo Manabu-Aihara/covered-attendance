@@ -35,7 +35,7 @@ class AcquisitionType(enum.Enum):
     @classmethod
     def name(cls, name: str) -> str:
         if name == "":
-            raise KeyError("M_RECORD_PAIDHOLIDAY、ACQUISITION_TYPEの値が見つかりません。")
+            raise KeyError("M_RECORD_PAIDHOLIDAYテーブルの、ACQUISITION_TYPEの値が見つかりません。")
         else:
             return cls._member_map_[name]
 
@@ -408,6 +408,10 @@ class HolidayAcquire:
         diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
         # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
         diff_month += 1 if self.get_nth_dow() == 1 else diff_month
+
+        print(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
+        # logger = get_logger(__name__, "INFO")
+        # logger.info(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
 
         return diff_month
 

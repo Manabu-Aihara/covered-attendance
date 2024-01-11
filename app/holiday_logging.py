@@ -5,6 +5,11 @@ from datetime import datetime
 def get_logger(name: str, level: str):
     # getLoggerにモジュール名を与える
     logger = logging.getLogger(name)
+    # loggingの多重実行を防止する
+    # https://qiita.com/thistle_/items/f9042ca94f28f2cbfd9e
+    for h in logger.handlers[:]:
+        logger.removeHandler(h)
+        h.close()
 
     # これを設定しておかないと後のsetLevelでDEBUG以下を指定しても効かないっぽい
     level: int = getattr(logging, level)
