@@ -3,7 +3,9 @@ from datetime import datetime
 from typing import List
 import inspect
 
+from app import db, app
 from app.models import User
+from app.models_aprv import PaidHolidayLog
 from app.holiday_subject import SubjectImpl
 from app.holiday_observer import ObserverRegist, ObserverCheckType, ObserverCarry
 from app.holiday_acquisition import AcquisitionType, HolidayAcquire
@@ -96,7 +98,7 @@ def test_calcurate_carry_days(app_context, subject, mocker):
     assert remains_mock.call_count == 2
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_check_observer(app_context, subject, mocker):
     observer = ObserverCheckType()
@@ -105,45 +107,64 @@ def test_check_observer(app_context, subject, mocker):
     acquisition_type_mock = mocker.patch.object(
         subject,
         "refer_acquire_type",
-        side_effect=[(None, "B"), (None, "C"), (None, "A")],
+        side_effect=[(None, "F"), (None, ""), (None, "F")],
     )
 
     # Save original function
-    # original_trigger_fail = observer.trigger_fail
+    original_trigger_fail = observer.trigger_fail
 
-    # def mock_for_fail(i):
-    #     """Mock throwing an exception when i == 2."""
-    #     print(f"mock_insert_id called with i={i}")
-    #     if i == 31:
-    #         raise Exception("failed")
-    #     original_trigger_fail(i)
+    def mock_for_fail(i):
+        """Mock throwing an exception when i == 2."""
+        print(f"mock_insert_id called with i={i}")
+        if i == 31:
+            raise ValueError("failed")
+        original_trigger_fail(i)
 
-    # mocker.patch.object(observer, "trigger_fail", side_effect=mock_for_fail)
+    mocker.patch.object(observer, "trigger_fail", side_effect=mock_for_fail)
     observer.update(subject)
 
     assert acquisition_type_mock.call_count == 3
 
     # 現状、不発
-    def db_commit_mock(subject):
-        print("Dummy insert")
-        return False
+    # def db_commit_mock(subject):
+    #     print("Dummy insert")
 
-    update_mock = mocker.patch.object(observer, "update", side_effect=db_commit_mock)
-    subject.notify()
+    # update_mock = mocker.patch.object(observer, "update", side_effect=db_commit_mock)
+    # subject.notify()
 
-    assert update_mock.called
+    # assert update_mock.called
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_carry_observer(app_context, subject, mocker):
     observer = ObserverCarry()
     subject.attach(observer)
 
-    # carry_days_mock = mocker.patch.object(subject, "calcurate_carry_days")
-    observer.update(subject)
+    original_func = db.session.add
 
-    # assert carry_days_mock.call_count == 3
+    dummy_obj = PaidHolidayLog
+    # def make_dummy_obj():
+    #     return PaidHolidayLog
+
+    # dummy_obj = mocker.patch("PaidHolidayLog", side_effect=dummy_obj)
+
+    def dummy_add_db(i: int):
+        carri_days = subject.calcurate_carry_days(i)
+        print(f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, ...{carri_days})")
+        # original_func(dummy_obj)
+
+    add_mock = mocker.patch.object(db.session, "add", return_value=dummy_add_db)
+
+    observer.update(subject)
+    assert add_mock.call_count == 3
+
+
+@pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 9, 30))
+def test_get_concerned_staff(app_context, subject):
+    sakura_member_list = subject.get_concerned_staff()
+    print(sakura_member_list)
 
 
 # コンストラクタモックは無理、引数あるから

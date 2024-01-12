@@ -17,7 +17,7 @@ def get_official_user(app_context):
 # 年休関連、必要情報
 @pytest.mark.skip
 def test_get_holiday_info(app_context):
-    target_user_info: List[int, int] = (
+    target_user_info = (
         db.session.query(RecordPaidHoliday.STAFFID, RecordPaidHoliday.WORK_TIME)
         .filter(
             HolidayAcquire(RecordPaidHoliday.STAFFID).convert_base_day().month == int(4)
@@ -39,16 +39,6 @@ def test_insert_notification_row(get_official_user):
     # print(get_official_user.get_notification_rests(53))
     pay_log_obj = PaidHolidayLog(
         20, remain - get_official_user.get_notification_rests(53), 53
-    )
-    db.session.add(pay_log_obj)
-    db.session.commit()
-
-
-@pytest.mark.skip
-def test_insert_new_user(get_official_user):
-    test_sum_holiday = get_official_user.get_sum_holiday()
-    pay_log_obj = PaidHolidayLog(
-        get_official_user.id, test_sum_holiday, None, None, "新規作成"
     )
     db.session.add(pay_log_obj)
     db.session.commit()

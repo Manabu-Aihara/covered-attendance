@@ -62,6 +62,10 @@ class ObserverRegist(Observer):
 
 
 class ObserverCarry(Observer):
+    def trigger_fail(self, i):
+        """Dummy for trigger fail"""
+        print(f"trigger_fail() i={i}")
+
     def update(self, subject: Subject) -> None:
         # notification_state: int = subject.notice_month()
         if (notification_state := subject.notice_month()) == 3 or (
@@ -82,12 +86,13 @@ class ObserverCarry(Observer):
                     )
                     db.session.add(holiday_log_data)
                     db.session.flush()
-                    # self.trigger_fail(concerned_id)
+                    self.trigger_fail(concerned_id)
                 except TypeError as e:
                     print(f"{concerned_id}: {e}")
                     logger = get_logger(__name__, "ERROR")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
+                # これが全部反映しないと、commitしないタイプ
                 else:
                     logger = get_logger(__name__, "INFO")
                     logger.info(f"ID{concerned_id}: {carry_days}日繰り越しました。")
@@ -96,6 +101,10 @@ class ObserverCarry(Observer):
 
 
 class ObserverCheckType(Observer):
+    def trigger_fail(self, i):
+        """Dummy for trigger fail"""
+        print(f"trigger_fail() i={i}")
+
     def update(self, subject: Subject) -> None:
         # notification_state: int = subject.notice_month()
         if (notification_state := subject.notice_month()) == 3 or (
@@ -111,14 +120,15 @@ class ObserverCheckType(Observer):
                         r_holiday_obj.ACQUISITION_TYPE = after_type
                         db.session.merge(r_holiday_obj)
                         db.session.flush()
+                        self.trigger_fail(concerned_id)
+                        db.session.commit()
                 except ValueError as e:
                     print(f"ID{concerned_id}: {e}")
                     logger = get_logger(__name__, "ERROR")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
-                # これが全部反映しないと、commitしないタイプ
                 else:
                     logger = get_logger(__name__, "INFO")
                     logger.info(f"ID{concerned_id}の年休付与タイプは「{after_type}」です。")
 
-            db.session.commit()
+            # db.session.commit()

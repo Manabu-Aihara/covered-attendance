@@ -100,6 +100,7 @@ class PaidHolidayLog(db.Model):
 
     def __init__(
         self,
+        # id,
         STAFFID,
         REMAIN_TIMES,
         NOTIFICATION_id,
@@ -107,6 +108,7 @@ class PaidHolidayLog(db.Model):
         CARRY_FORWARD=None,
         REMARK=None,
     ):
+        # self.id = id
         self.STAFFID = STAFFID
         self.REMAIN_TIMES = REMAIN_TIMES
         self.TIME_REST_FLAG = TIME_REST_FLAG

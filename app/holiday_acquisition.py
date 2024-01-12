@@ -139,13 +139,13 @@ class HolidayAcquire:
     def acquire_inday_holidays(self) -> OrderedDict[date, int]:
         base_day = self.convert_base_day()
         # 入職日から基準日まで2ヶ月以内
-        if monthmod(self.in_day, base_day)[0].months <= 2:
+        if monthmod(self.in_day.replace(day=1), base_day)[0].months <= 2:
             acquisition_days = 2
         # 入職日から基準日まで3ヶ月
-        elif monthmod(self.in_day, base_day)[0].months == 3:
+        elif monthmod(self.in_day.replace(day=1), base_day)[0].months == 3:
             acquisition_days = 1
         # 入職日から基準日まで3ヶ月以上
-        elif monthmod(self.in_day, base_day)[0].months > 3:
+        elif monthmod(self.in_day.replace(day=1), base_day)[0].months > 3:
             acquisition_days = 0
 
         first_data = [(self.in_day, acquisition_days)]
@@ -319,7 +319,9 @@ class HolidayAcquire:
         end_day_list = [
             end_day + relativedelta(years=1, days=-1) for end_day in day_list
         ]
-        end_day_list[0] = "入職日"
+        end_day_list[0] = self.get_acquisition_list(base_day)[0] + relativedelta(
+            days=-1
+        )
         return (day_list, end_day_list)
 
     """
@@ -373,21 +375,18 @@ class HolidayAcquire:
     """
 
     def count_workday(self) -> List[int]:
-        base_day = self.convert_base_day()
         from_list, to_list = self.print_acquisition_data()
 
         filters = []
         filters.append(Shinsei.STAFFID == self.id)
 
-        # 入職日年休付与以外受けていない者も含む
-        if (base_day.day == 1) or (self.get_nth_dow() == 1):
-            from_prev_last = from_list[-2]
-        # 入職日年休付与以外受けていない者
-        elif (monthmod(date.today(), self.in_day)[0].months < 6) and (
-            self.get_nth_dow() != 1
-        ):
+        # 入職日年休付与以外、受けていない者
+        if (len(self.get_acquisition_list() == 1)) and (self.get_nth_dow() != 1):
             # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
-            from_prev_last = from_list[-2] + relativedelta(months=+1)
+            from_prev_last = from_list[-2] + relativedelta(months=1)
+            from_prev_last = from_prev_last.replace(day=1)
+        else:
+            from_prev_last = from_list[-2]
 
         filters.append(Shinsei.WORKDAY.between(from_prev_last, to_list[-2]))
         filters.append(Shinsei.STARTTIME != 0)
