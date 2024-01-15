@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import IntEnum
-from typing import List
+from typing import List, Tuple
 
 from flask import render_template, redirect, request
 from flask_login import current_user
@@ -83,7 +83,15 @@ def get_notification_list(STAFFID):
     # 年休エリア
     holiday_obj = HolidayAcquire(STAFFID)
     start_list, end_list = holiday_obj.print_acquisition_data()
-    enable_holidays = holiday_obj.convert_tuple(holiday_obj.print_remains())
+    try:
+        holiday_obj.print_remains()
+    except TypeError as e:
+        enable_holidays = (None, None)
+        remain_exce_info = f"※{e}"
+    else:
+        enable_holidays = holiday_obj.convert_tuple(holiday_obj.print_remains())
+        remain_exce_info = ""
+
     recognized_holidays = holiday_obj.convert_tuple(holiday_obj.sum_notify_times())
 
     return render_template(
@@ -94,6 +102,7 @@ def get_notification_list(STAFFID):
         h_items=zip(start_list, end_list),
         recognized=recognized_holidays,
         remains=enable_holidays,
+        exce=remain_exce_info,
         stf_login=current_user,
     )
 

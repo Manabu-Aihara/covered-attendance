@@ -89,8 +89,8 @@ class ObserverCarry(Observer):
                     self.trigger_fail(concerned_id)
                 except TypeError as e:
                     print(f"{concerned_id}: {e}")
-                    logger = get_logger(__name__, "ERROR")
-                    logger.error(f"ID{concerned_id}: {e}")
+                    # logger = get_logger(__name__, "ERROR")
+                    # logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
                 # これが全部反映しないと、commitしないタイプ
                 else:

@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import PropertyMock
 from datetime import datetime
 from typing import List
 import inspect
@@ -125,17 +126,8 @@ def test_check_observer(app_context, subject, mocker):
 
     assert acquisition_type_mock.call_count == 3
 
-    # 現状、不発
-    # def db_commit_mock(subject):
-    #     print("Dummy insert")
 
-    # update_mock = mocker.patch.object(observer, "update", side_effect=db_commit_mock)
-    # subject.notify()
-
-    # assert update_mock.called
-
-
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_carry_observer(app_context, subject, mocker):
     observer = ObserverCarry()
@@ -143,21 +135,24 @@ def test_carry_observer(app_context, subject, mocker):
 
     original_func = db.session.add
 
-    dummy_obj = PaidHolidayLog
+    phl_obj = PaidHolidayLog
     # def make_dummy_obj():
     #     return PaidHolidayLog
 
-    # dummy_obj = mocker.patch("PaidHolidayLog", side_effect=dummy_obj)
+    phl_mock = mocker.MagicMock()
+    dummy_obj = mocker.patch("app.models_aprv.PaidHolidayLog", return_value=phl_mock)
 
-    def dummy_add_db(i: int):
-        carri_days = subject.calcurate_carry_days(i)
-        print(f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, ...{carri_days})")
-        # original_func(dummy_obj)
+    # def dummy_add_db(i: int):
+    #     carri_days = subject.calcurate_carry_days(i)
+    #     print(f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, ...{carri_days})")
 
-    add_mock = mocker.patch.object(db.session, "add", return_value=dummy_add_db)
+    add_mock = mocker.patch.object(db.session, "add", side_effect=True)
+    original_func(dummy_obj)
 
     observer.update(subject)
+
     assert add_mock.call_count == 3
+    assert dummy_obj.call_count == 3
 
 
 @pytest.mark.skip
@@ -170,8 +165,12 @@ def test_get_concerned_staff(app_context, subject):
 # コンストラクタモックは無理、引数あるから
 # 使いどころあるのか、引き続き検討か
 
-# def test_constructor(app_context, mocker):
-#     ha_mock = mocker.MagicMock()
-#     mocker.patch("app.holiday_acquisition.HolidayAcquire", return_value=ha_mock)
-#     ha_mock_201 = HolidayAcquire(201)
-#     assert ha_mock == ha_mock_201
+
+def test_constructor(app_context, mocker):
+    # ha_mock = mocker.MagicMock()
+    # ha_mock.configure_mock(id=201)
+    ha_mock = mocker.patch("app.holiday_acquisition.HolidayAcquire", autospec=True)
+    property_mock = PropertyMock(return_value=201)
+    type(ha_mock).id = property_mock
+    ha_mock_201 = HolidayAcquire(201)
+    assert ha_mock == ha_mock_201

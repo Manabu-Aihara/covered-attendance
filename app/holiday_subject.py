@@ -206,6 +206,11 @@ class SubjectImpl(Subject):
 
     def calcurate_carry_days(self, concerned_id: int) -> float:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
+
+        # Trueを付けたら時間休のみの合計
+        remainder = (
+            holiday_acquire_obj.sum_notify_times(True) % holiday_acquire_obj.job_time
+        )
         try:
             remain_times = holiday_acquire_obj.print_remains()
         except TypeError as e:
@@ -215,13 +220,12 @@ class SubjectImpl(Subject):
             # logger.exception(f"ID{concerned_id}: {e}", exc_info=False)
         else:
             # 最終残り日数を繰り越しにする
-            # これは切り捨てる部分
-            truncate_times = (
-                # Trueを付けたら時間休のみの合計
-                holiday_acquire_obj.job_time
-                - holiday_acquire_obj.sum_notify_times(True)
-                % holiday_acquire_obj.job_time
-            )
+            # これは切り捨てる部分 truncate_times
+            if remainder == 0:
+                truncate_times = 0
+            else:
+                truncate_times = holiday_acquire_obj.job_time - remainder
+
             carry_times = remain_times - truncate_times
             return carry_times / holiday_acquire_obj.job_time
 

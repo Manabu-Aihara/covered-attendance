@@ -25,7 +25,7 @@
 {% endif %}
 
 {# 個別申請一覧のみ表示 #}
-{% if remains %}
+{% if recognized %}
 <div class="holiday">
   <select class="term-list">
     <option>年次休暇付与歴</option>
@@ -36,9 +36,14 @@
 
   <div class="remain">
     <p>使用日数<span>{{ recognized[0] }}日 {{ recognized[1] }}時間</span></p>
+    {% if remains %}
     <p>残り<span>{{ remains[0] }}日 {{ remains[1] }}時間</span></p>
+    <p style="color: tomato;">{{ exce }}</p>
+    {% endif %}
   </div>
 </div>
+{% else %}
+<p></p>
 {% endif %}
 
 {% if nlst is none %}
