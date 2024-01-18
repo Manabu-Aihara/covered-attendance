@@ -14,19 +14,6 @@ from app.holiday_logging import get_logger
 if TYPE_CHECKING:
     from app.holiday_subject import Subject
 
-# class PaidLogParse:
-#     @classmethod
-#     def insert_data(cls):
-#         holiday_log_data = PaidHolidayLog(
-#             concerned_id,
-#             0,
-#             None,
-#             None,
-#             carry_times / holiday_acquire_obj.job_time,
-#             "前回からの繰り越し",
-#         )
-#         db.session.add(holiday_log_data)
-
 
 class Observer(ABC):
     @abstractmethod
@@ -66,6 +53,17 @@ class ObserverCarry(Observer):
         """Dummy for trigger fail"""
         print(f"trigger_fail() i={i}")
 
+    def insert_data(self, i: int, calc_data: float):
+        holiday_log_data = PaidHolidayLog(
+            i,
+            0,
+            None,
+            None,
+            calc_data,
+            "前回からの繰り越し",
+        )
+        db.session.add(holiday_log_data)
+
     def update(self, subject: Subject) -> None:
         # notification_state: int = subject.notice_month()
         if (notification_state := subject.notice_month()) == 3 or (
@@ -76,26 +74,18 @@ class ObserverCarry(Observer):
                 try:
                     carry_days = subject.calcurate_carry_days(concerned_id)
                     # print(f"{concerned_id}: {carry_times}")
-                    holiday_log_data = PaidHolidayLog(
-                        concerned_id,
-                        0,
-                        None,
-                        None,
-                        carry_days,
-                        "前回からの繰り越し",
-                    )
-                    db.session.add(holiday_log_data)
+                    self.insert_data(concerned_id, carry_days)
                     db.session.flush()
                     self.trigger_fail(concerned_id)
                 except TypeError as e:
                     print(f"{concerned_id}: {e}")
-                    # logger = get_logger(__name__, "ERROR")
-                    # logger.error(f"ID{concerned_id}: {e}")
+                    logger = get_logger(__name__, "ERROR")
+                    logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
                 # これが全部反映しないと、commitしないタイプ
-                else:
-                    logger = get_logger(__name__, "INFO")
-                    logger.info(f"ID{concerned_id}: {carry_days}日繰り越しました。")
+                # else:
+                #     logger = get_logger(__name__, "INFO")
+                #     logger.info(f"ID{concerned_id}: {carry_days}日繰り越しました。")
 
             db.session.commit()
 
@@ -114,14 +104,14 @@ class ObserverCheckType(Observer):
             for concerned_id in subject.get_concerned_staff():
                 try:
                     before_type, after_type = subject.refer_acquire_type(concerned_id)
-                    # print(paid_type)
-                    if (before_type is None) or (before_type != after_type):
-                        r_holiday_obj = RecordPaidHoliday(concerned_id)
-                        r_holiday_obj.ACQUISITION_TYPE = after_type
-                        db.session.merge(r_holiday_obj)
-                        db.session.flush()
-                        self.trigger_fail(concerned_id)
-                        db.session.commit()
+                    print(before_type, after_type)
+                    # if (before_type is None) or (before_type != after_type):
+                    #     r_holiday_obj = RecordPaidHoliday(concerned_id)
+                    #     r_holiday_obj.ACQUISITION_TYPE = after_type
+                    #     db.session.merge(r_holiday_obj)
+                    #     db.session.flush()
+                    #     self.trigger_fail(concerned_id)
+                    #     db.session.commit()
                 except ValueError as e:
                     print(f"ID{concerned_id}: {e}")
                     logger = get_logger(__name__, "ERROR")

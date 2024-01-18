@@ -53,7 +53,7 @@ def test_observer(app_context):
     print(subject.execute())
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_refer_acquire_type(app_context, subject, mocker):
     mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
@@ -92,8 +92,8 @@ def test_calcurate_carry_days(app_context, subject, mocker):
         HolidayAcquire, "sum_notify_times", side_effect=[13, 45, 6, 20]
     )
 
-    print(subject.calcurate_carry_days(20))
-    print(subject.calcurate_carry_days(30))
+    subject.calcurate_carry_days(20)
+    subject.calcurate_carry_days(30)
 
     print(sum_notify_mock.call_args_list)
     assert remains_mock.call_count == 2
@@ -121,38 +121,38 @@ def test_check_observer(app_context, subject, mocker):
             raise ValueError("failed")
         original_trigger_fail(i)
 
-    mocker.patch.object(observer, "trigger_fail", side_effect=mock_for_fail)
+    mock_fail = mocker.patch.object(observer, "trigger_fail", side_effect=mock_for_fail)
     observer.update(subject)
 
     assert acquisition_type_mock.call_count == 3
+    assert mock_fail.called
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_carry_observer(app_context, subject, mocker):
     observer = ObserverCarry()
     subject.attach(observer)
 
-    original_func = db.session.add
+    # 結局、session.addの引数にならなかった
+    phl_mock = mocker.MagicMock(spec=PaidHolidayLog)
+    dummy_obj = mocker.patch("app.models_aprv.PaidHolidayLog", phl_mock)
 
-    phl_obj = PaidHolidayLog
-    # def make_dummy_obj():
-    #     return PaidHolidayLog
+    assert isinstance(dummy_obj, PaidHolidayLog)
 
-    phl_mock = mocker.MagicMock()
-    dummy_obj = mocker.patch("app.models_aprv.PaidHolidayLog", return_value=phl_mock)
+    # original_func = db.session.add
+    original_func = observer.insert_data
 
-    # def dummy_add_db(i: int):
-    #     carri_days = subject.calcurate_carry_days(i)
-    #     print(f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, ...{carri_days})")
+    def dummy_add_db(i: int, carri_days: float = subject.calcurate_carry_days):
+        print(f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, ...{carri_days})")
+        original_func(i, carri_days)
 
-    add_mock = mocker.patch.object(db.session, "add", side_effect=True)
-    original_func(dummy_obj)
-
+    # add_mock = mocker.patch.object(db.session, "add", side_effect=dummy_add_db)
+    add_mock = mocker.patch.object(observer, "insert_data", side_effect=dummy_add_db)
     observer.update(subject)
 
-    assert add_mock.call_count == 3
-    assert dummy_obj.call_count == 3
+    print(add_mock.call_args_list)
+    assert add_mock.call_count == 2
 
 
 @pytest.mark.skip

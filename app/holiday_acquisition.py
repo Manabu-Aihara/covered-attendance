@@ -49,7 +49,7 @@ class HolidayAcquire:
         target_user = (
             db.session.query(User.INDAY).filter(User.STAFFID == self.id).first()
         )
-        if target_user.INDAY is None:
+        if target_user is None:
             TypeError(f"ID{self.id}: M_STAFFINFO.INDAYの値がありません。")
         else:
             self.in_day: datetime = target_user.INDAY
@@ -374,14 +374,15 @@ class HolidayAcquire:
     3月、9月に起動
     """
 
-    def count_workday(self) -> List[int]:
+    def count_workday(self) -> int:
+        base_day = self.convert_base_day()
         from_list, to_list = self.print_acquisition_data()
 
         filters = []
         filters.append(Shinsei.STAFFID == self.id)
 
         # 入職日年休付与以外、受けていない者
-        if (len(self.get_acquisition_list() == 1)) and (self.get_nth_dow() != 1):
+        if len(self.get_acquisition_list(base_day)) == 1 and (self.get_nth_dow() != 1):
             # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
             from_prev_last = from_list[-2] + relativedelta(months=1)
             from_prev_last = from_prev_last.replace(day=1)
