@@ -1,5 +1,6 @@
 import pytest
 
+import app
 from app import db
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire, AcquisitionType
@@ -7,7 +8,7 @@ from app.holiday_acquisition import HolidayAcquire, AcquisitionType
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(40)
+    acquisition_object = HolidayAcquire(20)
     return acquisition_object
 
 
@@ -101,7 +102,15 @@ def test_raise_acquisition_type(get_official_user):
 @pytest.mark.skip
 def test_plus_next_holidays(get_official_user):
     test_value = get_official_user.plus_next_holidays()
-    print(f"NEXT: {test_value}")
+    print(f"日付＆日数: {test_value}")
+
+
+def test_plus_next_holidays_log(get_official_user, mocker):
+    log_mock = mocker.patch.object(
+        app.holiday_logging, "get_logger", side_effect=Exception
+    )
+    get_official_user.plus_next_holidays()
+    assert log_mock.called
 
 
 # DBからとりあえず申請合計時間（時間休のみ）カウントできるか

@@ -59,24 +59,26 @@ class HolidayAcquire:
         holiday_info = (
             # job_time, acquisition_key = (
             db.session.query(
-                RecordPaidHoliday.WORK_TIME, RecordPaidHoliday.ACQUISITION_TYPE
+                RecordPaidHoliday.BASETIMES_PAIDHOLIDAY,
+                RecordPaidHoliday.ACQUISITION_TYPE,
             )
             .filter(self.id == RecordPaidHoliday.STAFFID)
             .first()
         )
+        # いらないかも
         if holiday_info is None:
             # if (job_time is None) or (acquisition_key is None):
             raise TypeError(
-                f"ID{self.id}: M_RECORD_PAIDHOLIDAYのWORK_TIME、もしくはACQUISITION_TYPEの値がありません。"
+                f"ID{self.id}: M_RECORD_PAIDHOLIDAYのBASETIMES_PAIDHOLIDAY、もしくはACQUISITION_TYPEの値がありません。"
             )
             # with open("holiday_err.log", "a") as f:
             #     # pass
             #     f.write(
-            #         f"\nID{self.id}: M_RECORD_PAIDHOLIDAYのWORK_TIME、もしくはACQUISITION_TYPEの値がありません。"
+            #         f"\nID{self.id}: M_RECORD_PAIDHOLIDAYのBASETIMES_PAIDHOLIDAY、もしくはACQUISITION_TYPEの値がありません。"
             #         # f"{e}"
             #     )
         else:
-            self.job_time: float = holiday_info.WORK_TIME
+            self.job_time: float = holiday_info.BASETIMES_PAIDHOLIDAY
             self.acquisition_key: str = holiday_info.ACQUISITION_TYPE
             # self.job_time: float = job_time
             # self.acquisition_key: str = acquisition_key
@@ -280,8 +282,9 @@ class HolidayAcquire:
                         self.acquisition_key
                     ).onward
         except KeyError as e:
+            # raise e
             # print(f"ID{self.id}: {e}")
-            logger = get_logger(__name__, "ERROR")
+            logger = get_logger("ERROR")
             logger.exception(f"ID{self.id}: {e}", exc_info=False)
         else:
             return holiday_pair
@@ -381,7 +384,7 @@ class HolidayAcquire:
         filters = []
         filters.append(Shinsei.STAFFID == self.id)
 
-        # 入職日年休付与以外、受けていない者
+        # 入職日年休付与以外、受けていない者（付与日リストが１個だけ）
         if len(self.get_acquisition_list(base_day)) == 1 and (self.get_nth_dow() != 1):
             # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
             from_prev_last = from_list[-2] + relativedelta(months=1)

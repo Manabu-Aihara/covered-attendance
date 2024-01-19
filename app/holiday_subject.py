@@ -140,37 +140,34 @@ class SubjectImpl(Subject):
     @Param
         concerned_id: int 該当者ID
     @Return
-        : Tuple<int, float> IDと日数（繰り越し含む）
+        : Tuple<float, int> 総時間（繰り越し含む）とログ用付与日数
         """
 
-    def acquire_holidays(self, concerned_id: int) -> Tuple[int, float]:
+    def acquire_holidays(self, concerned_id: int) -> Tuple[float, int]:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         # 繰り越し日数
-        try:
-            carry_times = (
-                db.session.query(PaidHolidayLog.CARRY_FORWARD)
-                .filter(concerned_id == PaidHolidayLog.STAFFID)
-                .order_by(PaidHolidayLog.id.desc())
-                .first()
-            )
-        except TypeError:
-            print(f"ID{concerned_id}: まだ年休付与はありません。")
-        else:
-            # 取得日数
-            dict_value = holiday_acquire_obj.plus_next_holidays().values()
-            # dict_valuesのリスト化
-            acquisition_days: int = list(dict_value)[-1]
-            # もしくは
-            # base_day = holiday_acquire_obj.convert_base_day()
-            # length: int = len(holiday_acquire_obj.get_acquisition_list(base_day))
-            # 取得日数
-            # acquisition_days = self.output_holiday_count(work_type, length)
+        carry_times = (
+            db.session.query(PaidHolidayLog.CARRY_FORWARD)
+            .filter(concerned_id == PaidHolidayLog.STAFFID)
+            .order_by(PaidHolidayLog.id.desc())
+            .first()
+        )
+        if carry_times is None:
+            raise TypeError("繰り越しはありません。")
 
-            return (
-                concerned_id,
-                (carry_times.CARRY_FORWARD + acquisition_days)
-                * holiday_acquire_obj.job_time,
-            )
+        # 取得日数 -> 例外処理済みだと思う
+        dict_value = holiday_acquire_obj.plus_next_holidays().values()
+        # dict_valuesのリスト化
+        acquisition_days: int = list(dict_value)[-1]
+        # もしくは
+        # base_day = holiday_acquire_obj.convert_base_day()
+        # length: int = len(holiday_acquire_obj.get_acquisition_list(base_day))
+        # 取得日数
+        # acquisition_days = self.output_holiday_count(work_type, length)
+
+        return (
+            carry_times.CARRY_FORWARD + acquisition_days
+        ) * holiday_acquire_obj.job_time, acquisition_days
         # return super().acquire_holidays()
 
     """
@@ -199,8 +196,8 @@ class SubjectImpl(Subject):
             elif sum_workday_count >= 217:
                 char = "A"
 
-        if sum_workday_count < 48 or not isinstance(sum_workday_count, int):
-            raise ValueError("出勤記録に誤りがあるかもしれません。")
+        if sum_workday_count < 48:
+            raise ValueError(f"出勤記録 {sum_workday_count} です。")
 
         return holiday_acquire_obj.acquisition_key, char
 
@@ -216,8 +213,6 @@ class SubjectImpl(Subject):
         except TypeError as e:
             # print(e)
             raise e
-            # logger = get_logger(__name__, "ERROR")
-            # logger.exception(f"ID{concerned_id}: {e}", exc_info=False)
         else:
             # 最終残り日数を繰り越しにする
             # これは切り捨てる部分 truncate_times

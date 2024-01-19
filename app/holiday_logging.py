@@ -2,9 +2,11 @@ import logging
 from datetime import datetime
 
 
-def get_logger(name: str, level: str):
+# class HolidayLogger:
+#     @staticmethod
+def get_logger(level: str, plus: str = ""):
     # getLoggerにモジュール名を与える
-    logger = logging.getLogger(name)
+    logger = logging.getLogger(__name__)
     # loggingの多重実行を防止する
     # https://qiita.com/thistle_/items/f9042ca94f28f2cbfd9e
     for h in logger.handlers[:]:
@@ -17,7 +19,7 @@ def get_logger(name: str, level: str):
 
     # 出力先を指定している
     date_now = datetime.now()
-    logfile = f"holiday{date_now.strftime('%Y%m%d')}.log"
+    logfile = f"holiday{date_now.strftime('%Y%m%d')}{plus}.log"
     handler = logging.FileHandler(logfile)
 
     # そのハンドラの対象のレベルを設定する

@@ -227,7 +227,7 @@ def get_notification_form():
 
     user_detail = User.query.get(current_user.STAFFID)
     user_worktime = (
-        db.session.query(RecordPaidHoliday.WORK_TIME)
+        db.session.query(RecordPaidHoliday.BASETIMES_PAIDHOLIDAY)
         .filter(RecordPaidHoliday.STAFFID == current_user.STAFFID)
         .first()
     )
@@ -235,7 +235,7 @@ def get_notification_form():
     return render_template(
         "attendance/approval_form.html",
         n_all=notification_all,
-        worktime=user_worktime.WORK_TIME,
+        worktime=user_worktime.BASETIMES_PAIDHOLIDAY,
         stf_login=user_detail,
     )
 

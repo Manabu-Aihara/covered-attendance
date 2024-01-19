@@ -2,14 +2,15 @@ import pytest
 from unittest.mock import PropertyMock
 from datetime import datetime
 from typing import List
-import inspect
+import logging
 
-from app import db, app
+import app
 from app.models import User
 from app.models_aprv import PaidHolidayLog
 from app.holiday_subject import SubjectImpl
 from app.holiday_observer import ObserverRegist, ObserverCheckType, ObserverCarry
 from app.holiday_acquisition import AcquisitionType, HolidayAcquire
+from app.holiday_logging import get_logger
 
 
 @pytest.mark.skip
@@ -51,6 +52,11 @@ def test_observer(app_context):
 
     print(datetime.now())
     print(subject.execute())
+
+
+"""
+    ここから、有用なテスト
+    """
 
 
 # @pytest.mark.skip
@@ -128,7 +134,34 @@ def test_check_observer(app_context, subject, mocker):
     assert mock_fail.called
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
+def test_dummy_output_log(app_context, subject, mocker):
+    observer = ObserverCheckType()
+    subject.attach(observer)
+
+    original_func = get_logger
+
+    def dummy_logger(level):
+        logging.basicConfig(
+            format="%(asctime)s : %(name)s : %(levelname)s : %(message)s"
+        )
+        logger = logging.getLogger("holiday_observer")
+        level = logging.INFO
+        logger.setLevel(level)
+        logger.debug("test...")
+        # return logger
+
+    log_mock = mocker.patch.object(
+        app.holiday_logging, "get_logger", side_effect=Exception
+    )
+    original_func("INFO")
+
+    # observer.update(subject)
+    assert log_mock.call_count == 3
+
+
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_carry_observer(app_context, subject, mocker):
     observer = ObserverCarry()
@@ -153,6 +186,11 @@ def test_carry_observer(app_context, subject, mocker):
 
     print(add_mock.call_args_list)
     assert add_mock.call_count == 2
+
+
+"""
+    ここまで
+    """
 
 
 @pytest.mark.skip
