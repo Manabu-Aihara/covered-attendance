@@ -9,7 +9,6 @@ from app import db
 from app.models import User
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
-from app.holiday_logging import get_logger
 
 from app.holiday_observer import Observer
 
@@ -198,6 +197,8 @@ class SubjectImpl(Subject):
 
         if sum_workday_count < 48:
             raise ValueError(f"出勤記録 {sum_workday_count} です。")
+        # elif sum_workday_count == 0 or sum_workday_count is None:
+        #     raise TypeError("出勤記録はありません。")
 
         return holiday_acquire_obj.acquisition_key, char
 

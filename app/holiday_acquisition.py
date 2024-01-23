@@ -11,7 +11,7 @@ from sqlalchemy import and_
 from app import db
 from app.models import User, RecordPaidHoliday, Shinsei
 from app.models_aprv import NotificationList, PaidHolidayLog
-from app.holiday_logging import get_logger
+from app.holiday_logging import HolidayLogger
 
 
 # コンストラクタを作って、その引数に、各項目に与えた値の
@@ -284,7 +284,7 @@ class HolidayAcquire:
         except KeyError as e:
             # raise e
             # print(f"ID{self.id}: {e}")
-            logger = get_logger("ERROR")
+            logger = HolidayLogger.get_logger("ERROR")
             logger.exception(f"ID{self.id}: {e}", exc_info=False)
         else:
             return holiday_pair
@@ -412,9 +412,9 @@ class HolidayAcquire:
         # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
         diff_month += 1 if self.get_nth_dow() == 1 else diff_month
 
-        print(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
-        # logger = get_logger(__name__, "INFO")
-        # logger.info(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
+        # print(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
+        logger = HolidayLogger.get_logger("INFO")
+        logger.info(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
 
         return diff_month
 

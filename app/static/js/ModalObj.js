@@ -24,7 +24,7 @@ class ModalAppear {
             let modal_p = myself.top_item.children;
             modal_p[0].innerText = modal_phrase;
             myself.form.submit();
-          }, 1000);
+          }, 700);
         } else {
           return false;
         }

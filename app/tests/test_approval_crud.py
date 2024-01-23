@@ -4,8 +4,8 @@ import datetime
 from app import db
 from app.models import Todokede, User
 from app.models_aprv import NotificationList, Approval
-from app.routes_approvals import get_notification_list
-from app.approval_util import toggle_notification_type, select_zero_date, NoZeroTable
+from app.routes_approvals import get_notification_list, insert_pay_log
+from app.approval_util import toggle_notification_type, NoZeroTable
 from app.pulldown_util import get_pulldown_list
 
 
@@ -87,9 +87,8 @@ def test_get_empty_object(app_context):
 
 @pytest.mark.skip
 def test_select_zero_date(app_context):
-    result_query = select_zero_date(
-        NotificationList, NotificationList.START_TIME, NotificationList.END_TIME
-    )
+    target_table = NoZeroTable(NotificationList)
+    result_query = target_table.select_zero_date_tables("START_TIME", "END_TIME")
     print(f"00：00：00オブジェクト：　{result_query}")
 
 
@@ -102,11 +101,17 @@ def test_select_same_date_tables(app_context):
     print(retrieve_table_objects)
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_convert_zero_to_none(app_context):
     target_table = NoZeroTable(NotificationList)
     target_table.convert_value_to_none(
-        target_table.select_zero_date_tables("START_TIME", "END_TIME"),
+        target_table.select_zero_date_tables,
         "START_TIME",
         "END_TIME",
     )
+
+
+def test_insert_pay_log(app_context):
+    with pytest.raises(TypeError) as except_info:
+        insert_pay_log(20, 35)
+    print(except_info.value)

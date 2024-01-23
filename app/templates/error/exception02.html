@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+
+{{ title }}
+
+<p><span>システム管理者へ： </span>ID{{ sid }}: {{ exception }}</p>
+<h3 style="color: red;">{{ repo }}</h3>
+
+<p><a href="/approval-list/charge?">戻る</a></p>
+
+{% endblock %}

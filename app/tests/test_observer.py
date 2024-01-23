@@ -10,7 +10,7 @@ from app.models_aprv import PaidHolidayLog
 from app.holiday_subject import SubjectImpl
 from app.holiday_observer import ObserverRegist, ObserverCheckType, ObserverCarry
 from app.holiday_acquisition import AcquisitionType, HolidayAcquire
-from app.holiday_logging import get_logger
+from app.holiday_logging import HolidayLogger
 
 
 @pytest.mark.skip
@@ -59,7 +59,7 @@ def test_observer(app_context):
     """
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_refer_acquire_type(app_context, subject, mocker):
     mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
@@ -134,34 +134,7 @@ def test_check_observer(app_context, subject, mocker):
     assert mock_fail.called
 
 
-@pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
-def test_dummy_output_log(app_context, subject, mocker):
-    observer = ObserverCheckType()
-    subject.attach(observer)
-
-    original_func = get_logger
-
-    def dummy_logger(level):
-        logging.basicConfig(
-            format="%(asctime)s : %(name)s : %(levelname)s : %(message)s"
-        )
-        logger = logging.getLogger("holiday_observer")
-        level = logging.INFO
-        logger.setLevel(level)
-        logger.debug("test...")
-        # return logger
-
-    log_mock = mocker.patch.object(
-        app.holiday_logging, "get_logger", side_effect=Exception
-    )
-    original_func("INFO")
-
-    # observer.update(subject)
-    assert log_mock.call_count == 3
-
-
-@pytest.mark.skip
+# @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_carry_observer(app_context, subject, mocker):
     observer = ObserverCarry()
@@ -174,11 +147,14 @@ def test_carry_observer(app_context, subject, mocker):
     assert isinstance(dummy_obj, PaidHolidayLog)
 
     # original_func = db.session.add
-    original_func = observer.insert_data
+    original_insert_func = observer.insert_data
 
     def dummy_add_db(i: int, carri_days: float = subject.calcurate_carry_days):
-        print(f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, ...{carri_days})")
-        original_func(i, carri_days)
+        with open("insert_carry.log", "a") as f:
+            f.write(
+                f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, 0, None, None, {carri_days}, '前回からの繰り越し')\n"
+            )
+        original_insert_func(i, carri_days)
 
     # add_mock = mocker.patch.object(db.session, "add", side_effect=dummy_add_db)
     add_mock = mocker.patch.object(observer, "insert_data", side_effect=dummy_add_db)

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from app import db
 from app.models import RecordPaidHoliday
 from app.models_aprv import PaidHolidayLog
-from app.holiday_logging import get_logger
+from app.holiday_logging import HolidayLogger
 
 # 循環参照回避
 if TYPE_CHECKING:
@@ -49,11 +49,11 @@ class ObserverRegist(Observer):
                     self.insert_data(concerned_id, result_times)
                 except ValueError as e:
                     print(f"ID{concerned_id}: {e}")
-                    logger = get_logger("ERROR")
+                    logger = HolidayLogger.get_logger("ERROR")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
                 else:
-                    logger = get_logger("INFO")
+                    logger = HolidayLogger.get_logger("INFO")
                     logger.info(f"ID{concerned_id}: {day_acquired}日付与されました。")
 
             db.session.commit()
@@ -90,12 +90,12 @@ class ObserverCarry(Observer):
                     # self.trigger_fail(concerned_id)
                 except TypeError as e:
                     print(f"{concerned_id}: {e}")
-                    logger = get_logger("ERROR")
+                    logger = HolidayLogger.get_logger("ERROR")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
                 # これが全部反映しないと、commitしないタイプ
                 else:
-                    logger = get_logger("INFO")
+                    logger = HolidayLogger.get_logger("INFO")
                     logger.info(f"ID{concerned_id}: {carry_days}日繰り越しました。")
 
             db.session.commit()
@@ -106,7 +106,7 @@ class ObserverCheckType(Observer):
         """Dummy for trigger fail"""
         print(f"trigger_fail() i={i}")
 
-    def merge_type(i: int, past: str, post: str):
+    def merge_type(self, i: int, past: str, post: str):
         if (past is None) or (post != post):
             r_holiday_obj = RecordPaidHoliday(i)
             r_holiday_obj.ACQUISITION_TYPE = post
@@ -120,18 +120,18 @@ class ObserverCheckType(Observer):
             for concerned_id in subject.get_concerned_staff():
                 try:
                     before_type, after_type = subject.refer_acquire_type(concerned_id)
-                    print(before_type, after_type)
+                    # print(before_type, after_type)
                     self.merge_type(concerned_id, before_type, after_type)
                     db.session.flush()
                     # self.trigger_fail(concerned_id)
                     # db.session.commit()
                 except ValueError as e:
-                    print(f"ID{concerned_id}: {e}")
-                    logger = get_logger("ERROR")
+                    # print(f"ID{concerned_id}: {e}")
+                    logger = HolidayLogger.get_logger("ERROR")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
                 else:
-                    logger = get_logger("INFO")
+                    logger = HolidayLogger.get_logger("INFO")
                     logger.info(f"ID{concerned_id}の年休付与タイプは「{after_type}」です。")
 
             db.session.commit()

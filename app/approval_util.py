@@ -18,12 +18,12 @@ class NoZeroTable:
     00:00:00が存在するオブジェクトを抽出
     Param:
         table: T (クラステーブル)
-        *args: datetime (00：00：00を持つであろう属性名)
+        *args: str (00：00：00を持つであろう属性名)
     Return:
         datetime_query: List[T]
     """
 
-    def select_zero_date_tables(self, *args: datetime) -> List[T]:
+    def select_zero_date_tables(self, *args: str) -> List[T]:
         filters = []
         for arg in args:
             filters.append(getattr(self.table, arg) == 0)
@@ -39,13 +39,13 @@ class NoZeroTable:
     #     return datetime_query
 
     def convert_value_to_none(self, func: Callable[..., List[T]], *target: str) -> None:
-        pickup_objects = func(target[0], target[1])
+        pickup_objects = func(*target)
 
         for pickup_obj in pickup_objects:
             for one_val in target:
                 if getattr(pickup_obj, one_val).strftime("%H:%M:%S") == "00:00:00":
                     setattr(pickup_obj, one_val, None)
-                    # print(f'Noneを期待：　{getattr(pickup_obj, one_val)}')
+                    # print(f"Noneを期待：　{getattr(pickup_obj, one_val)}")
                 # db.session.merge(pickup_obj)
                 # db.session.commit()
 
