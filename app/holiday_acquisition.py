@@ -1,7 +1,7 @@
 import enum
 from datetime import date, datetime, timedelta
 from dataclasses import dataclass
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Union
 from collections import OrderedDict
 from monthdelta import monthmod
 from dateutil.relativedelta import relativedelta
@@ -175,7 +175,7 @@ class HolidayAcquire:
         申請時間: float
     """
 
-    def get_notification_rests(self, notification_id: int) -> float:
+    def get_notification_rests(self, notification_id: int) -> Union[float, str]:
         # 年休対象項目ID（M_NOTIFICATION）
         n_code_list: List[int] = [3, 4, 10, 11, 12, 13, 14, 15]
 
@@ -197,7 +197,9 @@ class HolidayAcquire:
         )
         # 条件2番目に引っかからなかった場合
         if notify_datetimes is None:
-            raise TypeError("年休に関わりのない項目です。")
+            # 諸事上により、例外やめる
+            # raise TypeError("年休に関わりのない項目です。")
+            return "年休に関わりのない項目です。"
 
         # 申請開始日、終了日が同じ場合
         end_day = (
@@ -352,20 +354,16 @@ class HolidayAcquire:
             .all()
         )
 
-        try:  # get_notification_restsでとりあえず投げている
-            approval_time_list = list(
-                map(
-                    lambda x: self.get_notification_rests(x.NOTIFICATION_id)
-                    if x.STATUS == 1
-                    else 0,
-                    noification_info_list,
-                )
+        approval_time_list = list(
+            map(
+                lambda x: self.get_notification_rests(x.NOTIFICATION_id)
+                if x.STATUS == 1
+                else 0,
+                noification_info_list,
             )
-        except TypeError as e:
-            print(e)
-        else:
-            # Trueの場合、時間休だけの総合計時間
-            return sum(approval_time_list)
+        )
+        # Trueの場合、時間休だけの総合計時間
+        return sum(approval_time_list)
 
     # Pythonで任意の日付がその月の第何週目かを取得
     # https://note.nkmk.me/python-calendar-datetime-nth-dow/

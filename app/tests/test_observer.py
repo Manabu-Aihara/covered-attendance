@@ -10,7 +10,6 @@ from app.models_aprv import PaidHolidayLog
 from app.holiday_subject import SubjectImpl
 from app.holiday_observer import ObserverRegist, ObserverCheckType, ObserverCarry
 from app.holiday_acquisition import AcquisitionType, HolidayAcquire
-from app.holiday_logging import HolidayLogger
 
 
 @pytest.mark.skip

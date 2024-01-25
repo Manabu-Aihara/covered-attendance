@@ -5,6 +5,7 @@ from datetime import datetime
 from app.holiday_acquisition import HolidayAcquire
 from app.holiday_subject import Subject, SubjectImpl
 from app.holiday_observer import ObserverRegist, ObserverCheckType, ObserverCarry
+from app.holiday_logging import HolidayLogger
 
 
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
@@ -57,11 +58,12 @@ def concerned_id_from_panda_indirect(app_context):
 
 # とりあえず、この方法しか上手くいかん。
 # https://stackoverflow.com/questions/49117806/what-is-the-best-way-to-parameterize-a-pytest-function-using-a-fixture-that-retu
-@pytest.fixture(params=range(10, 16))
-def get_param(request, panda_id):
+# @pytest.fixture(params=range(0, 25))
+@pytest.fixture
+def get_param(panda_id):
     # print(f"expensive-{request.param}")
-    return {"ID": panda_id[request.param], "Work": sample_work_count[request.param] * 2}
-    # return [panda_id[request.param]]
+    # return {"ID": panda_id[request.param], "Work": sample_work_count[request.param] * 2}
+    return {"ID": panda_id, "Work": [x * 2 for x in sample_work_count]}
 
 
 @pytest.mark.skip
@@ -87,49 +89,55 @@ class IdArgs:
 
 
 # @pytest.mark.skip
-@pytest.fixture
-def holiday_obj_mock(get_param, mocker):
-    obj_mock = mocker.patch("app.holiday_acquisition.HolidayAcquire", autospec=True)
-    property_mock = PropertyMock(side_effect=get_param.get("ID"))
-    type(obj_mock).id = property_mock
-    type(obj_mock).count_workday = sample_work_count[10:16]
-    return obj_mock
+# @pytest.fixture
+# def holiday_obj_mock(get_param, mocker):
+#     obj_mock = mocker.patch("app.holiday_acquisition.HolidayAcquire", autospec=True)
+#     property_mock = PropertyMock(side_effect=get_param.get("ID"))
+#     type(obj_mock).id = property_mock
+#     type(obj_mock).count_workday = sample_work_count[10:16]
+#     return obj_mock
 
 
 # @pytest.mark.skip
 # @pytest.mark.parametrize("sample_list", sample_work_count, indirect=["panda_id"])
-# @pytest.mark.parametrize(("param", "count"), zip(get_param, sample_work_count[10:16]))
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
-def test_refer_observer(app_context, subject, get_param):
-    # observer = ObserverCheckType()
-    # subject.attach(observer)
+def test_refer_observer(app_context, subject, get_param, mocker):
+    observer = ObserverCheckType()
+    subject.attach(observer)
+
     print(get_param.get("ID"))
     print(get_param.get("Work"))
-    # for param, count in zip(list(get_param.get("ID")), sample_work_count[10:16]):
-    # print(str(param) + " : " + str(count))
 
+    original_update_func = observer.merge_type
+    original_logger = HolidayLogger.get_logger
+    # original_log_func = original_logger.info
 
-# mocker.patch.object(
-#     HolidayAcquire,
-#     "count_workday",
-#     side_effect=count * 2,
-# )
+    workday_mock = mocker.patch.object(
+        HolidayAcquire, "count_workday", side_effect=get_param.get("Work")
+    )
 
-# subject.refer_acquire_type(param.get("ID"))
+    def dummy_logger(level: str):
+        print("---info---")
+        output_info = original_logger(level)
+        output_info.error("5時です!!")
+        output_info.info("5時です")
+        # original_log_func("5時です")
 
-# original_update_func = observer.merge_type
+    # mocker.patch.object(HolidayLogger, "get_logger", side_effect=dummy_logger)
 
-# def dummy_update_db(i: int, past: str, post: str):
-#     with open("update_type.log", "a") as f:
-#         f.write(
-#             f"UPDATE INTO D_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE={post} WHERE STAFF_ID={get_param.get('ID')}\n"
-#         )
-#     original_update_func(i, past, post)
+    def dummy_update_db(i: int, past: str, post: str):
+        with open("update_type01251715.log", "a") as f:
+            f.write(
+                f"UPDATE INTO D_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE={post} WHERE STAFF_ID={i}\n"
+            )
+        # print(post)
+        original_update_func(i, past, post)
 
-# update_mock = mocker.patch.object(
-#     observer, "merge_type", side_effect=dummy_update_db
-# )
+    update_mock = mocker.patch.object(
+        observer, "merge_type", side_effect=dummy_update_db
+    )
 
-# observer.update(subject)
+    # print(subject.refer_acquire_type(get_param.get("ID")))
+    observer.update(subject)
 
-# print(update_mock.call_count)
+    assert workday_mock.call_count == 25

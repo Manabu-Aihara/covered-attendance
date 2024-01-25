@@ -48,7 +48,7 @@ class SkypeRelatedException(SkypeBaseException):
 
 
 def check_skype_account(skype_liveId: str, manager_id: int):
-    if skype_liveId == "":
+    if skype_liveId is None:
         raise SkypeRelatedException(str(manager_id))
 
 

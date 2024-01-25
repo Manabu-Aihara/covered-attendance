@@ -324,7 +324,7 @@ def append_approval():
 
     # 承認者SkypeID
     skype_approval_account = (
-        db.session.query(SystemInfo.SKYPE_ID)
+        db.session.query(SystemInfo)
         .filter(SystemInfo.STAFFID == approval_member.STAFFID)
         .first()
     )
@@ -335,7 +335,7 @@ def append_approval():
         {request.url_root}approval-list/charge"
 
     # こっちからでも出来なくはない
-    # skype_approval_obj = make_skype_object(skype_account.MAIL, skype_account.MICRO_PASS)
+    # skype_approval_obj = make_skype_object(skype_approval_account.MAIL, skype_approval_account.MICRO_PASS)
 
     skype_system_obj = make_system_skype_object()
 
@@ -365,7 +365,7 @@ def append_approval():
 """
     申請依頼に対して、許可か拒否か、DBupdate
     Param:
-        id: int
+        id: int 申請id
         judgement: int
     Return:
         : None
@@ -398,33 +398,30 @@ def insert_pay_log(staff_id: int, id: int) -> None:
         time_rest_flag: bool = False
 
     holiday_obj = HolidayAcquire(staff_id)
-    try:
-        notify_time = holiday_obj.get_notification_rests(id)
-    except TypeError as e:
-        print(e)
+    notify_time_else = holiday_obj.get_notification_rests(id)
 
-    try:
-        remain_time = holiday_obj.print_remains()
-    except TypeError as e:
-        raise e
+    if isinstance(notify_time_else, float):
+        try:
+            remain_time = holiday_obj.print_remains()
+        except TypeError as e:
+            raise e
+        else:
+            pay_log_obj = PaidHolidayLog(
+                staff_id, remain_time - notify_time_else, id, time_rest_flag
+            )
+            db.session.add(pay_log_obj)
+            db.session.commit()
     else:
-        pay_log_obj = PaidHolidayLog(
-            staff_id, remain_time - notify_time, id, time_rest_flag
-        )
-        db.session.add(pay_log_obj)
-        db.session.commit()
+        print(notify_time_else)
 
 
 # 申請に対して、承認
 @app.route("/approval_judge/<STAFFID>/<id>/<status>", methods=["POST"])
 @login_required
-def change_status_judge(id, STAFFID, status: int):
+def change_status_judge(id, STAFFID, status: str):
     # 承認待ちユーザー
-    # tupleで返る
     approval_wait_user = (
-        SystemInfo.query.with_entities(SystemInfo.SKYPE_ID, SystemInfo.STAFFID)
-        .filter(SystemInfo.STAFFID == STAFFID)
-        .first()
+        db.session.query(SystemInfo).filter(SystemInfo.STAFFID == STAFFID).first()
     )
     # 承認するユーザー
     approval_reply_user = SystemInfo.query.filter(
@@ -433,11 +430,11 @@ def change_status_judge(id, STAFFID, status: int):
     # 承認判断対象
     target_notification = NotificationList.query.get(id)
 
-    approval_reply_message = f"{target_notification.START_DAY}:\
-            {toggle_notification_type(Todokede, target_notification.N_CODE)}\
-                \n{target_notification.REMARK}\
-                \n{StatusEnum(int(status)).name}です。\
-                \n\n{request.form.get('comment')}"
+    def reply_approval_message(
+        status: str, comment: str = request.form.get("comment")
+    ) -> str:
+        return f"{target_notification.START_DAY}: {toggle_notification_type(Todokede, target_notification.N_CODE)}\
+                \n{target_notification.REMARK}\n{StatusEnum(int(status)).name}です。\n\n{comment}"
 
     # 承認者よりコメントをメールで
     # send_mail(approval_reply_user.MAIL, approval_wait_user.MAIL,
@@ -449,17 +446,8 @@ def change_status_judge(id, STAFFID, status: int):
     ps = "データベーステーブルM_SYSTEMINFOのSKYPE_IDを確認してください。"
     out_report = "承認が完了しませんでした。"
     try:
-        check_skype_account(approval_wait_user.SKYPE_ID, approval_wait_user.STAFFID)
-    except SkypeRelatedException as skype_exception:
-        print(skype_exception)
-        return render_template(
-            "error/exception01.html",
-            title="Exception Message",
-            message=skype_exception,
-            ps=ps,
-            repo=out_report,
-        )
-    except Exception as e:
+        check_skype_account(approval_wait_user.SKYPE_ID, STAFFID)
+    except SkypeRelatedException as e:
         print(e)
         return render_template(
             "error/exception01.html",
@@ -469,15 +457,15 @@ def change_status_judge(id, STAFFID, status: int):
             repo=out_report,
         )
     else:
-        #     update_status(id, status)
-        #     channel = skype_system_obj.contacts[approval_wait_user.SKYPE_ID].chat
-        #     channel.sendMsg(approval_reply_message)
-
-        out_report = "承認が出来ませんでした。"
+        out_report = "承認が出来ませんでした。未承認にします。"
         if int(status) == 1:
             try:
                 insert_pay_log(STAFFID, id)
             except TypeError as e:
+                update_status(id, 2)
+                channel = skype_system_obj.contacts[approval_wait_user.SKYPE_ID].chat
+                reply_messege = reply_approval_message("2", "年休が足りません。")
+                channel.sendMsg(reply_messege)
                 return render_template(
                     "error/exception02.html",
                     title="Exception Message",
@@ -485,6 +473,11 @@ def change_status_judge(id, STAFFID, status: int):
                     repo=out_report,
                     exception=e,
                 )
+
+        update_status(id, status)
+        channel = skype_system_obj.contacts[approval_wait_user.SKYPE_ID].chat
+        reply_messege = reply_approval_message(status)
+        channel.sendMsg(reply_messege)
 
     # やはりこちらはダメ、url_forクセがすごい
     # return redirect(url_for('get_middle_approval'))

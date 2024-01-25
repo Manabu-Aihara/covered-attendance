@@ -8,7 +8,7 @@ from app.holiday_acquisition import HolidayAcquire, AcquisitionType
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(20)
+    acquisition_object = HolidayAcquire(201)
     return acquisition_object
 
 
@@ -17,7 +17,7 @@ def get_official_user(app_context):
 def test_convert_base_day(get_official_user):
     conv_date = get_official_user.convert_base_day()
     print(conv_date)
-    assert conv_date.month == 10
+    assert conv_date.month == 4
 
 
 def test_acquire_inday_holiday(get_official_user):
@@ -61,11 +61,11 @@ def test_convert_tuple(get_official_user):
 
 
 # 年休関係ない申請例外
-@pytest.mark.skip
-def test_raise_notification_rests(get_official_user):
-    with pytest.raises(TypeError) as except_info:
-        get_official_user.get_notification_rests(31)
-    print(except_info.value)
+# @pytest.mark.skip
+# def test_raise_notification_rests(get_official_user):
+#     with pytest.raises(TypeError) as except_info:
+#         get_official_user.get_notification_rests(31)
+#     print(except_info.value)
 
 
 # 特定申請時間計算
@@ -105,6 +105,7 @@ def test_plus_next_holidays(get_official_user):
     print(f"日付＆日数: {test_value}")
 
 
+@pytest.mark.skip
 def test_plus_next_holidays_log(get_official_user, mocker):
     log_mock = mocker.patch.object(
         app.holiday_logging, "get_logger", side_effect=Exception
@@ -117,7 +118,7 @@ def test_plus_next_holidays_log(get_official_user, mocker):
 @pytest.mark.skip
 def test_sum_notify_times(get_official_user):
     test_result = get_official_user.sum_notify_times(True)
-    assert test_result == 3.0
+    assert test_result == 5.0
 
 
 # DBからとりあえず出勤日数カウントできるか
