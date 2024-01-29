@@ -166,7 +166,7 @@ class SubjectImpl(Subject):
 
         return (
             carry_times.CARRY_FORWARD + acquisition_days
-        ) * holiday_acquire_obj.job_time, acquisition_days
+        ) * holiday_acquire_obj.holiday_base_time, acquisition_days
         # return super().acquire_holidays()
 
     """
@@ -178,7 +178,9 @@ class SubjectImpl(Subject):
         : str
         """
 
-    def refer_acquire_type(self, concerned_id: int) -> Tuple[Optional[str], str]:
+    def refer_acquire_type(
+        self, concerned_id: int
+    ) -> Tuple[Optional[str], Optional[str]]:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         base_day = holiday_acquire_obj.convert_base_day()
         # 年間出勤日数の計算
@@ -196,18 +198,23 @@ class SubjectImpl(Subject):
                 char = "A"
 
         if sum_workday_count < 48:
-            raise ValueError(f"出勤記録 {sum_workday_count} です。")
-        # elif sum_workday_count == 0 or sum_workday_count is None:
-        #     raise TypeError("出勤記録はありません。")
+            raise ValueError(f"出勤日数 {sum_workday_count} です。")
 
-        return holiday_acquire_obj.acquisition_key, char
+        past_type = holiday_acquire_obj.get_acquisition_key()
+        if past_type is None:
+            raise TypeError(
+                f"ID{concerned_id}: M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。"
+            )
+
+        return past_type, char
 
     def calcurate_carry_days(self, concerned_id: int) -> float:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
 
         # Trueを付けたら時間休のみの合計
         remainder = (
-            holiday_acquire_obj.sum_notify_times(True) % holiday_acquire_obj.job_time
+            holiday_acquire_obj.sum_notify_times(True)
+            % holiday_acquire_obj.holiday_base_time
         )
         try:
             remain_times = holiday_acquire_obj.print_remains()
@@ -220,10 +227,10 @@ class SubjectImpl(Subject):
             if remainder == 0:
                 truncate_times = 0
             else:
-                truncate_times = holiday_acquire_obj.job_time - remainder
+                truncate_times = holiday_acquire_obj.holiday_base_time - remainder
 
             carry_times = remain_times - truncate_times
-            return carry_times / holiday_acquire_obj.job_time
+            return carry_times / holiday_acquire_obj.holiday_base_time
 
     def execute(self) -> None:
         self.notify()

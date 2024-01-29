@@ -34,7 +34,7 @@ class AcquisitionType(enum.Enum):
     # 例: AからAcquisition.Aを引き出す
     @classmethod
     def name(cls, name: str) -> str:
-        if name == "":
+        if name is None:
             raise KeyError("M_RECORD_PAIDHOLIDAYテーブルの、ACQUISITION_TYPEの値が見つかりません。")
         else:
             return cls._member_map_[name]
@@ -54,34 +54,44 @@ class HolidayAcquire:
         else:
             self.in_day: datetime = target_user.INDAY
 
-        # 勤務時間 job_time: float
-        # 勤務形態 acquisition_key: ['A', 'B', 'C', 'D', 'E']
-        holiday_info = (
-            # job_time, acquisition_key = (
+        # 勤務時間 holiday_base_time: float
+        holiday_base_time = (
             db.session.query(
                 RecordPaidHoliday.BASETIMES_PAIDHOLIDAY,
-                RecordPaidHoliday.ACQUISITION_TYPE,
             )
             .filter(self.id == RecordPaidHoliday.STAFFID)
             .first()
         )
         # いらないかも
-        if holiday_info is None:
-            # if (job_time is None) or (acquisition_key is None):
+        if holiday_base_time is None:
             raise TypeError(
-                f"ID{self.id}: M_RECORD_PAIDHOLIDAYのBASETIMES_PAIDHOLIDAY、もしくはACQUISITION_TYPEの値がありません。"
+                f"ID{self.id}: M_RECORD_PAIDHOLIDAYのBASETIMES_PAIDHOLIDAYの値がありません。"
             )
             # with open("holiday_err.log", "a") as f:
             #     # pass
             #     f.write(
-            #         f"\nID{self.id}: M_RECORD_PAIDHOLIDAYのBASETIMES_PAIDHOLIDAY、もしくはACQUISITION_TYPEの値がありません。"
+            #         f"\nID{self.id}: M_RECORD_PAIDHOLIDAYのBASETIMES_PAIDHOLIDAYの値がありません。"
             #         # f"{e}"
             #     )
         else:
-            self.job_time: float = holiday_info.BASETIMES_PAIDHOLIDAY
-            self.acquisition_key: str = holiday_info.ACQUISITION_TYPE
-            # self.job_time: float = job_time
-            # self.acquisition_key: str = acquisition_key
+            self.holiday_base_time: float = holiday_base_time.BASETIMES_PAIDHOLIDAY
+            # self.holiday_base_time: float = holiday_base_time
+
+    # 勤務形態 acquisition_key: ['A', 'B', 'C', 'D', 'E']
+    def get_acquisition_key(self) -> str:
+        acquisition_key = (
+            db.session.query(
+                RecordPaidHoliday.ACQUISITION_TYPE,
+            )
+            .filter(self.id == RecordPaidHoliday.STAFFID)
+            .first()
+        )
+        # if acquisition_key is None:
+        #     raise KeyError(
+        #         f"ID{self.id}: M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。"
+        #     )
+        # else:
+        return acquisition_key.ACQUISITION_TYPE
 
     """
     acquire: 日数
@@ -163,7 +173,7 @@ class HolidayAcquire:
 
     def convert_tuple(self, func: Callable[..., float]) -> Tuple[int, float]:
         # func()はダメ
-        return func // self.job_time, func % self.job_time
+        return func // self.holiday_base_time, func % self.holiday_base_time
 
     # 年休消費項目
     #     3, 4, range(10, 16)
@@ -235,7 +245,7 @@ class HolidayAcquire:
         minute_side = comb_end.minute - comb_start.minute
         minute_side_float: float = minute_side / 60
         return (
-            day_side * (hour_side if hour_side != 0 else self.job_time)
+            day_side * (hour_side if hour_side != 0 else self.holiday_base_time)
             + minute_side_float
         )
 
@@ -270,7 +280,7 @@ class HolidayAcquire:
         try:
             # 入職5年くらい以内、AcquisitionType見て
             for i, acquisition_day in enumerate(
-                AcquisitionType.name(self.acquisition_key).under5y
+                AcquisitionType.name(self.get_acquisition_key()).under5y
             ):
                 if i == len(day_list) - 1:
                     break
@@ -278,16 +288,22 @@ class HolidayAcquire:
                     holiday_pair[day_list[i + 1]] = acquisition_day
 
             # 入職5年くらい以上
-            if len(day_list) > len(AcquisitionType.name(self.acquisition_key).under5y):
+            if len(day_list) > len(
+                AcquisitionType.name(self.get_acquisition_key()).under5y
+            ):
                 for day in day_list[7:]:
                     holiday_pair[day] = AcquisitionType.name(
-                        self.acquisition_key
+                        self.get_acquisition_key()
                     ).onward
         except KeyError as e:
-            # raise e
+            raise e
             # print(f"ID{self.id}: {e}")
             logger = HolidayLogger.get_logger("ERROR")
             logger.exception(f"ID{self.id}: {e}", exc_info=False)
+        except TypeError as e:
+            raise e
+            # logger = HolidayLogger.get_logger("ERROR")
+            # logger.exception(f"ID{self.id}: {e}", exc_info=False)
         else:
             return holiday_pair
 
@@ -313,7 +329,7 @@ class HolidayAcquire:
 
         # acquisition_obj = HolidayAcquire(self.id)
         # 残り総合計時間
-        sum_times: float = default_sum_holiday * (self.job_time)
+        sum_times: float = default_sum_holiday * (self.holiday_base_time)
         return sum_times
 
     # 表示用: STARTDAY, ENDDAYのペア

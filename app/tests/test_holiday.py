@@ -8,7 +8,7 @@ from app.holiday_acquisition import HolidayAcquire, AcquisitionType
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(201)
+    acquisition_object = HolidayAcquire(40)
     return acquisition_object
 
 
@@ -24,6 +24,12 @@ def test_acquire_inday_holiday(get_official_user):
     test_dict = get_official_user.acquire_inday_holidays()
     # print(list(test_dict.values()))
     assert list(test_dict.values())[0] == 0
+
+
+def test_get_acquisition_key(get_official_user):
+    # with pytest.raises(KeyError) as except_info:
+    test_type = get_official_user.get_acquisition_key()
+    print(test_type)
 
 
 @pytest.mark.skip

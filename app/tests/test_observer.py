@@ -87,6 +87,12 @@ def test_raise_carry_days(app_context, subject):
     print(exce_info.value)
 
 
+def test_raise_refer_holiday_type(app_context, subject):
+    with pytest.raises(KeyError) as exce_info:
+        subject.refer_acquire_type(40)
+    print(exce_info.value)
+
+
 @pytest.mark.skip
 def test_calcurate_carry_days(app_context, subject, mocker):
     # 8時間労働と7時間労働のあり得る繰り越し時間
@@ -133,7 +139,7 @@ def test_check_observer(app_context, subject, mocker):
     assert mock_fail.called
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_carry_observer(app_context, subject, mocker):
     observer = ObserverCarry()

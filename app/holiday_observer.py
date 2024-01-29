@@ -107,7 +107,7 @@ class ObserverCheckType(Observer):
         print(f"trigger_fail() i={i}")
 
     def merge_type(self, i: int, past: str, post: str):
-        if (past is None) or (post != post):
+        if (past is None) or (past != post):
             r_holiday_obj = RecordPaidHoliday(i)
             r_holiday_obj.ACQUISITION_TYPE = post
 
@@ -119,9 +119,9 @@ class ObserverCheckType(Observer):
             print(f"Notify!---{notification_state + 1}月年休付与前のチェックが入ります。---")
             for concerned_id in subject.get_concerned_staff():
                 try:
-                    before_type, after_type = subject.refer_acquire_type(concerned_id)
+                    your_types = subject.refer_acquire_type(concerned_id)
                     # print(before_type, after_type)
-                    self.merge_type(concerned_id, before_type, after_type)
+                    self.merge_type(concerned_id, your_types[0], your_types[1])
                     db.session.flush()
                     # self.trigger_fail(concerned_id)
                     # db.session.commit()
@@ -130,8 +130,13 @@ class ObserverCheckType(Observer):
                     logger = HolidayLogger.get_logger("ERROR")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
+                except TypeError as e:
+                    # print(f"ID{concerned_id}: {e}")
+                    logger = HolidayLogger.get_logger("ERROR")
+                    logger.error(f"ID{concerned_id}: {e}")
+                    db.session.rollback()
                 else:
                     logger = HolidayLogger.get_logger("INFO")
-                    logger.info(f"ID{concerned_id}の年休付与タイプは「{after_type}」です。")
+                    logger.info(f"ID{concerned_id}の年休付与タイプは「{your_types[1]}」です。")
 
             db.session.commit()
