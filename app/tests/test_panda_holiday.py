@@ -24,7 +24,7 @@ def search_half_flag(concern_id: int) -> bool:
     flag = (
         True
         if len(holiday_acquire_obj.get_acquisition_list(base_day)) == 1
-        and (holiday_acquire_obj.get_nth_dow() != 1)
+        # and (holiday_acquire_obj.get_nth_dow() != 1)
         else flag
     )
 
@@ -90,15 +90,6 @@ class IdArgs:
         return id_list
 
 
-# @pytest.fixture
-# def holiday_obj_mock(get_param, mocker):
-#     obj_mock = mocker.patch("app.holiday_acquisition.HolidayAcquire", autospec=True)
-#     property_mock = PropertyMock(side_effect=get_param.get("ID"))
-#     type(obj_mock).id = property_mock
-#     type(obj_mock).count_workday = sample_work_count[10:16]
-#     return obj_mock
-
-
 @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_print_fixtures(app_context, get_param):
@@ -107,44 +98,23 @@ def test_print_fixtures(app_context, get_param):
 
 
 date_now = datetime.now()
+level = [("ERROR", "-err"), ("INFO", "-info")]
 
 
-@pytest.mark.skip
+@pytest.fixture(params=level)
+def fix_level(request):
+    return request.param
+
+
+@pytest.fixture(scope="class")
+# @pytest.mark.parametrize("level", [("ERROR", "-err"), ("INFO", "-info")])
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
-def test_select_count(app_context, subject, mocker):
-    observer = ObserverCheckType()
-    subject.attach(observer)
-
-    orignal_func = subject.refer_acquire_type
-
-    def dummy_pass_method(i: int):
-        # print(f"タイプ: {type(i)}")
-        with open(f"pass_method{date_now.strftime('%m%d%H%M')}.log", "a") as f:
-            if search_half_flag(i) is False:
-                f.write(f"ID{i}: count_workday\n")
-            else:
-                f.write(f"ID{i}: count_workday_half_year\n")
-        orignal_func(i)
-
-    refer_mock = mocker.patch.object(
-        subject, "refer_acquire_type", side_effect=dummy_pass_method
-    )
-    # これがヤバかった
-    # mocker.patch.object(observer, "update")
-
-    observer.update(subject)
-    print(f"---refer.COUNT---: {refer_mock.call_count}")
-
-
-# @pytest.mark.skip
-@pytest.mark.parametrize("level", [("ERROR", "-err"), ("INFO", "-info")])
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
-def test_observer_log(app_context, subject, level, mocker):
+def observer_log(app_context, subject, get_param, fix_level, mocker):
     observer = ObserverCheckType()
     subject.attach(observer)
 
     log_args_mock = mocker.MagicMock()
-    log_args_mock.__getitem__.side_effect = level
+    log_args_mock.__getitem__.side_effect = fix_level
 
     logger_mock = mocker.MagicMock()
     mocker.patch.object(HolidayLogger, "get_logger", return_value=logger_mock)
@@ -153,21 +123,24 @@ def test_observer_log(app_context, subject, level, mocker):
 
     assert origin_logger == logger_mock
 
+    property_mock = PropertyMock(side_effect=get_param.get("ID"))
+    type(origin_logger).id = property_mock
+
     def dummy_output_error(msg: str):
-        with open("dummy_log_err.log", "a") as f:
-            f.write("エラー出る予定です\n")
-        origin_logger.error(msg)
-        # logger_mock.error("エラーです!!")
+        # with open("dummy_log_err.log", "a") as f:
+        #     f.write("エラー出る予定です\n")
+        print("エラーです!!")
+        # origin_logger.error(msg)
 
     log_err_mock = mocker.patch.object(
         origin_logger, "error", side_effect=dummy_output_error
     )
 
     def dummy_output_info(msg: str):
-        with open("dummy_log_info.log", "a") as f:
-            f.write("通常です\n")
-        origin_logger.info(msg)
-        # logger_mock.info("インフォで〜す")
+        # with open("dummy_log_info.log", "a") as f:
+        #     f.write("通常です\n")
+        print("インフォで〜す")
+        # origin_logger.info(msg)
 
     log_info_mock = mocker.patch.object(
         origin_logger, "info", side_effect=dummy_output_info
@@ -180,30 +153,61 @@ def test_observer_log(app_context, subject, level, mocker):
 
 
 # @pytest.mark.skip
+@pytest.mark.usefixtures("app_context")
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
-def test_refer_observer(app_context, subject, get_param, mocker):
-    observer = ObserverCheckType()
-    subject.attach(observer)
+class TestCheckType:
+    @pytest.mark.skip
+    def test_select_count(self, subject, mocker):
+        observer = ObserverCheckType()
+        subject.attach(observer)
 
-    workday_mock = mocker.patch.object(
-        HolidayAcquire, "count_workday", side_effect=get_param.get("Work")
-    )
+        orignal_func = subject.refer_acquire_type
 
-    original_update_func = observer.merge_type
+        def dummy_pass_method(i: int):
+            # print(f"タイプ: {type(i)}")
+            with open(f"pass_method{date_now.strftime('%m%d%H%M')}.log", "a") as f:
+                if search_half_flag(i) is False:
+                    f.write(f"ID{i}: count_workday\n")
+                else:
+                    f.write(f"ID{i}: count_workday_half_year\n")
+            orignal_func(i)
 
-    def dummy_update_db(i: int, past: str, post: str):
-        with open(f"update_type{date_now.strftime('%m%d%H%M')}.log", "a") as f:
-            f.write(
-                f"UPDATE INTO D_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE={post} WHERE STAFF_ID={i}\n"
-            )
-        # print(post)
-        original_update_func(i, past, post)
+        refer_mock = mocker.patch.object(
+            subject, "refer_acquire_type", side_effect=dummy_pass_method
+        )
+        # これがヤバかった
+        # mocker.patch.object(observer, "update")
 
-    update_mock = mocker.patch.object(
-        observer, "merge_type", side_effect=dummy_update_db
-    )
+        observer.update(subject)
+        print(f"---refer.COUNT---: {refer_mock.call_count}")
 
-    observer.update(subject)
+    # @pytest.mark.skip
+    def test_merge_observer(self, subject, get_param, mocker):
+        observer = ObserverCheckType()
+        subject.attach(observer)
 
-    print(f"---merge.COUNT---: {update_mock.call_count}")
-    print(f"---workday.COUNT---: {workday_mock.call_count}")
+        workday_mock = mocker.patch.object(
+            HolidayAcquire, "count_workday", side_effect=get_param.get("Work")
+        )
+        workday_half_mock = mocker.patch.object(
+            HolidayAcquire, "count_workday_half_year", side_effect=get_param.get("Work")
+        )
+
+        original_update_func = observer.merge_type
+
+        def dummy_update_db(i: int, past: str, post: str):
+            with open(f"update_type{date_now.strftime('%m%d%H%M')}.log", "a") as f:
+                f.write(
+                    f"UPDATE INTO D_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE={post} WHERE STAFF_ID={i}\n"
+                )
+            # print(post)
+            original_update_func(i, past, post)
+
+        update_mock = mocker.patch.object(
+            observer, "merge_type", side_effect=dummy_update_db
+        )
+
+        observer.update(subject)
+
+        print(f"---merge.COUNT---: {update_mock.call_count}")
+        print(f"---workday.COUNT---: {workday_mock.call_count}")

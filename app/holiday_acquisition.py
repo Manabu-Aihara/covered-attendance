@@ -86,12 +86,12 @@ class HolidayAcquire:
             .filter(self.id == RecordPaidHoliday.STAFFID)
             .first()
         )
-        # if acquisition_key is None:
-        #     raise KeyError(
-        #         f"ID{self.id}: M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。"
-        #     )
-        # else:
-        return acquisition_key.ACQUISITION_TYPE
+        if acquisition_key is None:
+            raise TypeError(
+                f"ID{self.id}: M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。"
+            )
+        else:
+            return acquisition_key.ACQUISITION_TYPE
 
     """
     acquire: 日数
@@ -296,14 +296,9 @@ class HolidayAcquire:
                         self.get_acquisition_key()
                     ).onward
         except KeyError as e:
-            raise e
             # print(f"ID{self.id}: {e}")
             logger = HolidayLogger.get_logger("ERROR")
             logger.exception(f"ID{self.id}: {e}", exc_info=False)
-        except TypeError as e:
-            raise e
-            # logger = HolidayLogger.get_logger("ERROR")
-            # logger.exception(f"ID{self.id}: {e}", exc_info=False)
         else:
             return holiday_pair
 

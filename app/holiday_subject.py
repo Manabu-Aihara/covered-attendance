@@ -201,10 +201,13 @@ class SubjectImpl(Subject):
             raise ValueError(f"出勤日数 {sum_workday_count} です。")
 
         past_type = holiday_acquire_obj.get_acquisition_key()
-        if past_type is None:
-            raise TypeError(
-                f"ID{concerned_id}: M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。"
-            )
+        """
+            24/2/1 ここで例外を投げず、受け取る処理を施す
+            """
+        # if past_type is None:
+        #     raise TypeError(
+        #         f"ID{concerned_id}: M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。"
+        #     )
 
         return past_type, char
 

@@ -121,6 +121,10 @@ class ObserverCheckType(Observer):
                 try:
                     your_types = subject.refer_acquire_type(concerned_id)
                     # print(before_type, after_type)
+                    """
+                        holiday_subject::get_acquisition_keyでTypeErrorを投げると
+                        実行されないので、例外処理を終わらせとく
+                        """
                     self.merge_type(concerned_id, your_types[0], your_types[1])
                     db.session.flush()
                     # self.trigger_fail(concerned_id)
@@ -130,6 +134,7 @@ class ObserverCheckType(Observer):
                     logger = HolidayLogger.get_logger("ERROR")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
+                # ここは動かさない方向
                 except TypeError as e:
                     # print(f"ID{concerned_id}: {e}")
                     logger = HolidayLogger.get_logger("ERROR")
