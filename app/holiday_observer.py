@@ -3,7 +3,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from app import db
 from app.models import RecordPaidHoliday
@@ -80,7 +80,9 @@ class ObserverCarry(Observer):
         if (notification_state := subject.notice_month()) == 3 or (
             notification_state := subject.notice_month()
         ) == 9:
-            print(f"Notify!---{notification_state + 1}月年休付与前のチェックが入ります。---")
+            print(
+                f"Notify!---{notification_state + 1}月年休付与前のチェックが入ります。---"
+            )
             for concerned_id in subject.get_concerned_staff():
                 try:
                     carry_days = subject.calcurate_carry_days(concerned_id)
@@ -106,7 +108,7 @@ class ObserverCheckType(Observer):
         """Dummy for trigger fail"""
         print(f"trigger_fail() i={i}")
 
-    def merge_type(self, i: int, past: str, post: str):
+    def merge_type(self, i: int, past: Optional[str], post: str):
         if (past is None) or (past != post):
             r_holiday_obj = RecordPaidHoliday(i)
             r_holiday_obj.ACQUISITION_TYPE = post
@@ -116,7 +118,9 @@ class ObserverCheckType(Observer):
         if (notification_state := subject.notice_month()) == 3 or (
             notification_state := subject.notice_month()
         ) == 9:
-            print(f"Notify!---{notification_state + 1}月年休付与前のチェックが入ります。---")
+            print(
+                f"Notify!---{notification_state + 1}月年休付与前のチェックが入ります。---"
+            )
             for concerned_id in subject.get_concerned_staff():
                 try:
                     your_types = subject.refer_acquire_type(concerned_id)
@@ -131,17 +135,18 @@ class ObserverCheckType(Observer):
                     # db.session.commit()
                 except ValueError as e:
                     # print(f"ID{concerned_id}: {e}")
-                    logger = HolidayLogger.get_logger("ERROR")
+                    logger = HolidayLogger.get_logger("ERROR", "-err")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
-                # ここは動かさない方向
                 except TypeError as e:
                     # print(f"ID{concerned_id}: {e}")
-                    logger = HolidayLogger.get_logger("ERROR")
+                    logger = HolidayLogger.get_logger("ERROR", "-err")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
                 else:
-                    logger = HolidayLogger.get_logger("INFO")
-                    logger.info(f"ID{concerned_id}の年休付与タイプは「{your_types[1]}」です。")
+                    logger = HolidayLogger.get_logger("INFO", "-info")
+                    logger.info(
+                        f"ID{concerned_id}の年休付与タイプは「{your_types[1]}」です。"
+                    )
 
             db.session.commit()

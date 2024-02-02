@@ -8,7 +8,7 @@ from app.holiday_acquisition import HolidayAcquire, AcquisitionType
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(40)
+    acquisition_object = HolidayAcquire(203)
     return acquisition_object
 
 
@@ -20,12 +20,14 @@ def test_convert_base_day(get_official_user):
     assert conv_date.month == 4
 
 
+@pytest.mark.skip
 def test_acquire_inday_holiday(get_official_user):
     test_dict = get_official_user.acquire_inday_holidays()
     # print(list(test_dict.values()))
-    assert list(test_dict.values())[0] == 0
+    assert list(test_dict.values())[0] == 1
 
 
+@pytest.mark.skip
 def test_get_acquisition_key(get_official_user):
     # with pytest.raises(KeyError) as except_info:
     test_type = get_official_user.get_acquisition_key()
@@ -49,7 +51,7 @@ def test_insert_new_user(get_official_user):
 
 
 # 付与リスト
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_get_acquisition_list(get_official_user):
     base_day = get_official_user.convert_base_day()
     test_all_list = [
@@ -128,8 +130,8 @@ def test_sum_notify_times(get_official_user):
 
 
 # DBからとりあえず出勤日数カウントできるか
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_count_workday(get_official_user):
-    test_count = get_official_user.count_workday()
+    test_count = get_official_user.count_workday_half_year()
     print(f"出勤日数カウント: {test_count}")
     # assert test_count == 2

@@ -35,7 +35,9 @@ class AcquisitionType(enum.Enum):
     @classmethod
     def name(cls, name: str) -> str:
         if name is None:
-            raise KeyError("M_RECORD_PAIDHOLIDAYテーブルの、ACQUISITION_TYPEの値が見つかりません。")
+            raise KeyError(
+                "M_RECORD_PAIDHOLIDAYテーブルの、ACQUISITION_TYPEの値が見つかりません。"
+            )
         else:
             return cls._member_map_[name]
 
@@ -75,7 +77,6 @@ class HolidayAcquire:
             #     )
         else:
             self.holiday_base_time: float = holiday_base_time.BASETIMES_PAIDHOLIDAY
-            # self.holiday_base_time: float = holiday_base_time
 
     # 勤務形態 acquisition_key: ['A', 'B', 'C', 'D', 'E']
     def get_acquisition_key(self) -> str:
@@ -86,12 +87,12 @@ class HolidayAcquire:
             .filter(self.id == RecordPaidHoliday.STAFFID)
             .first()
         )
-        if acquisition_key is None:
-            raise TypeError(
-                f"ID{self.id}: M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。"
-            )
-        else:
-            return acquisition_key.ACQUISITION_TYPE
+        # if acquisition_key is None:
+        #     raise TypeError(
+        #         f"ID{self.id}: M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。"
+        #     )
+        # else:
+        return acquisition_key.ACQUISITION_TYPE
 
     """
     acquire: 日数
@@ -367,9 +368,11 @@ class HolidayAcquire:
 
         approval_time_list = list(
             map(
-                lambda x: self.get_notification_rests(x.NOTIFICATION_id)
-                if x.STATUS == 1
-                else 0,
+                lambda x: (
+                    self.get_notification_rests(x.NOTIFICATION_id)
+                    if x.STATUS == 1
+                    else 0
+                ),
                 noification_info_list,
             )
         )
@@ -416,14 +419,14 @@ class HolidayAcquire:
     def get_diff_month(self) -> int:
         base_day = self.convert_base_day()
 
-        # 入職月〜基準月1ヶ月前
+        # 入職月〜基準日1日前
         diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
         # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
         diff_month += 1 if self.get_nth_dow() == 1 else diff_month
 
         # print(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
         logger = HolidayLogger.get_logger("INFO")
-        logger.info(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
+        logger.info(f"ID{self.id}: (入職日以外の)初の年休支給になります。{diff_month}")
 
         return diff_month
 

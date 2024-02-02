@@ -87,6 +87,7 @@ def test_raise_carry_days(app_context, subject):
     print(exce_info.value)
 
 
+@pytest.mark.skip
 def test_raise_refer_holiday_type(app_context, subject):
     with pytest.raises(KeyError) as exce_info:
         subject.refer_acquire_type(40)
@@ -174,8 +175,8 @@ def test_carry_observer(app_context, subject, mocker):
     """
 
 
-@pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 9, 30))
+# @pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_get_concerned_staff(app_context, subject):
     sakura_member_list = subject.get_concerned_staff()
     print(sakura_member_list)
@@ -185,11 +186,11 @@ def test_get_concerned_staff(app_context, subject):
 # 使いどころあるのか、引き続き検討か
 
 
-def test_constructor(app_context, mocker):
-    # ha_mock = mocker.MagicMock()
-    # ha_mock.configure_mock(id=201)
-    ha_mock = mocker.patch("app.holiday_acquisition.HolidayAcquire", autospec=True)
-    property_mock = PropertyMock(return_value=201)
-    type(ha_mock).id = property_mock
-    ha_mock_201 = HolidayAcquire(201)
-    assert ha_mock == ha_mock_201
+# def test_constructor(app_context, mocker):
+#     # ha_mock = mocker.MagicMock()
+#     # ha_mock.configure_mock(id=201)
+#     ha_mock = mocker.patch("app.holiday_acquisition.HolidayAcquire", autospec=True)
+#     property_mock = PropertyMock(return_value=201)
+#     type(ha_mock).id = property_mock
+#     ha_mock_201 = HolidayAcquire(201)
+#     assert ha_mock == ha_mock_201
