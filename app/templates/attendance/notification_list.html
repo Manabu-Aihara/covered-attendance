@@ -6,7 +6,7 @@
 {% if uinfo %}
 <h3 class="h3-list">申請リスト</h3>
 <h4 class="h4-info">社員番号：{{ uinfo.STAFFID }}　氏名：{{ uinfo.LNAME }} {{ uinfo.FNAME }}</h4>
-<input type="month" value="" class="month-calender">
+<!-- <input type="month" value="" class="month-calender"> -->
 <div class="to-notice-form"><a href="{{ url_for('get_notification_form') }}" class="btn to-notice-button">届出申請</a></div>
 {% else %}
 {# 承認者のみの申請リスト #}
@@ -27,6 +27,7 @@
 {# 個別申請一覧のみ表示 #}
 {% if recognized %}
 <div class="holiday">
+  <!-- <p style="color: indigo;">開始日絞り込み</p> -->
   <select class="term-list">
     <option>年次休暇付与歴</option>
     {% for start, end in h_items %}
@@ -77,7 +78,7 @@
         {% endif %}
         <td>{{ nl.NAME }}</td>
         <!-- <td>{{ nl.STATUS }}</td> -->
-        <td>{{ nl.START_DAY }}</td>
+        <td class="rest-start">{{ nl.START_DAY }}</td>
         <td>{{ nl.START_TIME }}</td>
         <td>{{ nl.END_DAY }}</td>
         <td>{{ nl.END_TIME }}</td>
@@ -98,5 +99,6 @@
   });
 </script>
 <script src="/static/js/StatusRequest.js"></script>
+<script src="/static/js/HolidayTermSelect.js"></script>
 <script src="/static/js/NoticeDateSelect.js"></script>
 {% endblock %}

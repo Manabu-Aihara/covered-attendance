@@ -14,10 +14,11 @@ const extractRows = (statusNum) => {
    * Uncaught TypeError: Cannot set properties of undefined
    */
   // for(let trRow in trRows)
-  for(let i = 0; i < trRows.length; i++){
+  for (let i = 0; i < trRows.length; i++) {
     if (trRows[i].dataset.status != statusNum) {
-      // console.log(trRows[i]);
+      // console.log(`${trRows[i]}`);
       trRows[i].style.display = "none";
+      trRows[i].classList.remove("appear");
     } else {
       trRows[i].style.display = "table-row";
       trRows[i].classList.add("appear");
@@ -27,7 +28,7 @@ const extractRows = (statusNum) => {
 
 const showRowsByStatus = () => {
   let statusSelect = document.getElementById('status').value;
-  switch(statusSelect){
+  switch (statusSelect) {
     case "0":
       document.getElementById('h4-status').textContent = "申請中リスト";
       extractRows(statusSelect);
@@ -41,8 +42,8 @@ const showRowsByStatus = () => {
       extractRows(statusSelect);
       break;
     default:
-      // document.getElementById('h4-status').textContent = "申請中リスト";
-      // extractRows("0");
+    // document.getElementById('h4-status').textContent = "申請中リスト";
+    // extractRows("0");
   }
 }
 
