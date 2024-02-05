@@ -1,12 +1,11 @@
 import pytest
-from unittest.mock import PropertyMock
 from datetime import datetime
 from typing import List
 
 from app.holiday_acquisition import HolidayAcquire
-from app.holiday_subject import Subject, SubjectImpl
+from app.holiday_subject import SubjectImpl
 from app.holiday_observer import ObserverRegist, ObserverCheckType, ObserverCarry
-from app.holiday_logging import HolidayLogger
+from app.models_aprv import PaidHolidayLog
 
 
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
@@ -72,25 +71,13 @@ def count_workday_from_panda_indirect(app_context):
 def get_param(panda_id, panda_count):
     # print(f"expensive-{request.param}")
     # return {"ID": panda_id[request.param], "Work": sample_work_count[request.param] * 2}
-    return {"ID": panda_id, "Work": [x * 2 for x in panda_count]}
+    return {"ID": panda_id, "Work": [x * 6 / 5 for x in panda_count]}
 
 
 # @pytest.fixture(name="work_flag")
 # @pytest.mark.freeze_time(datetime(2024, 3, 31))
 # def search_half_flag_indirect(app_context):
 #     return search_half_flag()
-
-
-# これもダメ ↓
-# @pytest.mark.parametrize("id_list", concern_id_from_panda(), indirect=["panda_id"])
-@pytest.mark.skip
-@pytest.mark.usefixtures("app_context")
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
-class IdArgs:
-    @staticmethod
-    def setup():
-        id_list = concern_id_from_panda()
-        return id_list
 
 
 @pytest.mark.skip
@@ -101,65 +88,13 @@ def test_print_fixtures(app_context, get_param):
 
 
 date_now = datetime.now()
-level = [("ERROR", "-err"), ("INFO", "-info")]
-
-
-@pytest.fixture(params=level)
-def fix_level(request):
-    return request.param
-
-
-@pytest.fixture(scope="class")
-# @pytest.mark.parametrize("level", [("ERROR", "-err"), ("INFO", "-info")])
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
-def observer_log(app_context, subject, get_param, fix_level, mocker):
-    observer = ObserverCheckType()
-    subject.attach(observer)
-
-    log_args_mock = mocker.MagicMock()
-    log_args_mock.__getitem__.side_effect = fix_level
-
-    logger_mock = mocker.MagicMock()
-    mocker.patch.object(HolidayLogger, "get_logger", return_value=logger_mock)
-
-    origin_logger = HolidayLogger.get_logger(log_args_mock)
-
-    # assert origin_logger == logger_mock
-
-    property_mock = PropertyMock(side_effect=get_param.get("ID"))
-    type(origin_logger).id = property_mock
-
-    def dummy_output_error(msg: str):
-        # with open("dummy_log_err.log", "a") as f:
-        #     f.write("エラー出る予定です\n")
-        print("エラーです!!")
-        # origin_logger.error(msg)
-
-    log_err_mock = mocker.patch.object(
-        origin_logger, "error", side_effect=dummy_output_error
-    )
-
-    def dummy_output_info(msg: str):
-        # with open("dummy_log_info.log", "a") as f:
-        #     f.write("通常です\n")
-        print("インフォで〜す")
-        # origin_logger.info(msg)
-
-    log_info_mock = mocker.patch.object(
-        origin_logger, "info", side_effect=dummy_output_info
-    )
-
-    observer.update(subject)
-
-    print(f"---error.COUNT---: {log_err_mock.call_count}")
-    print(f"---info.COUNT---: {log_info_mock.call_count}")
 
 
 # @pytest.mark.skip
 @pytest.mark.usefixtures("app_context")
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 class TestCheckType:
-    # @pytest.mark.skip
+    @pytest.mark.skip
     def test_select_count(self, subject, mocker):
         observer = ObserverCheckType()
         subject.attach(observer)
@@ -200,7 +135,7 @@ class TestCheckType:
         original_update_func = observer.merge_type
 
         def dummy_update_db(i: int, past: str, post: str):
-            with open(f"update_type{date_now.strftime('%m%d%H%M')}.log", "a") as f:
+            with open(f"update_type_cat{date_now.strftime('%m%d%H%M')}.log", "a") as f:
                 f.write(
                     f"UPDATE INTO D_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE={post} WHERE STAFF_ID={i}\n"
                 )
@@ -216,3 +151,63 @@ class TestCheckType:
         print(f"---merge.COUNT---: {update_mock.call_count}")
         print(f"---workday.COUNT---: {workday_mock.call_count}")
         # print(f"---workday_half.COUNT---: {workday_half_mock.call_count}")
+
+
+# ダミー関数を初めてやってみた
+@pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
+def test_check_observer(app_context, subject, mocker):
+    observer = ObserverCheckType()
+    subject.attach(observer)
+
+    acquisition_type_mock = mocker.patch.object(
+        subject,
+        "refer_acquire_type",
+        side_effect=[(None, "F"), (None, ""), (None, "F")],
+    )
+
+    # Save original function
+    original_trigger_fail = observer.trigger_fail
+
+    def mock_for_fail(i):
+        """Mock throwing an exception when i == 2."""
+        print(f"mock_insert_id called with i={i}")
+        if i == 31:
+            raise ValueError("failed")
+        original_trigger_fail(i)
+
+    mock_fail = mocker.patch.object(observer, "trigger_fail", side_effect=mock_for_fail)
+    observer.update(subject)
+
+    assert acquisition_type_mock.call_count == 3
+    assert mock_fail.called
+
+
+@pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
+def test_carry_observer(app_context, subject, mocker):
+    observer = ObserverCarry()
+    subject.attach(observer)
+
+    # 結局、session.addの引数にならなかった
+    phl_mock = mocker.MagicMock(spec=PaidHolidayLog)
+    dummy_obj = mocker.patch("app.models_aprv.PaidHolidayLog", phl_mock)
+
+    assert isinstance(dummy_obj, PaidHolidayLog)
+
+    # original_func = db.session.add
+    original_insert_func = observer.insert_data
+
+    def dummy_add_db(i: int, carri_days: float = subject.calcurate_carry_days):
+        with open("insert_carry.log", "a") as f:
+            f.write(
+                f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, 0, None, None, {carri_days}, '前回からの繰り越し')\n"
+            )
+        original_insert_func(i, carri_days)
+
+    # add_mock = mocker.patch.object(db.session, "add", side_effect=dummy_add_db)
+    add_mock = mocker.patch.object(observer, "insert_data", side_effect=dummy_add_db)
+    observer.update(subject)
+
+    print(add_mock.call_args_list)
+    assert add_mock.call_count == 2

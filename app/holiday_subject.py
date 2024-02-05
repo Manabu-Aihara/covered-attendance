@@ -199,9 +199,19 @@ class SubjectImpl(Subject):
             elif sum_workday_count < 48:
                 raise ValueError(f"出勤日数 {sum_workday_count} です。")
 
+        """
+            ここで例外を投げると、holiday_observer::merge_typeが動かない
+            例外キャッチはもとより出来ない
+            """
+        # try:
         past_type = holiday_acquire_obj.get_acquisition_key()
         # if past_type is None:
         #     raise TypeError("M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。")
+        # except TypeError as e:
+        #     with open(
+        #         f"acquire_type{datetime.now().strftime('%m%d%H%M')}-err.log", "a"
+        #     ) as f:
+        #         f.write(f"{e}")
 
         return past_type, char
 

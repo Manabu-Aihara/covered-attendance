@@ -8,7 +8,7 @@ from app.holiday_acquisition import HolidayAcquire, AcquisitionType
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(203)
+    acquisition_object = HolidayAcquire(40)
     return acquisition_object
 
 
@@ -130,8 +130,13 @@ def test_sum_notify_times(get_official_user):
 
 
 # DBからとりあえず出勤日数カウントできるか
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_count_workday(get_official_user):
     test_count = get_official_user.count_workday_half_year()
     print(f"出勤日数カウント: {test_count}")
     # assert test_count == 2
+
+
+def test_diff_month(get_official_user):
+    test_diff = get_official_user.get_diff_month()
+    assert test_diff == 5

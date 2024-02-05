@@ -87,12 +87,12 @@ class HolidayAcquire:
             .filter(self.id == RecordPaidHoliday.STAFFID)
             .first()
         )
-        # if acquisition_key is None:
-        #     raise TypeError(
-        #         f"ID{self.id}: M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。"
-        #     )
-        # else:
-        return acquisition_key.ACQUISITION_TYPE
+        if acquisition_key is None:
+            raise TypeError(
+                f"ID{self.id}: M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。"
+            )
+        else:
+            return acquisition_key.ACQUISITION_TYPE
 
     """
     acquire: 日数
@@ -421,14 +421,13 @@ class HolidayAcquire:
 
         # 入職月〜基準日1日前
         diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
-        # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
-        diff_month += 1 if self.get_nth_dow() == 1 else diff_month
+        result_diff = diff_month + 1 if self.get_nth_dow() == 1 else diff_month
 
-        # print(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
-        logger = HolidayLogger.get_logger("INFO")
-        logger.info(f"ID{self.id}: (入職日以外の)初の年休支給になります。{diff_month}")
+        print(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
+        # logger = HolidayLogger.get_logger("INFO")
+        # logger.info(f"ID{self.id}: (入職日以外の)初の年休支給になります。{diff_month}")
 
-        return diff_month
+        return result_diff
 
     def count_workday_half_year(self) -> float:
         # 入職月〜基準月1ヶ月前の範囲を12ヶ月分にしたもの

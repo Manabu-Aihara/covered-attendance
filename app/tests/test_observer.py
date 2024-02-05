@@ -12,6 +12,7 @@ from app.holiday_observer import ObserverRegist, ObserverCheckType, ObserverCarr
 from app.holiday_acquisition import AcquisitionType, HolidayAcquire
 
 
+# != Noneのやつ
 @pytest.mark.skip
 def test_print_db(app_context):
     acquisition_type_list: List[int, datetime] = (
@@ -109,65 +110,6 @@ def test_calcurate_carry_days(app_context, subject, mocker):
 
     print(sum_notify_mock.call_args_list)
     assert remains_mock.call_count == 2
-
-
-@pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
-def test_check_observer(app_context, subject, mocker):
-    observer = ObserverCheckType()
-    subject.attach(observer)
-
-    acquisition_type_mock = mocker.patch.object(
-        subject,
-        "refer_acquire_type",
-        side_effect=[(None, "F"), (None, ""), (None, "F")],
-    )
-
-    # Save original function
-    original_trigger_fail = observer.trigger_fail
-
-    def mock_for_fail(i):
-        """Mock throwing an exception when i == 2."""
-        print(f"mock_insert_id called with i={i}")
-        if i == 31:
-            raise ValueError("failed")
-        original_trigger_fail(i)
-
-    mock_fail = mocker.patch.object(observer, "trigger_fail", side_effect=mock_for_fail)
-    observer.update(subject)
-
-    assert acquisition_type_mock.call_count == 3
-    assert mock_fail.called
-
-
-@pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
-def test_carry_observer(app_context, subject, mocker):
-    observer = ObserverCarry()
-    subject.attach(observer)
-
-    # 結局、session.addの引数にならなかった
-    phl_mock = mocker.MagicMock(spec=PaidHolidayLog)
-    dummy_obj = mocker.patch("app.models_aprv.PaidHolidayLog", phl_mock)
-
-    assert isinstance(dummy_obj, PaidHolidayLog)
-
-    # original_func = db.session.add
-    original_insert_func = observer.insert_data
-
-    def dummy_add_db(i: int, carri_days: float = subject.calcurate_carry_days):
-        with open("insert_carry.log", "a") as f:
-            f.write(
-                f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, 0, None, None, {carri_days}, '前回からの繰り越し')\n"
-            )
-        original_insert_func(i, carri_days)
-
-    # add_mock = mocker.patch.object(db.session, "add", side_effect=dummy_add_db)
-    add_mock = mocker.patch.object(observer, "insert_data", side_effect=dummy_add_db)
-    observer.update(subject)
-
-    print(add_mock.call_args_list)
-    assert add_mock.call_count == 2
 
 
 """

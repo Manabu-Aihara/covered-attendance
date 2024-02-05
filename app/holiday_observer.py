@@ -112,6 +112,7 @@ class ObserverCheckType(Observer):
         if (past is None) or (past != post):
             r_holiday_obj = RecordPaidHoliday(i)
             r_holiday_obj.ACQUISITION_TYPE = post
+            db.session.merge(r_holiday_obj)
 
     def update(self, subject: Subject) -> None:
         # notification_state: int = subject.notice_month()
@@ -123,12 +124,12 @@ class ObserverCheckType(Observer):
             )
             for concerned_id in subject.get_concerned_staff():
                 try:
-                    your_types = subject.refer_acquire_type(concerned_id)
+                    # before_type, after_type = subject.refer_acquire_type(concerned_id)
+                    # TypeError: cannot unpack non-iterable NoneType object
                     # print(before_type, after_type)
-                    """
-                        holiday_subject::get_acquisition_keyでTypeErrorを投げると
-                        実行されないので、例外処理を終わらせとく
-                        """
+                    your_types = subject.refer_acquire_type(concerned_id)
+                    # TypeError: 'NoneType' object is not subscriptable
+                    # print(your_types[0], your_types[1])
                     self.merge_type(concerned_id, your_types[0], your_types[1])
                     db.session.flush()
                     # self.trigger_fail(concerned_id)
@@ -138,11 +139,14 @@ class ObserverCheckType(Observer):
                     logger = HolidayLogger.get_logger("ERROR", "-err")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
-                except TypeError as e:
-                    # print(f"ID{concerned_id}: {e}")
-                    logger = HolidayLogger.get_logger("ERROR", "-err")
-                    logger.error(f"ID{concerned_id}: {e}")
-                    db.session.rollback()
+                """
+                    `M_RECORD_PAIDHOLIDAY`.`ACQUISITION_TYPE`がNULLのうちは、下記例外キャッチは出来そうにない
+                    """
+                # except TypeError as e:
+                #     # print(f"ID{concerned_id}: {e}")
+                #     logger = HolidayLogger.get_logger("ERROR", "-err")
+                #     logger.error(f"ID{concerned_id}: {e}")
+                #     db.session.rollback()
                 else:
                     logger = HolidayLogger.get_logger("INFO", "-info")
                     logger.info(
