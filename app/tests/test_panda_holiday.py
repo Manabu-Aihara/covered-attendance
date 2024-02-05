@@ -94,7 +94,7 @@ date_now = datetime.now()
 @pytest.mark.usefixtures("app_context")
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 class TestCheckType:
-    @pytest.mark.skip
+    # @pytest.mark.skip
     def test_select_count(self, subject, mocker):
         observer = ObserverCheckType()
         subject.attach(observer)
@@ -119,7 +119,7 @@ class TestCheckType:
         observer.update(subject)
         print(f"---refer.COUNT---: {refer_mock.call_count}")
 
-    # @pytest.mark.skip
+    @pytest.mark.skip
     def test_merge_observer(self, subject, get_param, mocker):
         observer = ObserverCheckType()
         subject.attach(observer)

@@ -423,9 +423,9 @@ class HolidayAcquire:
         diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
         result_diff = diff_month + 1 if self.get_nth_dow() == 1 else diff_month
 
-        print(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
-        # logger = HolidayLogger.get_logger("INFO")
-        # logger.info(f"ID{self.id}: (入職日以外の)初の年休支給になります。{diff_month}")
+        # print(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
+        logger = HolidayLogger.get_logger("INFO")
+        logger.info(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
 
         return result_diff
 

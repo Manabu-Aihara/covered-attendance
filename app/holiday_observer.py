@@ -139,9 +139,9 @@ class ObserverCheckType(Observer):
                     logger = HolidayLogger.get_logger("ERROR", "-err")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
-                """
-                    `M_RECORD_PAIDHOLIDAY`.`ACQUISITION_TYPE`がNULLのうちは、下記例外キャッチは出来そうにない
                     """
+                        `M_RECORD_PAIDHOLIDAY`.`ACQUISITION_TYPE`がNULLのうちは、下記例外キャッチは出来そうにない
+                        """
                 # except TypeError as e:
                 #     # print(f"ID{concerned_id}: {e}")
                 #     logger = HolidayLogger.get_logger("ERROR", "-err")
