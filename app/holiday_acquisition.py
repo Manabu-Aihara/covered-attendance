@@ -408,6 +408,10 @@ class HolidayAcquire:
         filters.append(Shinsei.STARTTIME != 0)
 
         attendance_list = db.session.query(Shinsei.id).filter(and_(*filters)).all()
+
+        logger = HolidayLogger.get_logger("INFO")
+        logger.info(f"ID{self.id}: 勤務日数は{len(attendance_list)}日です。")
+
         return len(attendance_list)
 
     # 入職日年休付与以外受けていない者
@@ -425,7 +429,7 @@ class HolidayAcquire:
 
         # print(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
         logger = HolidayLogger.get_logger("INFO")
-        logger.info(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
+        logger.info(f"ID{self.id}: {result_diff}ヶ月分を12ヶ月にしてカウントします。")
 
         return result_diff
 

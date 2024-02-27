@@ -105,7 +105,7 @@ class SubjectImpl(Subject):
 
     def notice_month(self) -> int:
         now = datetime.now()
-        self._state = 3 if (now.month == 3 and now.day == 31) else self._state
+        self._state = 3 if (now.month == 3 and now.day == 29) else self._state
         self._state = 9 if (now.month == 9 and now.day == 30) else self._state
         self._state = 4 if (now.month == 4 and now.day == 1) else self._state
         self._state = 10 if (now.month == 10 and now.day == 1) else self._state

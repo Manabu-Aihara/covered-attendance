@@ -40,7 +40,7 @@ def test_output_holiday_count():
 
 # ほぼ本番のやつ
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 3, 29))
 def test_observer(app_context):
     subject = SubjectImpl()
     # observer = ObserverRegist()
@@ -60,7 +60,7 @@ def test_observer(app_context):
 
 
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 3, 29))
 def test_refer_acquire_type(app_context, subject, mocker):
     mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
     print(datetime.now())

@@ -6,6 +6,7 @@ from flask_login import UserMixin
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 
 from app.models_aprv import NotificationList
+from app.dummy_model_todo import TodoOrm
 
 
 class User(db.Model):
@@ -322,16 +323,24 @@ class RecordPaidHoliday(db.Model):  # 年休関連
     # 入社日
     # INDAY = db.Column(db.DateTime(), index=True, nullable=True)  # User
 
-    LAST_DATEGRANT = db.Column(db.DateTime(), index=True, nullable=True)  # 今回付与年月日
-    NEXT_DATEGRANT = db.Column(db.DateTime(), index=True, nullable=True)  # 次回付与年月日
+    LAST_DATEGRANT = db.Column(
+        db.DateTime(), index=True, nullable=True
+    )  # 今回付与年月日
+    NEXT_DATEGRANT = db.Column(
+        db.DateTime(), index=True, nullable=True
+    )  # 次回付与年月日
     USED_PAIDHOLIDAY = db.Column(db.Float, index=True, nullable=True)  # 使用日数
     REMAIN_PAIDHOLIDAY = db.Column(db.Float, index=True, nullable=True)  # 残日数
     TEAM_CODE = db.Column(db.Integer, index=True, nullable=True)
     CONTRACT_CODE = db.Column(db.Integer, index=True, nullable=True)
     LAST_CARRIEDOVER = db.Column(db.Float, index=True, nullable=True)  # 前回繰越日数
-    ATENDANCE_YEAR = db.Column(db.Integer, index=True, nullable=True)  # 年間出勤日数（年休べース）
+    ATENDANCE_YEAR = db.Column(
+        db.Integer, index=True, nullable=True
+    )  # 年間出勤日数（年休べース）
     WORK_TIME = db.Column(db.Float, index=True, nullable=True)  # 職員勤務時間
-    BASETIMES_PAIDHOLIDAY = db.Column(db.Float, index=True, nullable=True)  # 規定の年休時間
+    BASETIMES_PAIDHOLIDAY = db.Column(
+        db.Float, index=True, nullable=True
+    )  # 規定の年休時間
     """    2023/12/5
         追加カラム
         """
@@ -342,6 +351,7 @@ class RecordPaidHoliday(db.Model):  # 年休関連
     D_PAIDHOLIDAY_LOGs = db.relationship(
         "PaidHolidayLog", backref="M_RECORD_PAIDHOLIDAY"
     )
+    T_TODOs = db.relationship("TodoOrm", backref="M_RECORD_PAIDHOLIDAY")
 
     def __init__(self, STAFFID):
         self.STAFFID = STAFFID

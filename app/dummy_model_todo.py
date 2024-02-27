@@ -5,10 +5,20 @@ class TodoOrm(db.Model):
     __tablename__ = "T_TODO"
 
     id = db.Column(db.Integer, primary_key=True, index=True, autoincrement=True)
-    summary = db.Column(db.String(50), index=True, nullable=False)
-    owner = db.Column(db.String(20), index=True, nullable=False)
-    done = db.Column(db.Boolean, index=True, nullable=False, default=False)
+    staff_id = db.Column(
+        db.Integer, db.ForeignKey("M_RECORD_PAIDHOLIDAY.STAFFID"), nullable=True
+    )
+    summary = db.Column(db.String(50), index=True, nullable=True)
+    owner = db.Column(db.String(20), index=True, nullable=True)
+    done = db.Column(db.String(25), index=True, nullable=True)
 
-    def __init__(self, summary, owner):
-        self.summary = summary
-        self.owner = owner
+    def __init__(self, staff_id):
+        self.staff_id = staff_id
+
+    def to_dict(self):
+        return {
+            "staff_id": self.staff_id,
+            "summry": self.summary,
+            "owner": self.owner,
+            "done": self.done,
+        }

@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import List
 
 from flask import render_template, redirect, request
 from flask_login import current_user
@@ -9,7 +9,6 @@ from app.dummy_model_todo import TodoOrm
 
 from app.models import RecordPaidHoliday
 from app.models_aprv import PaidHolidayLog
-from app.routes_approvals import auth_approval_user
 from app.holiday_acquisition import HolidayAcquire
 
 
@@ -22,12 +21,24 @@ def appear_sub(target_id):
     )
 
 
-@app.route("/todo/add", methods=["POST"])
+@app.route("/todo/all", methods=["GET"])
 @login_required
-def append_todo():
-    summary = request.json["summary"]
-    owner = request.json["owner"]
-    one_todo = TodoOrm(summary=summary, owner=owner)
+def print_all_todo() -> List[TodoOrm]:
+    td_dict_list = []
+    todo_list: list = db.session.query(TodoOrm).all()
+    for todo in todo_list:
+        td_dict_list.append(todo.to_dict())
+
+    return td_dict_list
+
+
+@app.route("/todo/add/<staff_id>", methods=["POST"])
+@login_required
+def append_todo(staff_id):
+    one_todo = TodoOrm(staff_id=staff_id)
+    one_todo.summary = request.json["summary"]
+    one_todo.owner = request.json["owner"]
+    one_todo.done = request.json["done"]
     db.session.add(one_todo)
     db.session.commit()
 
