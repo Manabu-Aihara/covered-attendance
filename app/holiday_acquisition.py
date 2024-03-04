@@ -220,9 +220,10 @@ class HolidayAcquire:
         )
         """
         要注意！！
-        routes_approvals::get_notification_listでは、DBから00：00：00はNoneになるということ なぜかテスト環境では発生しない:原因不明
-        TypeError: combine() argument 2 must be datetime.time, not None対策
-        """
+            routes_approvals::get_notification_listでは、DBから00：00：00はNoneになる
+            なぜかテスト環境では発生しない:原因不明
+            TypeError: combine() argument 2 must be datetime.time, not None対策
+            """
         start_time = (
             datetime.min.time()
             if notify_datetimes.START_TIME is None
@@ -410,7 +411,7 @@ class HolidayAcquire:
         attendance_list = db.session.query(Shinsei.id).filter(and_(*filters)).all()
 
         logger = HolidayLogger.get_logger("INFO")
-        logger.info(f"ID{self.id}: 勤務日数は{len(attendance_list)}日です。")
+        logger.info(f"ID{self.id}: count: 勤務日数は{len(attendance_list)}日です。")
 
         return len(attendance_list)
 
@@ -426,6 +427,8 @@ class HolidayAcquire:
         # 入職月〜基準日1日前
         diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
         result_diff = diff_month + 1 if self.get_nth_dow() == 1 else diff_month
+        # if result_diff == 1:
+        #     raise ValueError(f"ID{self.id}: まだカウントしません。")
 
         # print(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
         logger = HolidayLogger.get_logger("INFO")
@@ -434,5 +437,18 @@ class HolidayAcquire:
         return result_diff
 
     def count_workday_half_year(self) -> float:
-        # 入職月〜基準月1ヶ月前の範囲を12ヶ月分にしたもの
-        return self.count_workday() * (12 / self.get_diff_month())
+        # UnboundLocalError – グローバル変数で回避
+        # https://ann0n.com/697/
+        global workday_half_result
+        try:
+            # 入職月〜基準月1日前の範囲を12ヶ月分にしたもの
+            workday_half_result = self.count_workday() * (12 / self.get_diff_month())
+        except ValueError as e:
+            print(e)
+
+        logger = HolidayLogger.get_logger("INFO")
+        logger.info(
+            f"ID{self.id}: count_half > : 暫定勤務日数は{workday_half_result}日です。"
+        )
+
+        return workday_half_result

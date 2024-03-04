@@ -129,7 +129,7 @@ class ObserverCheckType(Observer):
                     # print(before_type, after_type)
                     your_types = subject.refer_acquire_type(concerned_id)
                     # TypeError: 'NoneType' object is not subscriptable
-                    # print(your_types[0], your_types[1])
+                    print(your_types[0], your_types[1])
                     self.merge_type(concerned_id, your_types[0], your_types[1])
                     db.session.flush()
                     # self.trigger_fail(concerned_id)
@@ -153,4 +153,4 @@ class ObserverCheckType(Observer):
                         f"ID{concerned_id}の年休付与タイプは「{your_types[1]}」です。"
                     )
 
-            db.session.commit()
+            # db.session.commit()

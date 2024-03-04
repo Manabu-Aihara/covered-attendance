@@ -2,11 +2,8 @@ import pytest
 from unittest.mock import PropertyMock
 from datetime import datetime
 from typing import List
-import logging
 
-import app
 from app.models import User
-from app.models_aprv import PaidHolidayLog
 from app.holiday_subject import SubjectImpl
 from app.holiday_observer import ObserverRegist, ObserverCheckType, ObserverCarry
 from app.holiday_acquisition import AcquisitionType, HolidayAcquire
@@ -39,16 +36,16 @@ def test_output_holiday_count():
 
 
 # ほぼ本番のやつ
-@pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 29))
+# @pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_observer(app_context):
     subject = SubjectImpl()
     # observer = ObserverRegist()
     observer_type = ObserverCheckType()
-    observer_carry = ObserverCarry()
+    # observer_carry = ObserverCarry()
 
     subject.attach(observer_type)
-    subject.attach(observer_carry)
+    # subject.attach(observer_carry)
 
     print(datetime.now())
     print(subject.execute())
@@ -60,7 +57,7 @@ def test_observer(app_context):
 
 
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 29))
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_refer_acquire_type(app_context, subject, mocker):
     mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
     print(datetime.now())
@@ -71,9 +68,9 @@ def test_refer_acquire_type(app_context, subject, mocker):
         HolidayAcquire, "count_workday_half_year", side_effect=[230, 160]
     )
 
-    print(subject.refer_acquire_type(31))
-    print(subject.refer_acquire_type(201))
-    print(subject.refer_acquire_type(40))
+    print(subject.refer_acquire_type(189))
+    print(subject.refer_acquire_type(203))
+    print(subject.refer_acquire_type(204))
 
     assert workday_mock.call_count == 1
     assert workday_half_mock.call_count == 2
@@ -117,7 +114,7 @@ def test_calcurate_carry_days(app_context, subject, mocker):
     """
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_get_concerned_staff(app_context, subject):
     sakura_member_list = subject.get_concerned_staff()

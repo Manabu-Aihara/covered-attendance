@@ -8,7 +8,7 @@ from app.holiday_acquisition import HolidayAcquire, AcquisitionType
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(40)
+    acquisition_object = HolidayAcquire(203)
     return acquisition_object
 
 
@@ -16,7 +16,6 @@ def get_official_user(app_context):
 # @pytest.mark.skip
 def test_convert_base_day(get_official_user):
     conv_date = get_official_user.convert_base_day()
-    print(conv_date)
     assert conv_date.month == 4
 
 
@@ -54,11 +53,17 @@ def test_insert_new_user(get_official_user):
 # @pytest.mark.skip
 def test_get_acquisition_list(get_official_user):
     base_day = get_official_user.convert_base_day()
-    test_all_list = [
-        get_official_user.in_day.date()
-    ] + get_official_user.get_acquisition_list(base_day)
-    # test_from_to_list = get_official_user.print_acquisition_data()
-    print(f"付与リスト: {test_all_list}")
+    # test_all_list = [
+    #     get_official_user.in_day.date()
+    # ] + get_official_user.get_acquisition_list(base_day)
+    test_list = get_official_user.get_acquisition_list(base_day)
+    print(f"付与リスト: {test_list}")
+
+
+@pytest.mark.skip
+def test_print_acquisition_data(get_official_user):
+    test_from_to_list = get_official_user.print_acquisition_data()
+    print(f"付与リストペア: {test_from_to_list}")
 
 
 # 日数表示
@@ -132,11 +137,17 @@ def test_sum_notify_times(get_official_user):
 # DBからとりあえず出勤日数カウントできるか
 @pytest.mark.skip
 def test_count_workday(get_official_user):
+    test_count = get_official_user.count_workday()
+    print(f"出勤日数カウント: {test_count}")
+
+
+# @pytest.mark.skip
+def test_count_workday_half(get_official_user):
     test_count = get_official_user.count_workday_half_year()
     print(f"出勤日数カウント: {test_count}")
-    # assert test_count == 2
 
 
+# @pytest.mark.skip
 def test_diff_month(get_official_user):
     test_diff = get_official_user.get_diff_month()
     assert test_diff == 5
