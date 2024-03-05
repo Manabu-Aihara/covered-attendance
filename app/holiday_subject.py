@@ -1,6 +1,6 @@
 from __future__ import annotations
 import enum
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 from abc import ABC, abstractmethod
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
@@ -178,6 +178,18 @@ class SubjectImpl(Subject):
         : str
         """
 
+    # その前に…
+    def divide_acquire_type(self, count: Union[int, float]) -> str:
+        for char in ["B", "C", "D", "E"]:
+            if count in list(WorkdayType.name(char).value):
+                break
+            elif count >= 217:
+                char = "A"
+            elif count < 48:
+                raise ValueError(f"subject: 出勤日数は{count} です。")
+
+        return char
+
     def refer_acquire_type(
         self, concerned_id: int
     ) -> Tuple[Optional[str], Optional[str]]:
@@ -191,13 +203,7 @@ class SubjectImpl(Subject):
         else:
             sum_workday_count = holiday_acquire_obj.count_workday()
 
-        for char in ["B", "C", "D", "E"]:
-            if sum_workday_count in list(WorkdayType.name(char).value):
-                break
-            elif sum_workday_count >= 217:
-                char = "A"
-            elif sum_workday_count < 48:
-                raise ValueError(f"subject: 出勤日数は{sum_workday_count} です。")
+        new_type = self.divide_acquire_type(sum_workday_count)
 
         """
             ここで例外を投げると、holiday_observer::merge_typeが動かない
@@ -213,7 +219,7 @@ class SubjectImpl(Subject):
         #     ) as f:
         #         f.write(f"{e}")
 
-        return past_type, char
+        return past_type, new_type
 
     def calcurate_carry_days(self, concerned_id: int) -> float:
         holiday_acquire_obj = HolidayAcquire(concerned_id)

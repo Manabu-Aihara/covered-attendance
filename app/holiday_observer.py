@@ -142,11 +142,11 @@ class ObserverCheckType(Observer):
                     """
                         `M_RECORD_PAIDHOLIDAY`.`ACQUISITION_TYPE`がNULLのうちは、下記例外キャッチは出来そうにない
                         """
-                # except TypeError as e:
-                #     # print(f"ID{concerned_id}: {e}")
-                #     logger = HolidayLogger.get_logger("ERROR", "-err")
-                #     logger.error(f"ID{concerned_id}: {e}")
-                #     db.session.rollback()
+                except TypeError as e:
+                    # print(f"ID{concerned_id}: {e}")
+                    logger = HolidayLogger.get_logger("ERROR", "-err")
+                    logger.error(f"ID{concerned_id}: {e}")
+                    db.session.rollback()
                 else:
                     logger = HolidayLogger.get_logger("INFO", "-info")
                     logger.info(
