@@ -8,7 +8,7 @@ from app.holiday_acquisition import HolidayAcquire, AcquisitionType
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(203)
+    acquisition_object = HolidayAcquire(189)
     return acquisition_object
 
 
@@ -150,4 +150,4 @@ def test_count_workday_half(get_official_user):
 # @pytest.mark.skip
 def test_diff_month(get_official_user):
     test_diff = get_official_user.get_diff_month()
-    assert test_diff == 5
+    assert test_diff == 1

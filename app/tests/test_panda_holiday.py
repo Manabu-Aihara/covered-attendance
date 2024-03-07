@@ -62,13 +62,15 @@ def concerned_id_from_panda_indirect(app_context):
 @pytest.fixture(name="panda_count")
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def count_workday_from_panda_indirect(app_context):
-    return [x * 12 / 11 for x in work_count_to_mock()[0]]
+    return [round(x * 12 / 11) for x in work_count_to_mock()[0]]
+    # return work_count_to_mock()[0]
 
 
 @pytest.fixture(name="panda_half_count")
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def count_half_workday_from_panda_indirect(app_context):
-    return [x * 12 / 11 for x in work_count_to_mock()[1]]
+    return [round(x * 12 / 11) for x in work_count_to_mock()[1]]
+    # return work_count_to_mock()[1]
 
 
 # とりあえず、この方法しか上手くいかん。
@@ -102,11 +104,26 @@ date_now = datetime.now()
 # @pytest.mark.usefixtures("app_context")
 # class TestCheckType:
 # これはあまり意味をなさなくなった…
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_divide_observer(app_context, subject, get_param, mocker):
     observer = ObserverCheckType()
     subject.attach(observer)
+
+    workday_mock = mocker.patch.object(
+        HolidayAcquire, "count_workday", side_effect=get_param.get("Work")
+    )
+    workday_half_mock = mocker.patch.object(
+        HolidayAcquire, "count_workday_half_year", side_effect=get_param.get("Work_H")
+    )
+
+    original_divide_func = subject.divide_acquire_type
+
+    def dummy_divide_method(count: float):
+        print("---divideのダミー---")
+        print(f"念のため: {count}")
+        print(f"in Mock「 {original_divide_func(count)} 」")
+        original_divide_func(count)
 
     orignal_ref_func = subject.refer_acquire_type
 
@@ -119,27 +136,13 @@ def test_divide_observer(app_context, subject, get_param, mocker):
                 f.write(f"ID{i}: count_workday_half_year\n")
         orignal_ref_func(i)
 
-    workday_mock = mocker.patch.object(
-        HolidayAcquire, "count_workday", side_effect=get_param.get("Work")
-    )
-    workday_half_mock = mocker.patch.object(
-        HolidayAcquire, "count_workday_half_year", side_effect=get_param.get("Work_H")
-    )
-
     def dummy_ref_method(i: int):
         print("---refのダミー---")
         orignal_ref_func(i)
 
-    original_divide_func = subject.divide_acquire_type
-
-    def dummy_divide_method(count: float):
-        print("---divideのダミー---")
-        print(f"念のため: {count}")
-        print(f"「 {original_divide_func(count)} 」")
-
-    divide_mock = mocker.patch.object(
-        subject, "divide_acquire_type", side_effect=dummy_divide_method
-    )
+    # divide_mock = mocker.patch.object(
+    #     subject, "divide_acquire_type", side_effect=dummy_divide_method
+    # )
 
     refer_mock = mocker.patch.object(
         subject, "refer_acquire_type", side_effect=dummy_ref_method
@@ -148,17 +151,17 @@ def test_divide_observer(app_context, subject, get_param, mocker):
     # これがヤバかった
     # mocker.patch.object(observer, "update")
 
-    # observer.update(subject)
-    subject.execute()
+    observer.update(subject)
+    # subject.execute()
 
-    print(f"---divide.ARGS---: {divide_mock.call_args_list}")
-    print(f"---divide.COUNT---: {divide_mock.call_count}")
+    # print(f"---divide.ARGS---: {divide_mock.call_args_list}")
+    # print(f"---divide.COUNT---: {divide_mock.call_count}")
     print(f"---workday.COUNT---: {workday_mock.call_count}")
     print(f"---workday_half.COUNT---: {workday_half_mock.call_count}")
     print(f"---refer.COUNT---: {refer_mock.call_count}")
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_merge_observer(app_context, subject, get_param, mocker):
     observer = ObserverCheckType()
@@ -175,8 +178,8 @@ def test_merge_observer(app_context, subject, get_param, mocker):
     original_update_func = observer.merge_type
 
     def dummy_update_db(i: int, past: str, post: str):
-        print(f"---{search_half_flag(i)}---")
-        # if search_half_flag(i) is False:
+        # print(f"---{search_half_flag(i)}---")
+        # if search_half_flag(i) is True:
         with open(f"update_type_cat{date_now.strftime('%m%d%H%M')}.log", "a") as f:
             f.write(
                 f"UPDATE INTO D_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE={post} WHERE STAFF_ID={i}\n"

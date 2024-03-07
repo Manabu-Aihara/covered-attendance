@@ -129,7 +129,7 @@ class ObserverCheckType(Observer):
                     # print(before_type, after_type)
                     your_types = subject.refer_acquire_type(concerned_id)
                     # TypeError: 'NoneType' object is not subscriptable
-                    print(your_types[0], your_types[1])
+                    print(f"observer ID{concerned_id}: {your_types[1]}")
                     self.merge_type(concerned_id, your_types[0], your_types[1])
                     db.session.flush()
                     # self.trigger_fail(concerned_id)
@@ -142,11 +142,11 @@ class ObserverCheckType(Observer):
                     """
                         `M_RECORD_PAIDHOLIDAY`.`ACQUISITION_TYPE`がNULLのうちは、下記例外キャッチは出来そうにない
                         """
-                except TypeError as e:
-                    # print(f"ID{concerned_id}: {e}")
-                    logger = HolidayLogger.get_logger("ERROR", "-err")
-                    logger.error(f"ID{concerned_id}: {e}")
-                    db.session.rollback()
+                # except TypeError as e:
+                #     print(f"ID{concerned_id}: {e}")
+                #     logger = HolidayLogger.get_logger("ERROR", "-err")
+                #     logger.error(f"ID{concerned_id}: {e}")
+                #     db.session.rollback()
                 else:
                     logger = HolidayLogger.get_logger("INFO", "-info")
                     logger.info(

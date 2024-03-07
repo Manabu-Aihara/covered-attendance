@@ -175,20 +175,21 @@ class SubjectImpl(Subject):
     @Param
         concerned_id: int
     @Return
-        : str
+        : tuple<None | str, None | str>
         """
 
     # その前に…
     def divide_acquire_type(self, count: Union[int, float]) -> str:
         for char in ["B", "C", "D", "E"]:
             if count in list(WorkdayType.name(char).value):
-                break
+                print(f"original subject divide: {char}")
+                return char
             elif count >= 217:
                 char = "A"
+                print(f"original subject divide: {char}")
+                return char
             elif count < 48:
-                raise ValueError(f"subject: 出勤日数は{count} です。")
-
-        return char
+                raise ValueError(f"original subject: 出勤日数は{count} です。")
 
     def refer_acquire_type(
         self, concerned_id: int
@@ -196,14 +197,24 @@ class SubjectImpl(Subject):
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         base_day = holiday_acquire_obj.convert_base_day()
         # 年間出勤日数の計算
-        sum_workday_count: int
+        # global sum_workday_count
+        # global new_type
         # HolidayAcquire::get_acquisition_list(base_day)[0] -> 入職日除く最初の付与日
-        if date.today() < holiday_acquire_obj.get_acquisition_list(base_day)[0]:
+        # if date.today() < holiday_acquire_obj.get_acquisition_list(base_day)[0]:
+        if len(holiday_acquire_obj.get_acquisition_list(base_day)) == 1:
             sum_workday_count = holiday_acquire_obj.count_workday_half_year()
+            print(f"original subject ID{concerned_id}: {sum_workday_count}")
+            new_type = self.divide_acquire_type(sum_workday_count)
+            # print(f"(half)type: {new_half_type}")
+            # new_type = new_half_type
         else:
             sum_workday_count = holiday_acquire_obj.count_workday()
+            print(f"original subject ID{concerned_id}: {sum_workday_count}")
+            new_type = self.divide_acquire_type(sum_workday_count)
+            # print(f"(years)type: {new_years_type}")
+            # new_type = new_years_type
 
-        new_type = self.divide_acquire_type(sum_workday_count)
+        print(f"結局どうなる ID{concerned_id}: {new_type}")
 
         """
             ここで例外を投げると、holiday_observer::merge_typeが動かない

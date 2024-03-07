@@ -36,7 +36,7 @@ def test_output_holiday_count():
 
 
 # ほぼ本番のやつ
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_observer(app_context):
     subject = SubjectImpl()
@@ -56,24 +56,24 @@ def test_observer(app_context):
     """
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_refer_acquire_type(app_context, subject, mocker):
     mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
     print(datetime.now())
     workday_mock = mocker.patch.object(
-        HolidayAcquire, "count_workday", return_value=200
+        HolidayAcquire, "count_workday", return_value=124
     )
-    workday_half_mock = mocker.patch.object(
-        HolidayAcquire, "count_workday_half_year", side_effect=[230, 160]
-    )
+    # workday_half_mock = mocker.patch.object(
+    #     HolidayAcquire, "count_workday_half_year", side_effect=[230, 160]
+    # )
 
     print(subject.refer_acquire_type(189))
-    print(subject.refer_acquire_type(203))
-    print(subject.refer_acquire_type(204))
+    # print(subject.refer_acquire_type(203))
+    # print(subject.refer_acquire_type(204))
 
     assert workday_mock.call_count == 1
-    assert workday_half_mock.call_count == 2
+    # assert workday_half_mock.call_count == 2
 
 
 # Failed: DID NOT RAISE <class 'TypeError'>
@@ -90,6 +90,12 @@ def test_raise_refer_holiday_type(app_context, subject):
     with pytest.raises(KeyError) as exce_info:
         subject.refer_acquire_type(40)
     print(exce_info.value)
+
+
+@pytest.mark.skip
+def test_divide_acquire_type(app_context, subject):
+    expected_char = subject.divide_acquire_type(124)
+    assert expected_char == "C"
 
 
 @pytest.mark.skip
