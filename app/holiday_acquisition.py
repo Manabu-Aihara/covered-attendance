@@ -436,19 +436,16 @@ class HolidayAcquire:
 
         return result_diff
 
-    def count_workday_half_year(self) -> float:
+    def count_workday_half_year(self) -> int:
         # UnboundLocalError – グローバル変数で回避
         # https://ann0n.com/697/
-        global workday_half_result
-        try:
-            # 入職月〜基準月1日前の範囲を12ヶ月分にしたもの
-            workday_half_result = self.count_workday() * (12 / self.get_diff_month())
-        except ValueError as e:
-            print(e)
+        # global workday_half_result
+        # 入職月〜基準月1日前の範囲を12ヶ月分にしたもの
+        workday_half_result = self.count_workday() * (12 / self.get_diff_month())
 
         logger = HolidayLogger.get_logger("INFO")
         logger.info(
             f"ID{self.id}: count_half > : 暫定勤務日数は{workday_half_result}日です。"
         )
 
-        return workday_half_result
+        return round(workday_half_result)

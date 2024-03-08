@@ -12,7 +12,6 @@ from flask_bcrypt import Bcrypt
 from jinja2 import Environment
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from datetime import timedelta
-import logging
 
 # # loggerを定義
 # logger = logging.getLogger(__name__)
@@ -54,6 +53,8 @@ bcrypt = Bcrypt(app)
 
 jinja_env = Environment(extensions=["jinja2.ext.i18n"])
 app.jinja_env.add_extension("jinja2.ext.loopcontrols")
+
+# CORS(app)
 
 app.logger.setLevel(logging.DEBUG)
 log_handler = logging.FileHandler(LOGFILE_NAME)

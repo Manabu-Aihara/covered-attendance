@@ -70,6 +70,7 @@ class ObserverCarry(Observer):
             0,
             None,
             None,
+            # 繰り越し
             calc_data,
             "前回からの繰り越し",
         )

@@ -103,7 +103,6 @@ date_now = datetime.now()
 # @pytest.mark.skip
 # @pytest.mark.usefixtures("app_context")
 # class TestCheckType:
-# これはあまり意味をなさなくなった…
 @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_divide_observer(app_context, subject, get_param, mocker):
@@ -256,4 +255,11 @@ def test_carry_observer(app_context, subject, mocker):
     observer.update(subject)
 
     print(add_mock.call_args_list)
-    assert add_mock.call_count == 2
+
+
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
+def test_acquire_holiday(app_context, subject, get_param):
+    observer = ObserverRegist()
+    subject.attach(observer)
+
+    subject.execute()

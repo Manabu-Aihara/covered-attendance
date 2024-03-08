@@ -3,6 +3,7 @@ from typing import List
 from flask import render_template, redirect, request
 from flask_login import current_user
 from flask_login.utils import login_required
+from flask_cors import CORS, cross_origin
 
 from app import app, db
 from app.dummy_model_todo import TodoOrm
@@ -10,6 +11,11 @@ from app.dummy_model_todo import TodoOrm
 from app.models import RecordPaidHoliday
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
+
+# origins = ["http://localhost:5173"]
+# CORS(app, supports_credentials=True, origins=origins)
+# app.config.update(SESSION_COOKIE_SAMESITE="None")
+CORS(app)
 
 
 @app.route("/dummy-form/<target_id>", methods=["GET"])
@@ -22,7 +28,8 @@ def appear_sub(target_id):
 
 
 @app.route("/todo/all", methods=["GET"])
-@login_required
+# @cross_origin(supports_credentials=True)
+# @login_required
 def print_all_todo() -> List[TodoOrm]:
     td_dict_list = []
     todo_list: list = db.session.query(TodoOrm).all()
@@ -36,8 +43,10 @@ def print_all_todo() -> List[TodoOrm]:
 @login_required
 def append_todo(staff_id):
     one_todo = TodoOrm(staff_id=staff_id)
+    one_todo.staff_id = request.json["staff_id"]
+    one_todo.group_id = request.json["group_id"]
     one_todo.summary = request.json["summary"]
-    one_todo.owner = request.json["owner"]
+    # one_todo.owner = request.json["owner"]
     one_todo.done = request.json["done"]
     db.session.add(one_todo)
     db.session.commit()

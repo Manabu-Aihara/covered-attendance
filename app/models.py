@@ -235,6 +235,11 @@ class Team(db.Model):
     )
     NAME = db.Column(db.String(50), index=True, nullable=False)
     SHORTNAME = db.Column(db.String(50), index=True, nullable=False)
+    """
+        2024/3/8
+        リレーション機能追加
+    """
+    T_TODOs = db.relationship("TodoOrm", backref="M_TEAM")
 
     def __init__(self, CODE):
         self.CODE = CODE
@@ -351,6 +356,9 @@ class RecordPaidHoliday(db.Model):  # 年休関連
     D_PAIDHOLIDAY_LOGs = db.relationship(
         "PaidHolidayLog", backref="M_RECORD_PAIDHOLIDAY"
     )
+    """    2024/2/26
+        リレーション機能追加
+        """
     T_TODOs = db.relationship("TodoOrm", backref="M_RECORD_PAIDHOLIDAY")
 
     def __init__(self, STAFFID):

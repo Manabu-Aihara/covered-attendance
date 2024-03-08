@@ -1,8 +1,8 @@
 from __future__ import annotations
 import enum
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Optional
 from abc import ABC, abstractmethod
-from datetime import date, datetime
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from app import db
@@ -179,7 +179,7 @@ class SubjectImpl(Subject):
         """
 
     # その前に…
-    def divide_acquire_type(self, count: Union[int, float]) -> str:
+    def divide_acquire_type(self, count: int) -> str:
         for char in ["B", "C", "D", "E"]:
             if count in list(WorkdayType.name(char).value):
                 print(f"original subject divide: {char}")
@@ -196,23 +196,18 @@ class SubjectImpl(Subject):
     ) -> Tuple[Optional[str], Optional[str]]:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         base_day = holiday_acquire_obj.convert_base_day()
+
         # 年間出勤日数の計算
-        # global sum_workday_count
-        # global new_type
         # HolidayAcquire::get_acquisition_list(base_day)[0] -> 入職日除く最初の付与日
         # if date.today() < holiday_acquire_obj.get_acquisition_list(base_day)[0]:
         if len(holiday_acquire_obj.get_acquisition_list(base_day)) == 1:
             sum_workday_count = holiday_acquire_obj.count_workday_half_year()
             print(f"original subject ID{concerned_id}: {sum_workday_count}")
             new_type = self.divide_acquire_type(sum_workday_count)
-            # print(f"(half)type: {new_half_type}")
-            # new_type = new_half_type
         else:
             sum_workday_count = holiday_acquire_obj.count_workday()
             print(f"original subject ID{concerned_id}: {sum_workday_count}")
             new_type = self.divide_acquire_type(sum_workday_count)
-            # print(f"(years)type: {new_years_type}")
-            # new_type = new_years_type
 
         print(f"結局どうなる ID{concerned_id}: {new_type}")
 
@@ -243,7 +238,6 @@ class SubjectImpl(Subject):
         try:
             remain_times = holiday_acquire_obj.print_remains()
         except TypeError as e:
-            # print(e)
             raise e
         else:
             # 最終残り日数を繰り越しにする
@@ -251,6 +245,7 @@ class SubjectImpl(Subject):
             if remainder == 0:
                 truncate_times = 0
             else:
+                # base_time - 時間休合計の端数（時間休の合計/base_timeの余り）が切り捨て時間
                 truncate_times = holiday_acquire_obj.holiday_base_time - remainder
 
             carry_times = remain_times - truncate_times
