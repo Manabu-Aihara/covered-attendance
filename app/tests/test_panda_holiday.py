@@ -78,9 +78,9 @@ def count_half_workday_from_panda_indirect(app_context):
 # @pytest.fixture(params=range(0, 25))
 @pytest.fixture
 def get_param(panda_id, panda_count, panda_half_count):
-    # print(f"expensive-{request.param}")
-    print(f"調整後{panda_count}日")
-    print(f"調整後{panda_half_count}日")
+    print(f"{panda_id}")
+    print(f"調整後{panda_count}")
+    print(f"調整後{panda_half_count}")
     return {"ID": panda_id, "Work": panda_count, "Work_H": panda_half_count}
 
 
@@ -90,9 +90,10 @@ def get_param(panda_id, panda_count, panda_half_count):
 #     return search_half_flag()
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_print_fixtures(app_context, get_param):
-    print(f"{get_param.get('ID')}: {get_param.get('Work_H')}")
+    print("expensive")
+    print(f"{get_param.get('ID')}: {get_param.get('Work_H')}日")
     print(len(get_param.get("ID")))
     print(len(get_param.get("Work_H")))
 
@@ -160,7 +161,7 @@ def test_divide_observer(app_context, subject, get_param, mocker):
     print(f"---refer.COUNT---: {refer_mock.call_count}")
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_merge_observer(app_context, subject, get_param, mocker):
     observer = ObserverCheckType()

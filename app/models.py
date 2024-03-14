@@ -6,7 +6,7 @@ from flask_login import UserMixin
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 
 from app.models_aprv import NotificationList
-from app.dummy_model_todo import TodoOrm
+from app.dummy_model_todo import TodoOrm, EventORM
 
 
 class User(db.Model):
@@ -87,6 +87,10 @@ class StaffLoggin(UserMixin, db.Model):
     PASSWORD_HASH = db.Column(db.String(128), index=True, nullable=True)
     ADMIN = db.Column(db.Boolean(), index=True, nullable=True)
     shinseis = db.relationship("Shinsei", backref="M_LOGGININFO", lazy="dynamic")
+    """    2024/2/26
+        リレーション機能追加
+        """
+    # T_TODOs = db.relationship("TodoOrm", backref="M_LOGGININFO")
 
     def __init__(self, STAFFID, PASSWORD, ADMIN):
         self.STAFFID = STAFFID
@@ -108,19 +112,21 @@ class StaffLoggin(UserMixin, db.Model):
         s = Serializer(app.config["SECRET_KEY"])
         try:
             user_id = s.loads(token)["user_id"]
-        except:
-            return None
-        return StaffLoggin.query.filter_by(STAFFID=user_id)
+        except Exception as e:
+            # return None
+            print(e)
+        else:
+            return StaffLoggin.query.filter_by(STAFFID=user_id)
 
 
 class Todokede(db.Model):
     __tablename__ = "M_NOTIFICATION"
     CODE = db.Column(db.Integer, primary_key=True, index=True, nullable=False)
     NAME = db.Column(db.String(32), index=True, nullable=False)
-    # """
-    #     2023/8/7
-    #     リレーション機能追加
-    # """
+    """
+        2023/8/7
+        リレーション機能追加
+        """
     D_NOTIFICATION_LISTs = db.relationship("NotificationList", backref="M_NOTIFICATION")
 
     def __init__(self, CODE, NAME):
@@ -135,7 +141,7 @@ class Busho(db.Model):
     """
         2023/12/18
         リレーション機能追加
-    """
+        """
     M_RECORD_PAIDHOLIDAYs = db.relationship("RecordPaidHoliday", backref="M_DEPARTMENT")
 
     def __init__(self, CODE):
@@ -238,8 +244,13 @@ class Team(db.Model):
     """
         2024/3/8
         リレーション機能追加
-    """
+        """
     T_TODOs = db.relationship("TodoOrm", backref="M_TEAM")
+    """
+        2024/3/14
+        リレーション機能追加
+        """
+    T_TIMELINE_EVENTs = db.relationship("EventORM", backref="M_TEAM")
 
     def __init__(self, CODE):
         self.CODE = CODE
@@ -356,10 +367,6 @@ class RecordPaidHoliday(db.Model):  # 年休関連
     D_PAIDHOLIDAY_LOGs = db.relationship(
         "PaidHolidayLog", backref="M_RECORD_PAIDHOLIDAY"
     )
-    """    2024/2/26
-        リレーション機能追加
-        """
-    T_TODOs = db.relationship("TodoOrm", backref="M_RECORD_PAIDHOLIDAY")
 
     def __init__(self, STAFFID):
         self.STAFFID = STAFFID
@@ -497,6 +504,10 @@ class SystemInfo(db.Model):
     PAY_PASS = db.Column(db.String(50), index=True, nullable=True)
     KANAMIC_PASS = db.Column(db.String(50), index=True, nullable=True)
     ZOOM_PASS = db.Column(db.String(50), index=True, nullable=True)
+    """
+        24/3/14 リレーション機能追加
+        """
+    T_TIMELINE_EVENTs = db.relationship("EventORM", backref="M_SYSTEMINFO")
 
 
 @login.user_loader

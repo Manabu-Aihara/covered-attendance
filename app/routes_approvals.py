@@ -7,6 +7,7 @@ from flask_login import current_user
 from flask_login.utils import login_required
 
 from app import app, db
+from app.auth_middleware import token_required
 from app.common_func import GetPullDownList
 from app.models import User, Todokede, SystemInfo, RecordPaidHoliday
 from app.models_aprv import NotificationList, Approval, PaidHolidayLog
