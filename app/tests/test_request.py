@@ -14,7 +14,7 @@ from app.auth_middleware import issue_token
 
 @pytest.fixture
 def auth_user(app_context):
-    auth_user20 = db.session.get(StaffLoggin, 20)
+    auth_user20 = db.session.get(StaffLoggin, 201)
     # assert auth_user is not None
     # assert auth_user.STAFFID == 20
     return auth_user20
@@ -35,4 +35,4 @@ def test_decode_token(app_context, make_token):
     auth_user20 = db.session.get(StaffLoggin, dec_data["user_id"])
 
     assert isinstance(auth_user20, StaffLoggin)
-    assert auth_user20.STAFFID == 20
+    assert auth_user20.STAFFID == 201

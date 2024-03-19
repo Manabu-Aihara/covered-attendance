@@ -41,12 +41,12 @@ class EventORM(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, index=True)
     staff_id = db.Column(
-        db.Integer, db.ForeignKey("M_SYSTEMINFO.STAFFID"), nullable=False
+        db.Integer, db.ForeignKey("M_LOGGININFO.STAFFID"), nullable=False
     )
     group_id = db.Column(db.Integer, db.ForeignKey("M_TEAM.CODE"), nullable=False)
     start_time = db.Column(db.Date(), nullable=False)
     end_time = db.Column(db.Date(), nullable=False)
-    title = db.Column(db.String(25), nullable=False)
+    title = db.Column(db.String(25), index=True, nullable=False)
     summary = db.Column(db.String(50), nullable=True)
     progress = db.Column(db.String(25), index=True, nullable=True)
 

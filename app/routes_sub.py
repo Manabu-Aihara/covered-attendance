@@ -1,22 +1,24 @@
+import json
+import requests
 from typing import List, Dict, Any
 
-from flask import render_template, redirect, request, jsonify
+from flask import render_template, redirect, request, jsonify, make_response
 
-from flask_login import current_user, login_user
+from flask_login import current_user
 from flask_login.utils import login_required
 from flask_cors import CORS, cross_origin
 
 from app import app, db
 from app.auth_middleware import token_required, issue_token
 from app.dummy_model_todo import TodoOrm, EventORM
-from app.models import RecordPaidHoliday, StaffLoggin
+from app.models import RecordPaidHoliday
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
 
-origins = ["http://localhost:5173"]
-CORS(app, supports_credentials=True, origins=origins)
+# origins = ["http://localhost:5173"]
+# CORS(app, supports_credentials=True, origins=origins)
 # app.config.update(SESSION_COOKIE_SAMESITE="None")
-# CORS(app)
+CORS(app)
 
 
 @app.route("/dummy-form/<target_id>", methods=["GET"])
@@ -29,7 +31,7 @@ def appear_sub(target_id):
 
 
 @app.route("/todo/all", methods=["GET"])
-@login_required
+# @login_required
 @token_required
 def print_all_todo(auth_user) -> List[TodoOrm]:
 
@@ -41,26 +43,28 @@ def print_all_todo(auth_user) -> List[TodoOrm]:
     return td_dict_list
 
 
-@app.route("/event/auth", methods=["GET"])
+@app.route("/timetable/auth", methods=["GET", "POST"])
 @login_required
-@token_required
-def post_access_token(auth_user):
-
-    return str(auth_user.STAFFID)
-    # auth_user: StaffLoggin = StaffLoggin.query.get(current_user.STAFFID)
-    # return auth_user.STAFFID, auth_user.ADMIN
+def post_access_token():
+    token = issue_token(current_user.STAFFID)
+    response = make_response(jsonify(token))
+    # response.headers["Authorized"] = token["data"]
+    # return response
+    return redirect(f"http://localhost:5173/auth?token={token['data']}")
 
 
 @app.route("/event/all", methods=["GET"])
 # @login_required
-# @token_required
-def print_all_event():
-    ev_dict_list = []
-    event_list: list = db.session.query(EventORM).all()
-    for todo in event_list:
-        ev_dict_list.append(todo.to_dict())
+@token_required
+def print_all_event(auth_user, **kwargs):
 
-    return ev_dict_list
+    return str(auth_user.STAFFID), kwargs
+    # ev_dict_list = []
+    # event_list: list = db.session.query(EventORM).all()
+    # for todo in event_list:
+    #     ev_dict_list.append(todo.to_dict())
+
+    # return ev_dict_list
 
 
 @app.route("/todo/add/<staff_id>", methods=["POST"])

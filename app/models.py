@@ -91,6 +91,10 @@ class StaffLoggin(UserMixin, db.Model):
         リレーション機能追加
         """
     # T_TODOs = db.relationship("TodoOrm", backref="M_LOGGININFO")
+    """
+        24/3/14 リレーション機能追加
+        """
+    T_TIMELINE_EVENTs = db.relationship("EventORM", backref="M_LOGGININFO")
 
     def __init__(self, STAFFID, PASSWORD, ADMIN):
         self.STAFFID = STAFFID
@@ -504,10 +508,6 @@ class SystemInfo(db.Model):
     PAY_PASS = db.Column(db.String(50), index=True, nullable=True)
     KANAMIC_PASS = db.Column(db.String(50), index=True, nullable=True)
     ZOOM_PASS = db.Column(db.String(50), index=True, nullable=True)
-    """
-        24/3/14 リレーション機能追加
-        """
-    T_TIMELINE_EVENTs = db.relationship("EventORM", backref="M_SYSTEMINFO")
 
 
 @login.user_loader
