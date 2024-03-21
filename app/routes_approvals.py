@@ -18,7 +18,6 @@ from app.approval_contact import (
     check_skype_account,
 )
 from app.holiday_acquisition import HolidayAcquire
-from app.auth_middleware import issue_token
 
 """
     戻り値に代入される変数名は、必ずstf_login！！

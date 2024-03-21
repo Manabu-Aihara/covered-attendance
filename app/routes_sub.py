@@ -53,12 +53,21 @@ def post_access_token():
     return redirect(f"http://localhost:5173/auth?token={token['data']}")
 
 
+@app.route("/refresh", methods=["GET", "POST"])
+@token_required
+def refresh_token(auth_user):
+    new_token = issue_token(auth_user.STAFFID)
+    flask_resp = make_response(jsonify(new_token))
+
+    return flask_resp
+
+
 @app.route("/event/all", methods=["GET"])
 # @login_required
 @token_required
-def print_all_event(auth_user, **kwargs):
+def print_all_event(auth_user):
 
-    return str(auth_user.STAFFID), kwargs
+    return str(auth_user.STAFFID)
     # ev_dict_list = []
     # event_list: list = db.session.query(EventORM).all()
     # for todo in event_list:

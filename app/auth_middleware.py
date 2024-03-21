@@ -17,18 +17,25 @@ def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         # 以下コメントで、issue_tokenか!?
-        token = None
+        global token
         if "Authorization" in request.headers:
-            token = request.headers["Authorization"].split(" ")[1]
-            header_parts = token.split(".")
+            # token = request.headers["Authorization"].split(" ")[1]
+            # header_parts: list = token.split(".")
+            # if len(header_parts) != 2 or header_parts[0].lower() != "bearer":
+            #     print(type(header_parts[0]))
+            # else:
+            #     return {"message": "Request failed", "data": header_parts}, 401
+            auth_header = request.headers["Authorization"]
+            header_parts = auth_header.split(" ")
             if len(header_parts) != 2 or header_parts[0].lower() != "bearer":
-                kwargs = {"parts": header_parts[1]}
-            else:
-                return {"message": "Request failed", "data": header_parts}, 401
+                abort(401)
+            # return header_parts[1]
+            token = header_parts[1]
+            print(token)
         if not token:
             return {
                 "message": "Authentication Token is missing!",
-                "data": None,
+                "data": token,
                 "error": "Unauthorized",
             }, 401
         # token = issue_token(current_user.STAFFID)["data"]
