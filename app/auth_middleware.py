@@ -45,7 +45,7 @@ def token_required(f):
             """
                 "__init__() missing 2 required positional arguments: 'PASSWORD' and 'ADMIN'"
                 """
-            auth_user = db.session.get(StaffLoggin, data["user_id"])
+            auth_user: StaffLoggin = db.session.get(StaffLoggin, data["user_id"])
             if auth_user is None:
                 return {
                     "message": "Invalid Authentication token!",
@@ -68,11 +68,10 @@ def token_required(f):
 
 
 def issue_token(user_id: int) -> Dict[str, Any]:
-    payload = {"user_id": user_id}
-    # add token expiration time (5 seconds):
-    payload["exp"] = datetime.now() + timedelta(seconds=5)
-
     if current_user:
+        payload = {"user_id": user_id}
+        # add token expiration time (5 seconds):
+        payload["exp"] = datetime.now() + timedelta(seconds=5)
         try:
             # token should expire after 24 hrs
             token = jwt.encode(

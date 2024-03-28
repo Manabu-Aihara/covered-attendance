@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+from sqlalchemy import and_
+
 from app import db
 from app.models import User
 from app.models_aprv import PaidHolidayLog
@@ -119,18 +121,24 @@ class SubjectImpl(Subject):
 
     def get_concerned_staff(self) -> List[int]:
         concerned_id_list = []
-        staff_id_list: List = (
-            db.session.query(User.STAFFID).filter(User.INDAY != None).all()
+
+        filters = []
+        filters.append(User.INDAY != None)
+        filters.append(User.OUTDAY == None)
+
+        staff_info_list: List = (
+            db.session.query(User.STAFFID, User.INDAY).filter(and_(*filters)).all()
         )
-        for staff_id in staff_id_list:
+        for staff_info in staff_info_list:
             # しっかりカラム名を付ける、otherwise -> staff_id[0]
-            holiday_acquire_obj = HolidayAcquire(staff_id.STAFFID)
-            base_day = holiday_acquire_obj.convert_base_day()
+            base_day = HolidayAcquire(staff_info.STAFFID).convert_base_day(
+                staff_info.INDAY
+            )
             border_end_day = base_day + relativedelta(days=-1)
             if (base_day.month == self.notice_month()) or (
                 border_end_day.month == self.notice_month()
             ):
-                concerned_id_list.append(staff_id.STAFFID)
+                concerned_id_list.append(staff_info.STAFFID)
 
         return concerned_id_list
 

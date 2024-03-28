@@ -52,11 +52,11 @@ attendance_list_C = [12, 10, 12, 12, 10, 11]
 # おニューカレンダーテスト
 @pytest.fixture
 def make_new_calendar():
-    new_calendar = NewCalendar(2023, 12)
+    new_calendar = NewCalendar(2023, 9)
     return new_calendar
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_get_itermonthdays(make_new_calendar):
     result = make_new_calendar.get_itermonthdays()
     print(result)
@@ -70,3 +70,8 @@ def test_get_month_holidays_num(make_new_calendar):
 @pytest.mark.skip
 def test_get_weekday(make_new_calendar):
     print(make_new_calendar.get_weekday())
+
+
+@pytest.mark.skip
+def test_get_nth_dow(make_new_calendar):
+    assert make_new_calendar.get_nth_dow(20) == 4

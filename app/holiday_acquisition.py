@@ -11,6 +11,7 @@ from sqlalchemy import and_
 from app import db
 from app.models import User, RecordPaidHoliday, Shinsei
 from app.models_aprv import NotificationList, PaidHolidayLog
+from app.new_calendar import NewCalendar
 from app.holiday_logging import HolidayLogger
 
 
@@ -40,6 +41,29 @@ class AcquisitionType(enum.Enum):
             )
         else:
             return cls._member_map_[name]
+
+
+# Pythonで任意の日付がその月の第何週目かを取得
+# https://note.nkmk.me/python-calendar-datetime-nth-dow/
+def get_calendar_nth_dow(in_year: int, in_month: int, in_day: int) -> int:
+    # return (self.in_day.day - 1) // 7 + 1
+    calendar_obj = NewCalendar(in_year, in_month)
+    return calendar_obj.get_nth_dow(in_day)
+
+
+"""
+    第5週、第6週入職日は翌月カウントデコレータ
+    基準日変更の可能性を考慮し
+    """
+
+
+def cure_base_day(func):
+    def wrapper(in_date: datetime):
+        if get_calendar_nth_dow(in_date.year, in_date.month, in_date.day) >= 5:
+            in_date = in_date + relativedelta(months=1)
+        return func(in_date.replace(day=1))
+
+    return wrapper
 
 
 @dataclass
@@ -99,24 +123,26 @@ class HolidayAcquire:
     get: 日付
     """
 
-    def convert_base_day(self) -> datetime:
+    @staticmethod
+    @cure_base_day
+    def convert_base_day(in_date: datetime) -> datetime:
         # 基準月に変換
         #     入社日が4月〜9月
         #     10月1日に年休付与
-        if self.in_day.month >= 4 and self.in_day.month < 10:
-            change_day = self.in_day.replace(month=10, day=1)  # 基準月
+        if in_date.month >= 4 and in_date.month < 10:
+            change_day = in_date.replace(month=10, day=1)  # 基準月
             return change_day  # 初回付与日
 
         #     入社日が10月〜12月
         #     翌年4月1日に年休付与
-        elif self.in_day.month >= 10 and self.in_day.month <= 12:
-            change_day = self.in_day.replace(month=4, day=1)
+        elif in_date.month >= 10 and in_date.month <= 12:
+            change_day = in_date.replace(month=4, day=1)
             return change_day + relativedelta(months=12)
 
         #     入社日が1月〜3月
         #     4月1日に年休付与
-        elif self.in_day.month < 4:
-            change_day = self.in_day.replace(month=4, day=1)
+        elif in_date.month < 4:
+            change_day = in_date.replace(month=4, day=1)
             return change_day
 
     """
@@ -149,17 +175,19 @@ class HolidayAcquire:
         : OrderedDict<date, int> 入職日と支給日数
         """
 
+    # ddm = monthmod(inday, datetime.today())[0].months
     def acquire_inday_holidays(self) -> OrderedDict[date, int]:
-        base_day = self.convert_base_day()
+        base_day = self.convert_base_day(self.in_day)
         # 入職日から基準日まで2ヶ月以内
-        if monthmod(self.in_day.replace(day=1), base_day)[0].months <= 2:
-            acquisition_days = 2
+        # replace(day=1)しない？
+        if monthmod(self.in_day, base_day)[0].months <= 2:
+            acquisition_days = 0
         # 入職日から基準日まで3ヶ月
-        elif monthmod(self.in_day.replace(day=1), base_day)[0].months == 3:
+        elif monthmod(self.in_day, base_day)[0].months == 3:
             acquisition_days = 1
         # 入職日から基準日まで3ヶ月以上
-        elif monthmod(self.in_day.replace(day=1), base_day)[0].months > 3:
-            acquisition_days = 0
+        elif monthmod(self.in_day, base_day)[0].months > 3:
+            acquisition_days = 2
 
         first_data = [(self.in_day, acquisition_days)]
         return OrderedDict(first_data)
@@ -274,7 +302,7 @@ class HolidayAcquire:
     """
 
     def plus_next_holidays(self) -> OrderedDict[date, int]:
-        base_day = self.convert_base_day()
+        base_day = self.convert_base_day(self.in_day)
         day_list = [self.in_day.date()] + self.get_acquisition_list(base_day)
         # 入職日と支給日数をリストの最初に
         holiday_pair = self.acquire_inday_holidays()
@@ -331,7 +359,7 @@ class HolidayAcquire:
 
     # 表示用: STARTDAY, ENDDAYのペア
     def print_acquisition_data(self) -> Tuple[list[date], list[date]]:
-        base_day = self.convert_base_day()
+        base_day = self.convert_base_day(self.in_day)
         day_list = [self.in_day.date()] + self.get_acquisition_list(base_day)
 
         end_day_list = [
@@ -380,25 +408,22 @@ class HolidayAcquire:
         # Trueの場合、時間休だけの総合計時間
         return sum(approval_time_list)
 
-    # Pythonで任意の日付がその月の第何週目かを取得
-    # https://note.nkmk.me/python-calendar-datetime-nth-dow/
-    def get_nth_dow(self) -> int:
-        return (self.in_day.day - 1) // 7 + 1
-
     """
     出退勤による勤務日数、範囲は今回付与日から次回付与日前日
     3月、9月に起動
     """
 
     def count_workday(self) -> int:
-        base_day = self.convert_base_day()
+        base_day = self.convert_base_day(self.in_day)
         from_list, to_list = self.print_acquisition_data()
 
         filters = []
         filters.append(Shinsei.STAFFID == self.id)
 
         # 入職日年休付与以外、受けていない者（付与日リストが１個だけ）
-        if len(self.get_acquisition_list(base_day)) == 1 and (self.get_nth_dow() != 1):
+        if (
+            len(self.get_acquisition_list(base_day)) == 1
+        ):  # and (self.get_nth_dow() != 1):
             # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
             from_prev_last = from_list[-2] + relativedelta(months=1)
             from_prev_last = from_prev_last.replace(day=1)
@@ -408,7 +433,12 @@ class HolidayAcquire:
         filters.append(Shinsei.WORKDAY.between(from_prev_last, to_list[-2]))
         filters.append(Shinsei.STARTTIME != 0)
 
-        attendance_list = db.session.query(Shinsei.id).filter(and_(*filters)).all()
+        attendance_list = (
+            db.session.query(Shinsei.id)
+            .join(User, User.STAFFID == Shinsei.STAFFID)
+            .filter(and_(*filters))
+            .all()
+        )
 
         logger = HolidayLogger.get_logger("INFO")
         logger.info(f"ID{self.id}: count: 勤務日数は{len(attendance_list)}日です。")
@@ -422,13 +452,16 @@ class HolidayAcquire:
         """
 
     def get_diff_month(self) -> int:
-        base_day = self.convert_base_day()
+        base_day = self.convert_base_day(self.in_day)
 
-        # 入職月〜基準日1日前
+        # 入職日〜基準日1日前
         diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
-        result_diff = diff_month + 1 if self.get_nth_dow() == 1 else diff_month
-        # if result_diff == 1:
-        #     raise ValueError(f"ID{self.id}: まだカウントしません。")
+        result_diff = (
+            diff_month + 1
+            if get_calendar_nth_dow(self.in_day.year, self.inday.month, self.in_day.day)
+            == 1
+            else diff_month
+        )
 
         # print(f"ID{self.id}: (入職日以外の)初の年休支給になります。")
         logger = HolidayLogger.get_logger("INFO")

@@ -56,7 +56,7 @@ def test_observer(app_context):
     """
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_refer_acquire_type(app_context, subject, mocker):
     mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
@@ -120,11 +120,12 @@ def test_calcurate_carry_days(app_context, subject, mocker):
     """
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_get_concerned_staff(app_context, subject):
     sakura_member_list = subject.get_concerned_staff()
     print(sakura_member_list)
+    print(len(sakura_member_list))
 
 
 # コンストラクタモックは無理、引数あるから

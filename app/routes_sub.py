@@ -2,7 +2,7 @@ import json
 import requests
 from typing import List, Dict, Any
 
-from flask import render_template, redirect, request, jsonify, make_response
+from flask import render_template, redirect, request, jsonify, make_response, url_for
 
 from flask_login import current_user
 from flask_login.utils import login_required
@@ -15,10 +15,11 @@ from app.models import RecordPaidHoliday
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
 
-# origins = ["http://localhost:5173"]
-# CORS(app, supports_credentials=True, origins=origins)
+# 絶対こっち
+origins = ["http://localhost:5173"]
+CORS(app, supports_credentials=True, origins=origins)
 # app.config.update(SESSION_COOKIE_SAMESITE="None")
-CORS(app)
+# CORS(app)
 
 
 @app.route("/dummy-form/<target_id>", methods=["GET"])
@@ -43,26 +44,33 @@ def print_all_todo(auth_user) -> List[TodoOrm]:
     return td_dict_list
 
 
+@app.route("/redirect")
+@login_required
+def redirect_func():
+    token_dict = issue_token(current_user.STAFFID)
+    # response.headers["Authorized"] = token["data"]
+    return redirect(url_for("post_access_token", token_data=token_dict["data"]))
+
+
 @app.route("/timetable/auth", methods=["GET", "POST"])
 @login_required
 def post_access_token():
-    token = issue_token(current_user.STAFFID)
-    response = make_response(jsonify(token))
-    # response.headers["Authorized"] = token["data"]
-    # return response
-    return redirect(f"http://localhost:5173/auth?token={token['data']}")
+    token_dict = issue_token(current_user.STAFFID)
+    # resp = make_response(jsonify(token_data))
+    return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
 
 
 @app.route("/refresh", methods=["GET", "POST"])
+# @login_required
 @token_required
 def refresh_token(auth_user):
     new_token = issue_token(auth_user.STAFFID)
     flask_resp = make_response(jsonify(new_token))
 
-    return flask_resp
+    return new_token["data"]
 
 
-@app.route("/event/all", methods=["GET"])
+@app.route("/event/all", methods=["GET", "POST"])
 # @login_required
 @token_required
 def print_all_event(auth_user):

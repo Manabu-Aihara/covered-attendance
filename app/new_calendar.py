@@ -9,6 +9,7 @@ from dataclasses import dataclass
 class NewCalendar:
     year: int
     month: int
+    firstweekday: int = 6
 
     def get_itermonthdays(self) -> List[tuple]:
         calendar_obj = calendar.Calendar()
@@ -37,3 +38,8 @@ class NewCalendar:
             filter(lambda d: d[0] not in self.__get_jp_holidays_num(), weekdays)
         )
         return weekdays
+
+    def get_nth_dow(self, day):
+        first_dow = calendar.monthrange(self.year, self.month)[0]
+        offset = (first_dow - self.firstweekday) % 7
+        return (day + offset - 1) // 7 + 1
