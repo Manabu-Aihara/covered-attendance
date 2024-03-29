@@ -56,24 +56,24 @@ def test_observer(app_context):
     """
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_refer_acquire_type(app_context, subject, mocker):
     mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
     print(datetime.now())
     workday_mock = mocker.patch.object(
-        HolidayAcquire, "count_workday", return_value=124
+        HolidayAcquire, "count_workday", return_value=200
     )
-    # workday_half_mock = mocker.patch.object(
-    #     HolidayAcquire, "count_workday_half_year", side_effect=[230, 160]
-    # )
+    workday_half_mock = mocker.patch.object(
+        HolidayAcquire, "count_workday_half_year", side_effect=[230, 160]
+    )
 
-    print(subject.refer_acquire_type(189))
-    # print(subject.refer_acquire_type(203))
-    # print(subject.refer_acquire_type(204))
+    print(subject.refer_acquire_type(31))
+    print(subject.refer_acquire_type(40))
+    print(subject.refer_acquire_type(201))
 
     assert workday_mock.call_count == 1
-    # assert workday_half_mock.call_count == 2
+    assert workday_half_mock.call_count == 2
 
 
 # Failed: DID NOT RAISE <class 'TypeError'>
@@ -120,8 +120,8 @@ def test_calcurate_carry_days(app_context, subject, mocker):
     """
 
 
-# @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 9, 30))
 def test_get_concerned_staff(app_context, subject):
     sakura_member_list = subject.get_concerned_staff()
     print(sakura_member_list)

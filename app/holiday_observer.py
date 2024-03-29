@@ -134,7 +134,6 @@ class ObserverCheckType(Observer):
                     self.merge_type(concerned_id, your_types[0], your_types[1])
                     db.session.flush()
                     # self.trigger_fail(concerned_id)
-                    # db.session.commit()
                 except ValueError as e:
                     # print(f"ID{concerned_id}: {e}")
                     logger = HolidayLogger.get_logger("ERROR", "-err")

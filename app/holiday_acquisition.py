@@ -180,13 +180,13 @@ class HolidayAcquire:
         base_day = self.convert_base_day(self.in_day)
         # 入職日から基準日まで2ヶ月以内
         # replace(day=1)しない？
-        if monthmod(self.in_day, base_day)[0].months <= 2:
+        if monthmod(self.in_day.replace(day=1), base_day)[0].months <= 2:
             acquisition_days = 0
         # 入職日から基準日まで3ヶ月
-        elif monthmod(self.in_day, base_day)[0].months == 3:
+        elif monthmod(self.in_day.replace(day=1), base_day)[0].months == 3:
             acquisition_days = 1
         # 入職日から基準日まで3ヶ月以上
-        elif monthmod(self.in_day, base_day)[0].months > 3:
+        elif monthmod(self.in_day.replace(day=1), base_day)[0].months > 3:
             acquisition_days = 2
 
         first_data = [(self.in_day, acquisition_days)]
@@ -421,9 +421,10 @@ class HolidayAcquire:
         filters.append(Shinsei.STAFFID == self.id)
 
         # 入職日年休付与以外、受けていない者（付与日リストが１個だけ）
-        if (
-            len(self.get_acquisition_list(base_day)) == 1
-        ):  # and (self.get_nth_dow() != 1):
+        if (len(self.get_acquisition_list(base_day)) == 1) and (
+            get_calendar_nth_dow(self.in_day.year, self.in_day.month, self.in_day.day)
+            != 1
+        ):
             # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
             from_prev_last = from_list[-2] + relativedelta(months=1)
             from_prev_last = from_prev_last.replace(day=1)
@@ -458,7 +459,9 @@ class HolidayAcquire:
         diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
         result_diff = (
             diff_month + 1
-            if get_calendar_nth_dow(self.in_day.year, self.inday.month, self.in_day.day)
+            if get_calendar_nth_dow(
+                self.in_day.year, self.in_day.month, self.in_day.day
+            )
             == 1
             else diff_month
         )
@@ -475,10 +478,11 @@ class HolidayAcquire:
         # global workday_half_result
         # 入職月〜基準月1日前の範囲を12ヶ月分にしたもの
         workday_half_result = self.count_workday() * (12 / self.get_diff_month())
+        workday_half_result = round(workday_half_result)
 
         logger = HolidayLogger.get_logger("INFO")
         logger.info(
             f"ID{self.id}: count_half > : 暫定勤務日数は{workday_half_result}日です。"
         )
 
-        return round(workday_half_result)
+        return workday_half_result

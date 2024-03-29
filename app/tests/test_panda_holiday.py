@@ -8,7 +8,7 @@ from app.holiday_observer import ObserverRegist, ObserverCheckType, ObserverCarr
 from app.models_aprv import PaidHolidayLog
 
 
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+# @pytest.mark.freeze_time(datetime(2024, 9, 30))
 def concern_id_from_panda() -> List[int]:
     subject = SubjectImpl()
     return subject.get_concerned_staff()
@@ -19,7 +19,7 @@ def search_half_flag(concern_id: int) -> bool:
     # list_tank = []
     # for concerned_id in concern_id_list:
     holiday_acquire_obj = HolidayAcquire(concern_id)
-    base_day = holiday_acquire_obj.convert_base_day()
+    base_day = HolidayAcquire(concern_id).convert_base_day(holiday_acquire_obj.in_day)
     flag = (
         True
         if len(holiday_acquire_obj.get_acquisition_list(base_day)) == 1
@@ -53,30 +53,31 @@ def subject():
 
 
 @pytest.fixture(name="panda_id")
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 9, 30))
 def concerned_id_from_panda_indirect(app_context):
     # print(f"len: {len(concern_id_from_panda())}\n")
     return concern_id_from_panda()
 
 
 @pytest.fixture(name="panda_count")
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 9, 30))
 def count_workday_from_panda_indirect(app_context):
-    return [round(x * 12 / 11) for x in work_count_to_mock()[0]]
-    # return work_count_to_mock()[0]
+    return [x * 2 for x in work_count_to_mock()[0]]
+    # return [round(x * 12 / 11) for x in work_count_to_mock()[0]]
 
 
 @pytest.fixture(name="panda_half_count")
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 9, 30))
 def count_half_workday_from_panda_indirect(app_context):
-    return [round(x * 12 / 11) for x in work_count_to_mock()[1]]
-    # return work_count_to_mock()[1]
+    return [x * 2 for x in work_count_to_mock()[1]]
+    # return [round(x * 12 / 11) for x in work_count_to_mock()[1]]
 
 
 # とりあえず、この方法しか上手くいかん。
 # https://stackoverflow.com/questions/49117806/what-is-the-best-way-to-parameterize-a-pytest-function-using-a-fixture-that-retu
 # @pytest.fixture(params=range(0, 25))
 @pytest.fixture
+@pytest.mark.freeze_time(datetime(2024, 9, 30))
 def get_param(panda_id, panda_count, panda_half_count):
     print(f"{panda_id}")
     print(f"調整後{panda_count}")
@@ -90,10 +91,11 @@ def get_param(panda_id, panda_count, panda_half_count):
 #     return search_half_flag()
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 9, 30))
 def test_print_fixtures(app_context, get_param):
     print("expensive")
-    print(f"{get_param.get('ID')}: {get_param.get('Work_H')}日")
+    print(f"{get_param.get('ID')}: {get_param.get('Work')}日")
     print(len(get_param.get("ID")))
     print(len(get_param.get("Work_H")))
 
@@ -162,7 +164,7 @@ def test_divide_observer(app_context, subject, get_param, mocker):
 
 
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 9, 30))
 def test_merge_observer(app_context, subject, get_param, mocker):
     observer = ObserverCheckType()
     subject.attach(observer)
@@ -182,7 +184,7 @@ def test_merge_observer(app_context, subject, get_param, mocker):
         # if search_half_flag(i) is True:
         with open(f"update_type_cat{date_now.strftime('%m%d%H%M')}.log", "a") as f:
             f.write(
-                f"UPDATE INTO D_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE={post} WHERE STAFF_ID={i}\n"
+                f"UPDATE M_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE='{post}' WHERE STAFFID={i};\n"
             )
 
         original_update_func(i, past, post)
@@ -201,7 +203,7 @@ def test_merge_observer(app_context, subject, get_param, mocker):
 
 # ダミー関数を初めてやってみた
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 9, 30))
 def test_check_observer(app_context, subject, mocker):
     observer = ObserverCheckType()
     subject.attach(observer)
@@ -230,7 +232,7 @@ def test_check_observer(app_context, subject, mocker):
 
 
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 9, 30))
 def test_carry_observer(app_context, subject, mocker):
     observer = ObserverCarry()
     subject.attach(observer)
@@ -258,9 +260,23 @@ def test_carry_observer(app_context, subject, mocker):
     print(add_mock.call_args_list)
 
 
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
-def test_acquire_holiday(app_context, subject, get_param):
+@pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 4, 1))
+def test_acquire_holiday(app_context, subject, mocker):
     observer = ObserverRegist()
     subject.attach(observer)
+
+    original_insert_func = observer.insert_data
+
+    def dummy_add_db(i: int, carri_days: float = subject.calcurate_carry_days):
+        with open("insert_holidays.log", "a") as f:
+            f.write(
+                f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, {carri_days}, None, None, 0, '前回からの繰り越し')\n"
+            )
+        original_insert_func(i, carri_days)
+
+    # add_mock = mocker.patch.object(db.session, "add", side_effect=dummy_add_db)
+    add_mock = mocker.patch.object(observer, "insert_data", side_effect=dummy_add_db)
+    observer.update(subject)
 
     subject.execute()

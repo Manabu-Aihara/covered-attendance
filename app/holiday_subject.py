@@ -203,7 +203,9 @@ class SubjectImpl(Subject):
         self, concerned_id: int
     ) -> Tuple[Optional[str], Optional[str]]:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
-        base_day = holiday_acquire_obj.convert_base_day()
+        base_day = HolidayAcquire(concerned_id).convert_base_day(
+            holiday_acquire_obj.in_day
+        )
 
         # 年間出勤日数の計算
         # HolidayAcquire::get_acquisition_list(base_day)[0] -> 入職日除く最初の付与日

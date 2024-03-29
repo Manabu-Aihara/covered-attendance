@@ -8,14 +8,14 @@ from app.holiday_acquisition import HolidayAcquire, AcquisitionType
 
 @pytest.fixture
 def get_official_user(app_context):
-    acquisition_object = HolidayAcquire(40)
+    acquisition_object = HolidayAcquire(201)
     return acquisition_object
 
 
 # 基準日
 # @pytest.mark.skip
 def test_convert_base_day(get_official_user):
-    conv_date = HolidayAcquire(40).convert_base_day(get_official_user.in_day)
+    conv_date = HolidayAcquire(201).convert_base_day(get_official_user.in_day)
     assert conv_date.month == 4
 
 
@@ -23,7 +23,7 @@ def test_convert_base_day(get_official_user):
 def test_acquire_inday_holiday(get_official_user):
     test_dict = get_official_user.acquire_inday_holidays()
     # print(list(test_dict.values()))
-    assert list(test_dict.values())[0] == 2
+    assert list(test_dict.values())[0] == 1
 
 
 @pytest.mark.skip
@@ -60,7 +60,7 @@ def test_get_acquisition_list(get_official_user):
     print(f"付与リスト: {test_all_list}")
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_print_acquisition_data(get_official_user):
     test_from_to_list = get_official_user.print_acquisition_data()
     print(f"付与リストペア: {test_from_to_list}")
@@ -112,7 +112,7 @@ def test_raise_acquisition_type(get_official_user):
     print(except_info.value)
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_plus_next_holidays(get_official_user):
     test_value = get_official_user.plus_next_holidays()
     print(f"日付＆日数: {test_value}")
