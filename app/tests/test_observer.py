@@ -40,11 +40,11 @@ def test_output_holiday_count():
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_observer(app_context):
     subject = SubjectImpl()
-    # observer = ObserverRegist()
-    observer_type = ObserverCheckType()
+    observer_regist = ObserverRegist()
+    # observer_type = ObserverCheckType()
     # observer_carry = ObserverCarry()
 
-    subject.attach(observer_type)
+    subject.attach(observer_regist)
     # subject.attach(observer_carry)
 
     print(datetime.now())
@@ -56,7 +56,7 @@ def test_observer(app_context):
     """
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_refer_acquire_type(app_context, subject, mocker):
     mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
@@ -93,6 +93,25 @@ def test_raise_refer_holiday_type(app_context, subject):
 
 
 @pytest.mark.skip
+def test_raise_acquire_holidays(app_context, subject):
+    with pytest.raises(KeyError) as exec_info:
+        subject.acquire_holidays(182)
+    print(exec_info.value)
+
+
+# @pytest.mark.skip
+def test_base_time_for_paid(app_context, subject):
+    holiday_base = subject.get_holiday_base_time(165)
+    assert holiday_base == 8.0
+
+
+# @pytest.mark.skip
+def test_acquire_holidays(app_context, subject):
+    expection_holiday = subject.acquire_holidays(105)
+    print(expection_holiday)
+
+
+@pytest.mark.skip
 def test_divide_acquire_type(app_context, subject):
     expected_char = subject.divide_acquire_type(124)
     assert expected_char == "C"
@@ -120,8 +139,8 @@ def test_calcurate_carry_days(app_context, subject, mocker):
     """
 
 
-@pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 9, 30))
+# @pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 4, 1))
 def test_get_concerned_staff(app_context, subject):
     sakura_member_list = subject.get_concerned_staff()
     print(sakura_member_list)

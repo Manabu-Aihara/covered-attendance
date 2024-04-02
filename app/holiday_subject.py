@@ -13,6 +13,7 @@ from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
 
 from app.holiday_observer import Observer
+from app.holiday_logging import HolidayLogger
 
 
 class WorkdayType(enum.Enum):
@@ -64,6 +65,22 @@ class Subject(ABC):
 
     def execute(self) -> None:
         raise NotImplementedError
+
+
+# BASETIMES_PAIDHOLIDAY、ACQUISITION_TYPEのデコレータを使ったエラーハンドリング
+def error_handler(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except KeyError as e:
+            logger = HolidayLogger.get_logger("ERROR", "-err")
+            logger.error(f"ID{args}: {e}", exc_info=False)
+        except ValueError as e:
+            logger = HolidayLogger.get_logger("ERROR", "-err")
+            logger.error(f"ID{args}: {e}", exc_info=False)
+        # その他のエラー処理が必要な場合に追加できます。
+
+    return wrapper
 
 
 class SubjectImpl(Subject):
@@ -125,22 +142,32 @@ class SubjectImpl(Subject):
         filters = []
         filters.append(User.INDAY != None)
         filters.append(User.OUTDAY == None)
-
         staff_info_list: List = (
             db.session.query(User.STAFFID, User.INDAY).filter(and_(*filters)).all()
         )
+
         for staff_info in staff_info_list:
-            # しっかりカラム名を付ける、otherwise -> staff_id[0]
-            base_day = HolidayAcquire(staff_info.STAFFID).convert_base_day(
-                staff_info.INDAY
-            )
-            border_end_day = base_day + relativedelta(days=-1)
-            if (base_day.month == self.notice_month()) or (
-                border_end_day.month == self.notice_month()
-            ):
-                concerned_id_list.append(staff_info.STAFFID)
+            try:
+                # しっかりカラム名を付ける、otherwise -> staff_id[0]
+                base_day = HolidayAcquire(staff_info.STAFFID).convert_base_day(
+                    staff_info.INDAY
+                )
+            except ValueError as e:
+                logger = HolidayLogger.get_logger("ERROR", "-err")
+                logger.error(f"ID{staff_info.STAFFID}: {e}", exc_info=False)
+            else:
+                # border_end_day: 3月31日か、9月30日
+                border_end_day = base_day + relativedelta(days=-1)
+                if (base_day.month == self.notice_month()) or (
+                    border_end_day.month == self.notice_month()
+                ):
+                    concerned_id_list.append(staff_info.STAFFID)
 
         return concerned_id_list
+
+    @error_handler
+    def get_holiday_base_time(self, id: int) -> float:
+        return HolidayAcquire(id).holiday_base_time
 
     """
     年休付与、4月、10月に起動
@@ -150,8 +177,8 @@ class SubjectImpl(Subject):
         : Tuple<float, int> 総時間（繰り越し含む）とログ用付与日数
         """
 
-    def acquire_holidays(self, concerned_id: int) -> Tuple[float, int]:
-        holiday_acquire_obj = HolidayAcquire(concerned_id)
+    @error_handler
+    def acquire_holidays(self, concerned_id: int) -> float:
         # 繰り越し日数
         carry_times = (
             db.session.query(PaidHolidayLog.CARRY_FORWARD)
@@ -160,21 +187,22 @@ class SubjectImpl(Subject):
             .first()
         )
         if carry_times is None:
-            raise TypeError("繰り越しはありません。")
+            # raise TypeError("繰り越しはありません。")
+            pass
 
-        # 取得日数 -> 例外処理済みだと思う
-        dict_value = holiday_acquire_obj.plus_next_holidays().values()
+        holiday_acquire_obj = HolidayAcquire(concerned_id)
+        dict_data = holiday_acquire_obj.plus_next_holidays()
+        dict_value = dict_data.values()
         # dict_valuesのリスト化
         acquisition_days: int = list(dict_value)[-1]
+
         # もしくは
         # base_day = holiday_acquire_obj.convert_base_day()
         # length: int = len(holiday_acquire_obj.get_acquisition_list(base_day))
         # 取得日数
         # acquisition_days = self.output_holiday_count(work_type, length)
 
-        return (
-            carry_times.CARRY_FORWARD + acquisition_days
-        ) * holiday_acquire_obj.holiday_base_time, acquisition_days
+        return (acquisition_days) * holiday_acquire_obj.holiday_base_time
         # return super().acquire_holidays()
 
     """
@@ -199,6 +227,7 @@ class SubjectImpl(Subject):
             elif count < 48:
                 raise ValueError(f"original subject: 出勤日数は{count} です。")
 
+    @error_handler
     def refer_acquire_type(
         self, concerned_id: int
     ) -> Tuple[Optional[str], Optional[str]]:
@@ -225,18 +254,11 @@ class SubjectImpl(Subject):
             ここで例外を投げると、holiday_observer::merge_typeが動かない
             例外キャッチはもとより出来ない
             """
-        # try:
         past_type = holiday_acquire_obj.get_acquisition_key()
-        # if past_type is None:
-        #     raise TypeError("M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。")
-        # except TypeError as e:
-        #     with open(
-        #         f"acquire_type{datetime.now().strftime('%m%d%H%M')}-err.log", "a"
-        #     ) as f:
-        #         f.write(f"{e}")
 
         return past_type, new_type
 
+    @error_handler
     def calcurate_carry_days(self, concerned_id: int) -> float:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
 

@@ -8,7 +8,6 @@ from app.holiday_observer import ObserverRegist, ObserverCheckType, ObserverCarr
 from app.models_aprv import PaidHolidayLog
 
 
-# @pytest.mark.freeze_time(datetime(2024, 9, 30))
 def concern_id_from_panda() -> List[int]:
     subject = SubjectImpl()
     return subject.get_concerned_staff()
@@ -46,6 +45,25 @@ def work_count_to_mock() -> Tuple[List[int], List[int]]:
     return count_list, count_half_list
 
 
+def plus_holidays_to_mock() -> List[float]:
+    subject = SubjectImpl()
+    plus_time_list = []
+    for concerned_id in concern_id_from_panda():
+        # holiday_acquire_obj = HolidayAcquire(concerned_id)
+        # dict_data = holiday_acquire_obj.plus_next_holidays()
+        # dict_value = dict_data.values()
+        # # dict_valuesのリスト化
+        # acquisition_days: int = list(dict_value)[-1]
+        # acquisition_times: float = (
+        #     acquisition_days * holiday_acquire_obj.holiday_base_time
+        # )
+        acquisition_times = subject.acquire_holidays(concerned_id)
+        plus_time_list.append(acquisition_times)
+    # return acquisition_times
+
+    return plus_time_list
+
+
 @pytest.fixture(scope="module")
 def subject():
     subject = SubjectImpl()
@@ -53,51 +71,72 @@ def subject():
 
 
 @pytest.fixture(name="panda_id")
-@pytest.mark.freeze_time(datetime(2024, 9, 30))
+@pytest.mark.freeze_time(datetime(2024, 4, 1))
 def concerned_id_from_panda_indirect(app_context):
     # print(f"len: {len(concern_id_from_panda())}\n")
     return concern_id_from_panda()
 
 
 @pytest.fixture(name="panda_count")
-@pytest.mark.freeze_time(datetime(2024, 9, 30))
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
 def count_workday_from_panda_indirect(app_context):
-    return [x * 2 for x in work_count_to_mock()[0]]
+    return [x for x in work_count_to_mock()[0]]
     # return [round(x * 12 / 11) for x in work_count_to_mock()[0]]
 
 
 @pytest.fixture(name="panda_half_count")
-@pytest.mark.freeze_time(datetime(2024, 9, 30))
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
 def count_half_workday_from_panda_indirect(app_context):
-    return [x * 2 for x in work_count_to_mock()[1]]
+    return [x for x in work_count_to_mock()[1]]
     # return [round(x * 12 / 11) for x in work_count_to_mock()[1]]
+
+
+@pytest.fixture(name="panda_plus")
+@pytest.mark.freeze_time(datetime(2024, 4, 1))
+def plus_holidays_indirect(app_context):
+    return plus_holidays_to_mock()
+    # 以下不可
+    # holiday_acquire_obj = HolidayAcquire(panda_id)
+    # days = holiday_acquire_obj.plus_next_holidays().values()
+    # return panda_id, days * holiday_acquire_obj.holiday_base_time
 
 
 # とりあえず、この方法しか上手くいかん。
 # https://stackoverflow.com/questions/49117806/what-is-the-best-way-to-parameterize-a-pytest-function-using-a-fixture-that-retu
 # @pytest.fixture(params=range(0, 25))
 @pytest.fixture
-@pytest.mark.freeze_time(datetime(2024, 9, 30))
-def get_param(panda_id, panda_count, panda_half_count):
-    print(f"{panda_id}")
-    print(f"調整後{panda_count}")
-    print(f"調整後{panda_half_count}")
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
+def get_work_param(panda_id, panda_count, panda_half_count):
+    # print(f"{panda_id}")
+    # print(f"調整後{panda_count}")
+    # print(f"調整後{panda_half_count}")
     return {"ID": panda_id, "Work": panda_count, "Work_H": panda_half_count}
 
 
-# @pytest.fixture(name="work_flag")
-# @pytest.mark.freeze_time(datetime(2024, 3, 31))
-# def search_half_flag_indirect(app_context):
-#     return search_half_flag()
+@pytest.fixture
+@pytest.mark.freeze_time(datetime(2024, 4, 1))
+def get_acquire_param(panda_id, panda_plus):
+    # print(f"{panda_id}")
+    return {"ID": panda_id, "Holiday": panda_plus}
 
 
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 9, 30))
-def test_print_fixtures(app_context, get_param):
+@pytest.mark.freeze_time(datetime(2024, 3, 31))
+def test_print_fixtures(get_work_param):
     print("expensive")
-    print(f"{get_param.get('ID')}: {get_param.get('Work')}日")
-    print(len(get_param.get("ID")))
-    print(len(get_param.get("Work_H")))
+    print(f"{get_work_param.get('ID')}: {get_work_param.get('Work')}日")
+    print(len(get_work_param.get("ID")))
+    print(len(get_work_param.get("Work")))
+    print(len(get_work_param.get("Work_H")))
+
+
+# @pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 4, 1))
+def test_print_fixture_plus(get_acquire_param):
+    print("expensive")
+    print(f"{get_acquire_param.get('ID')}: {get_acquire_param.get('Holiday')}")
+    print(len(get_acquire_param.get("ID")))
+    print(len(get_acquire_param.get("Holiday")))
 
 
 date_now = datetime.now()
@@ -106,75 +145,22 @@ date_now = datetime.now()
 # @pytest.mark.skip
 # @pytest.mark.usefixtures("app_context")
 # class TestCheckType:
+
+
 @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
-def test_divide_observer(app_context, subject, get_param, mocker):
+def test_merge_observer(app_context, subject, get_work_param, mocker):
     observer = ObserverCheckType()
     subject.attach(observer)
 
     workday_mock = mocker.patch.object(
-        HolidayAcquire, "count_workday", side_effect=get_param.get("Work")
+        HolidayAcquire, "count_workday", side_effect=get_work_param.get("Work")
     )
+    # get_work_param.get("Work")の重複になる！
     workday_half_mock = mocker.patch.object(
-        HolidayAcquire, "count_workday_half_year", side_effect=get_param.get("Work_H")
-    )
-
-    original_divide_func = subject.divide_acquire_type
-
-    def dummy_divide_method(count: float):
-        print("---divideのダミー---")
-        print(f"念のため: {count}")
-        print(f"in Mock「 {original_divide_func(count)} 」")
-        original_divide_func(count)
-
-    orignal_ref_func = subject.refer_acquire_type
-
-    def dummy_pass_method(i: int):
-        # print(f"タイプ: {type(i)}")
-        with open(f"pass_method{date_now.strftime('%m%d%H%M')}.log", "a") as f:
-            if search_half_flag(i) is False:
-                f.write(f"ID{i}: count_workday\n")
-            else:
-                f.write(f"ID{i}: count_workday_half_year\n")
-        orignal_ref_func(i)
-
-    def dummy_ref_method(i: int):
-        print("---refのダミー---")
-        orignal_ref_func(i)
-
-    # divide_mock = mocker.patch.object(
-    #     subject, "divide_acquire_type", side_effect=dummy_divide_method
-    # )
-
-    refer_mock = mocker.patch.object(
-        subject, "refer_acquire_type", side_effect=dummy_ref_method
-    )
-
-    # これがヤバかった
-    # mocker.patch.object(observer, "update")
-
-    observer.update(subject)
-    # subject.execute()
-
-    # print(f"---divide.ARGS---: {divide_mock.call_args_list}")
-    # print(f"---divide.COUNT---: {divide_mock.call_count}")
-    print(f"---workday.COUNT---: {workday_mock.call_count}")
-    print(f"---workday_half.COUNT---: {workday_half_mock.call_count}")
-    print(f"---refer.COUNT---: {refer_mock.call_count}")
-
-
-@pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 9, 30))
-def test_merge_observer(app_context, subject, get_param, mocker):
-    observer = ObserverCheckType()
-    subject.attach(observer)
-
-    workday_mock = mocker.patch.object(
-        HolidayAcquire, "count_workday", side_effect=get_param.get("Work")
-    )
-    # get_param.get("Work")の重複になる！
-    workday_half_mock = mocker.patch.object(
-        HolidayAcquire, "count_workday_half_year", side_effect=get_param.get("Work_H")
+        HolidayAcquire,
+        "count_workday_half_year",
+        side_effect=get_work_param.get("Work_H"),
     )
 
     original_update_func = observer.merge_type
@@ -184,7 +170,7 @@ def test_merge_observer(app_context, subject, get_param, mocker):
         # if search_half_flag(i) is True:
         with open(f"update_type_cat{date_now.strftime('%m%d%H%M')}.log", "a") as f:
             f.write(
-                f"UPDATE M_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE='{post}' WHERE STAFFID={i};\n"
+                f"UPDATE panda.M_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE='{post}' WHERE STAFFID={i};\n"
             )
 
         original_update_func(i, past, post)
@@ -201,36 +187,6 @@ def test_merge_observer(app_context, subject, get_param, mocker):
     print(f"---workday_half.COUNT---: {workday_half_mock.call_count}")
 
 
-# ダミー関数を初めてやってみた
-@pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 9, 30))
-def test_check_observer(app_context, subject, mocker):
-    observer = ObserverCheckType()
-    subject.attach(observer)
-
-    acquisition_type_mock = mocker.patch.object(
-        subject,
-        "refer_acquire_type",
-        side_effect=[(None, "F"), (None, ""), (None, "F")],
-    )
-
-    # Save original function
-    original_trigger_fail = observer.trigger_fail
-
-    def mock_for_fail(i):
-        """Mock throwing an exception when i == 2."""
-        print(f"mock_insert_id called with i={i}")
-        if i == 31:
-            raise ValueError("failed")
-        original_trigger_fail(i)
-
-    mock_fail = mocker.patch.object(observer, "trigger_fail", side_effect=mock_for_fail)
-    observer.update(subject)
-
-    assert acquisition_type_mock.call_count == 3
-    assert mock_fail.called
-
-
 @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 9, 30))
 def test_carry_observer(app_context, subject, mocker):
@@ -244,7 +200,7 @@ def test_carry_observer(app_context, subject, mocker):
     assert isinstance(dummy_obj, PaidHolidayLog)
 
     # original_func = db.session.add
-    original_insert_func = observer.insert_data
+    original_insert_func = observer.insert_carry
 
     def dummy_add_db(i: int, carri_days: float = subject.calcurate_carry_days):
         with open("insert_carry.log", "a") as f:
@@ -254,7 +210,7 @@ def test_carry_observer(app_context, subject, mocker):
         original_insert_func(i, carri_days)
 
     # add_mock = mocker.patch.object(db.session, "add", side_effect=dummy_add_db)
-    add_mock = mocker.patch.object(observer, "insert_data", side_effect=dummy_add_db)
+    add_mock = mocker.patch.object(observer, "insert_carry", side_effect=dummy_add_db)
     observer.update(subject)
 
     print(add_mock.call_args_list)
@@ -262,21 +218,29 @@ def test_carry_observer(app_context, subject, mocker):
 
 @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 4, 1))
-def test_acquire_holiday(app_context, subject, mocker):
+def test_acquire_holidays(app_context, subject, get_acquire_param, mocker):
     observer = ObserverRegist()
     subject.attach(observer)
 
+    plus_mock = mocker.patch.object(
+        subject,
+        "acquire_holidays",
+        side_effect=get_acquire_param.get("Holiday"),
+    )
+
     original_insert_func = observer.insert_data
 
-    def dummy_add_db(i: int, carri_days: float = subject.calcurate_carry_days):
+    def dummy_add_db(i: int, carri_times: float):
+        print(f"ID: 「{i}」")
         with open("insert_holidays.log", "a") as f:
             f.write(
-                f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, {carri_days}, None, None, 0, '前回からの繰り越し')\n"
+                f"INSERT panda.INTO M_PAIDHOLIDAY_LOG VALUES({i}, {carri_times}, None, None, 0, '{carri_times}時間付与')\n"
             )
-        original_insert_func(i, carri_days)
+        original_insert_func(i, carri_times)
 
-    # add_mock = mocker.patch.object(db.session, "add", side_effect=dummy_add_db)
-    add_mock = mocker.patch.object(observer, "insert_data", side_effect=dummy_add_db)
-    observer.update(subject)
-
+    insert_mock = mocker.patch.object(observer, "insert_data", side_effect=dummy_add_db)
+    # observer.update(subject)
     subject.execute()
+
+    print(f"---acquire.COUNT---: {plus_mock.call_count}")
+    print(f"---insert.ARGS---: {insert_mock.call_args_list}")

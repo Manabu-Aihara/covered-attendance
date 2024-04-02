@@ -35,6 +35,9 @@ class AcquisitionType(enum.Enum):
     # 例: AからAcquisition.Aを引き出す
     @classmethod
     def name(cls, name: str) -> str:
+        """
+        Subject: 該当ID抽出に発生すると思われる例外①
+        """
         if name is None:
             raise KeyError(
                 "M_RECORD_PAIDHOLIDAYテーブルの、ACQUISITION_TYPEの値が見つかりません。"
@@ -75,8 +78,9 @@ class HolidayAcquire:
         target_user = (
             db.session.query(User.INDAY).filter(User.STAFFID == self.id).first()
         )
+        # いらないかも
         if target_user is None:
-            TypeError(f"ID{self.id}: M_STAFFINFO.INDAYの値がありません。")
+            TypeError("M_STAFFINFO.INDAYの値がありません。")
         else:
             self.in_day: datetime = target_user.INDAY
 
@@ -88,17 +92,22 @@ class HolidayAcquire:
             .filter(self.id == RecordPaidHoliday.STAFFID)
             .first()
         )
-        # いらないかも
-        if holiday_base_time is None:
-            raise TypeError(
-                f"ID{self.id}: M_RECORD_PAIDHOLIDAYのBASETIMES_PAIDHOLIDAYの値がありません。"
+        # いらないかも part2
+        # if holiday_base_time is None:
+        #     raise TypeError(
+        #         "M_RECORD_PAIDHOLIDAYの、BASETIMES_PAIDHOLIDAYの値がありません。"
+        #     )
+        # with open("holiday_err.log", "a") as f:
+        #     # pass
+        #     f.write("M_RECORD_PAIDHOLIDAYの、BASETIMES_PAIDHOLIDAYの値が0です。")
+        """
+            Subject: 該当ID抽出に発生すると思われる例外②
+            """
+        if holiday_base_time.BASETIMES_PAIDHOLIDAY == 0:
+            # print(
+            raise ValueError(
+                "M_RECORD_PAIDHOLIDAYの、BASETIMES_PAIDHOLIDAYの値が0です。"
             )
-            # with open("holiday_err.log", "a") as f:
-            #     # pass
-            #     f.write(
-            #         f"\nID{self.id}: M_RECORD_PAIDHOLIDAYのBASETIMES_PAIDHOLIDAYの値がありません。"
-            #         # f"{e}"
-            #     )
         else:
             self.holiday_base_time: float = holiday_base_time.BASETIMES_PAIDHOLIDAY
 
@@ -111,12 +120,7 @@ class HolidayAcquire:
             .filter(self.id == RecordPaidHoliday.STAFFID)
             .first()
         )
-        if acquisition_key is None:
-            raise TypeError(
-                f"ID{self.id}: M_RECORD_PAIDHOLIDAYのACQUISITION_TYPEの値がありません。"
-            )
-        else:
-            return acquisition_key.ACQUISITION_TYPE
+        return acquisition_key.ACQUISITION_TYPE
 
     """
     acquire: 日数
@@ -303,6 +307,7 @@ class HolidayAcquire:
 
     def plus_next_holidays(self) -> OrderedDict[date, int]:
         base_day = self.convert_base_day(self.in_day)
+        # 入職日 + 付与リスト
         day_list = [self.in_day.date()] + self.get_acquisition_list(base_day)
         # 入職日と支給日数をリストの最初に
         holiday_pair = self.acquire_inday_holidays()
@@ -326,9 +331,7 @@ class HolidayAcquire:
                         self.get_acquisition_key()
                     ).onward
         except KeyError as e:
-            # print(f"ID{self.id}: {e}")
-            logger = HolidayLogger.get_logger("ERROR")
-            logger.exception(f"ID{self.id}: {e}", exc_info=False)
+            raise e
         else:
             return holiday_pair
 

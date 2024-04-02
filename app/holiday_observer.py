@@ -44,27 +44,28 @@ class ObserverRegist(Observer):
             print(f"Notify!---{notification_state}月年休付与の処理が入ります。---")
             for concerned_id in subject.get_concerned_staff():
                 try:
-                    result_times, day_acquired = subject.acquire_holidays(concerned_id)
-                    print(result_times)
+                    holiday_base_time: float = subject.get_holiday_base_time(
+                        concerned_id
+                    )
+                    result_times: float = subject.acquire_holidays(concerned_id)
+                    # print(f"PAID TIMES: {result_times}")
                     self.insert_data(concerned_id, result_times)
-                except ValueError as e:
+                except TypeError as e:
                     print(f"ID{concerned_id}: {e}")
-                    logger = HolidayLogger.get_logger("ERROR")
-                    logger.error(f"ID{concerned_id}: {e}")
+                    # logger = HolidayLogger.get_logger("ERROR", "-err")
+                    # logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
                 else:
-                    logger = HolidayLogger.get_logger("INFO")
-                    logger.info(f"ID{concerned_id}: {day_acquired}日付与されました。")
+                    logger = HolidayLogger.get_logger("INFO", "-info")
+                    logger.info(
+                        f"ID{concerned_id}: {round(result_times/holiday_base_time, 1)}日付与されました。"
+                    )
 
             db.session.commit()
 
 
 class ObserverCarry(Observer):
-    def trigger_fail(self, i):
-        """Dummy for trigger fail"""
-        print(f"trigger_fail() i={i}")
-
-    def insert_data(self, i: int, calc_data: float):
+    def insert_carry(self, i: int, calc_data: float):
         holiday_log_data = PaidHolidayLog(
             i,
             0,
@@ -90,25 +91,20 @@ class ObserverCarry(Observer):
                     # print(f"{concerned_id}: {carry_times}")
                     self.insert_data(concerned_id, carry_days)
                     db.session.flush()
-                    # self.trigger_fail(concerned_id)
                 except TypeError as e:
                     print(f"{concerned_id}: {e}")
-                    logger = HolidayLogger.get_logger("ERROR")
+                    logger = HolidayLogger.get_logger("ERROR", "-err")
                     logger.error(f"ID{concerned_id}: {e}")
                     db.session.rollback()
                 # これが全部反映しないと、commitしないタイプ
                 else:
-                    logger = HolidayLogger.get_logger("INFO")
+                    logger = HolidayLogger.get_logger("INFO", "-info")
                     logger.info(f"ID{concerned_id}: {carry_days}日繰り越しました。")
 
             db.session.commit()
 
 
 class ObserverCheckType(Observer):
-    def trigger_fail(self, i):
-        """Dummy for trigger fail"""
-        print(f"trigger_fail() i={i}")
-
     def merge_type(self, i: int, past: Optional[str], post: str):
         if (past is None) or (past != post):
             r_holiday_obj = RecordPaidHoliday(i)
@@ -124,33 +120,25 @@ class ObserverCheckType(Observer):
                 f"Notify!---{notification_state + 1}月年休付与前のチェックが入ります。---"
             )
             for concerned_id in subject.get_concerned_staff():
-                try:
-                    # before_type, after_type = subject.refer_acquire_type(concerned_id)
-                    # TypeError: cannot unpack non-iterable NoneType object
-                    # print(before_type, after_type)
-                    your_types = subject.refer_acquire_type(concerned_id)
-                    # TypeError: 'NoneType' object is not subscriptable
-                    print(f"observer ID{concerned_id}: {your_types[1]}")
-                    self.merge_type(concerned_id, your_types[0], your_types[1])
-                    db.session.flush()
-                    # self.trigger_fail(concerned_id)
-                except ValueError as e:
-                    # print(f"ID{concerned_id}: {e}")
-                    logger = HolidayLogger.get_logger("ERROR", "-err")
-                    logger.error(f"ID{concerned_id}: {e}")
-                    db.session.rollback()
+                # before_type, after_type = subject.refer_acquire_type(concerned_id)
+                # TypeError: cannot unpack non-iterable NoneType object
+                # print(before_type, after_type)
+                your_types = subject.refer_acquire_type(concerned_id)
+                # TypeError: 'NoneType' object is not subscriptable
+                print(f"observer ID{concerned_id}: {your_types[1]}")
+                self.merge_type(concerned_id, your_types[0], your_types[1])
+                db.session.flush()
+                """
+                    `M_RECORD_PAIDHOLIDAY`.`ACQUISITION_TYPE`がNULLのうちは、下記例外キャッチは出来そうにない
                     """
-                        `M_RECORD_PAIDHOLIDAY`.`ACQUISITION_TYPE`がNULLのうちは、下記例外キャッチは出来そうにない
-                        """
                 # except TypeError as e:
                 #     print(f"ID{concerned_id}: {e}")
                 #     logger = HolidayLogger.get_logger("ERROR", "-err")
                 #     logger.error(f"ID{concerned_id}: {e}")
                 #     db.session.rollback()
-                else:
-                    logger = HolidayLogger.get_logger("INFO", "-info")
-                    logger.info(
-                        f"ID{concerned_id}の年休付与タイプは「{your_types[1]}」です。"
-                    )
+                logger = HolidayLogger.get_logger("INFO", "-info")
+                logger.info(
+                    f"ID{concerned_id}の年休付与タイプは「{your_types[1]}」です。"
+                )
 
-            # db.session.commit()
+            db.session.commit()
