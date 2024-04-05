@@ -27,12 +27,12 @@ class ObserverRegist(Observer):
         add_holidays = PaidHolidayLog(
             # スタッフID
             i,
-            # 残り日数（繰り越し付き）
+            # 付与日数（繰り越し付き）
             calc_data,
             None,
             None,
             0,
-            f"{now.strftime('%Y/%m/%d')}付与",
+            f"{now.strftime('%Y/%m/%d')}付与分",
         )
         db.session.add(add_holidays)
 
@@ -43,23 +43,20 @@ class ObserverRegist(Observer):
         ) == 10:
             print(f"Notify!---{notification_state}月年休付与の処理が入ります。---")
             for concerned_id in subject.get_concerned_staff():
-                try:
-                    holiday_base_time: float = subject.get_holiday_base_time(
-                        concerned_id
-                    )
-                    result_times: float = subject.acquire_holidays(concerned_id)
-                    # print(f"PAID TIMES: {result_times}")
-                    self.insert_data(concerned_id, result_times)
-                except TypeError as e:
-                    print(f"ID{concerned_id}: {e}")
-                    # logger = HolidayLogger.get_logger("ERROR", "-err")
-                    # logger.error(f"ID{concerned_id}: {e}")
-                    db.session.rollback()
+                holiday_base_time: float = subject.get_holiday_base_time(concerned_id)
+                result_times: float = subject.acquire_holidays(concerned_id)
+                # print(f"PAID TIMES: {concerned_id}-{result_times}")
+                self.insert_data(concerned_id, result_times)
+                db.session.flush()
+                db.session.rollback()
+                if result_times:
+                    result_days = result_times / holiday_base_time
                 else:
-                    logger = HolidayLogger.get_logger("INFO", "-info")
-                    logger.info(
-                        f"ID{concerned_id}: {round(result_times/holiday_base_time, 1)}日付与されました。"
-                    )
+                    result_days = 0
+                logger = HolidayLogger.get_logger("INFO", "-info")
+                logger.info(
+                    f"ID{concerned_id}: {round(result_days, 1)}日付与されました。"
+                )
 
             db.session.commit()
 
@@ -76,6 +73,7 @@ class ObserverCarry(Observer):
             "前回からの繰り越し",
         )
         db.session.add(holiday_log_data)
+        # db.session.commit()
 
     def update(self, subject: Subject) -> None:
         # notification_state: int = subject.notice_month()
@@ -86,20 +84,14 @@ class ObserverCarry(Observer):
                 f"Notify!---{notification_state + 1}月年休付与前のチェックが入ります。---"
             )
             for concerned_id in subject.get_concerned_staff():
-                try:
-                    carry_days = subject.calcurate_carry_days(concerned_id)
-                    # print(f"{concerned_id}: {carry_times}")
-                    self.insert_data(concerned_id, carry_days)
-                    db.session.flush()
-                except TypeError as e:
-                    print(f"{concerned_id}: {e}")
-                    logger = HolidayLogger.get_logger("ERROR", "-err")
-                    logger.error(f"ID{concerned_id}: {e}")
-                    db.session.rollback()
+                carry_times = subject.calcurate_carry_times(concerned_id)
+                # print(f"{concerned_id}: {carry_times}")
+                self.insert_carry(concerned_id, carry_times)
+                db.session.flush()
+                db.session.rollback()
                 # これが全部反映しないと、commitしないタイプ
-                else:
-                    logger = HolidayLogger.get_logger("INFO", "-info")
-                    logger.info(f"ID{concerned_id}: {carry_days}日繰り越しました。")
+                logger = HolidayLogger.get_logger("INFO", "-info")
+                logger.info(f"ID{concerned_id}: {carry_times}時間繰り越しました。")
 
             db.session.commit()
 

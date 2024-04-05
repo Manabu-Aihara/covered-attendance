@@ -409,6 +409,7 @@ class HolidayAcquire:
             )
         )
         # Trueの場合、時間休だけの総合計時間
+        # return noification_info_list
         return sum(approval_time_list)
 
     """
@@ -460,6 +461,7 @@ class HolidayAcquire:
 
         # 入職日〜基準日1日前
         diff_month = monthmod(self.in_day, base_day + relativedelta(days=-1))[0].months
+        # 入職日が第1週でなければ、翌月からカウント（今のところ私の独断）
         result_diff = (
             diff_month + 1
             if get_calendar_nth_dow(

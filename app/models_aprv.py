@@ -90,7 +90,7 @@ class PaidHolidayLog(db.Model):
         index=True,
         nullable=False,
     )
-    REMAIN_TIMES = db.Column(db.Float, nullable=False)
+    REMAIN_TIMES = db.Column(db.Float, nullable=True)
     NOTIFICATION_id = db.Column(
         db.Integer, db.ForeignKey("D_NOTIFICATION_LIST.id"), index=True, nullable=True
     )
@@ -115,3 +115,14 @@ class PaidHolidayLog(db.Model):
         self.NOTIFICATION_id = NOTIFICATION_id
         self.CARRY_FORWARD = CARRY_FORWARD
         self.REMARK = REMARK
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "staff_id": self.STAFFID,
+            "remain_times": self.REMAIN_TIMES,
+            "time_flag": self.TIME_REST_FLAG,
+            "notification_id": self.NOTIFICATION_id,
+            "carry": self.CARRY_FORWARD,
+            "remark": self.REMARK,
+        }

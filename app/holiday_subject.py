@@ -74,7 +74,8 @@ def error_handler(func):
             return func(*args, **kwargs)
         except KeyError as e:
             logger = HolidayLogger.get_logger("ERROR", "-err")
-            logger.error(f"ID{args}: {e}", exc_info=False)
+            # print(f"ログのIDの型: {args}-{type(args)}")
+            logger.error(f"ID{args[1]}: {e}", exc_info=False)
         except ValueError as e:
             logger = HolidayLogger.get_logger("ERROR", "-err")
             logger.error(f"ID{args}: {e}", exc_info=False)
@@ -107,6 +108,7 @@ class SubjectImpl(Subject):
         self._observers.append(observer)
 
     def detach(self, observer: Observer) -> None:
+        print("Subject: ...Detached an observer.")
         self._observers.remove(observer)
 
     """
@@ -123,11 +125,20 @@ class SubjectImpl(Subject):
             observer.update(self)
 
     def notice_month(self) -> int:
-        now = datetime.now()
-        self._state = 3 if (now.month == 3 and now.day == 31) else self._state
-        self._state = 9 if (now.month == 9 and now.day == 30) else self._state
-        self._state = 4 if (now.month == 4 and now.day == 1) else self._state
-        self._state = 10 if (now.month == 10 and now.day == 1) else self._state
+        # Python の datetime.now で秒以下を切り捨てる方法
+        # https://hawksnowlog.blogspot.com/2022/06/python-datetime-now-without-seconds.html
+        now = datetime.now().replace(second=0, microsecond=0)
+        it_time3 = datetime(now.year, 4, 5, 18, 12)
+        it_time9 = datetime(now.year, 9, 30, 7, 0)
+        it_time4 = datetime(now.year, 4, 5, 18, 0)
+        it_time10 = datetime(now.year, 10, 1, 7, 0)
+        self._state = 3 if (now == it_time3) else self._state
+        self._state = 9 if (now == it_time9) else self._state
+        self._state = 4 if (now == it_time4) else self._state
+        self._state = 10 if (now == it_time10) else self._state
+
+        # print(f"今: {now}")
+        # print(f"4月1日: {it_time4}")
         return self._state
 
     # def output_holiday_count(self, work_type: AcquisitionType, subscript: int) -> int:
@@ -174,35 +185,46 @@ class SubjectImpl(Subject):
     @Param
         concerned_id: int 該当者ID
     @Return
-        : Tuple<float, int> 総時間（繰り越し含む）とログ用付与日数
+        : float, int 総時間（繰り越し含む）
         """
 
     @error_handler
     def acquire_holidays(self, concerned_id: int) -> float:
-        # 繰り越し日数
-        carry_times = (
-            db.session.query(PaidHolidayLog.CARRY_FORWARD)
-            .filter(concerned_id == PaidHolidayLog.STAFFID)
-            .order_by(PaidHolidayLog.id.desc())
-            .first()
-        )
-        if carry_times is None:
-            # raise TypeError("繰り越しはありません。")
-            pass
-
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         dict_data = holiday_acquire_obj.plus_next_holidays()
         dict_value = dict_data.values()
         # dict_valuesのリスト化
         acquisition_days: int = list(dict_value)[-1]
 
-        # もしくは
-        # base_day = holiday_acquire_obj.convert_base_day()
-        # length: int = len(holiday_acquire_obj.get_acquisition_list(base_day))
-        # 取得日数
-        # acquisition_days = self.output_holiday_count(work_type, length)
+        # 繰り越し時間
+        carry_times = (
+            db.session.query(PaidHolidayLog.CARRY_FORWARD)
+            .filter(concerned_id == PaidHolidayLog.STAFFID)
+            .order_by(PaidHolidayLog.id.desc())
+            .first()
+        )
+        # print(f"君の名は: {carry_times}")
 
-        return (acquisition_days) * holiday_acquire_obj.holiday_base_time
+        # 今回carry_timeのみだと ← ココ重要
+        # テーブル内データ: NULL → TypeErrorだけれども、raiseされない → (None,)だから
+        # テーブル内データ自体存在しない → TypeError
+        """
+            201 raise!
+            if carry_times.CARRY_FORWARD is None:
+            31 raise!
+            if carry_times is None:
+            """
+        if carry_times is None or carry_times.CARRY_FORWARD is None:
+            carry_forward_times = 0
+            # raise TypeError("繰り越しはありません。")
+        else:
+            carry_forward_times = carry_times.CARRY_FORWARD
+
+        # print(f"君の名は: {carry_times.CARRY_FORWARD}")
+        return (
+            acquisition_days * holiday_acquire_obj.holiday_base_time
+            + carry_forward_times
+        )
         # return super().acquire_holidays()
 
     """
@@ -259,7 +281,7 @@ class SubjectImpl(Subject):
         return past_type, new_type
 
     @error_handler
-    def calcurate_carry_days(self, concerned_id: int) -> float:
+    def calcurate_carry_times(self, concerned_id: int) -> float:
         holiday_acquire_obj = HolidayAcquire(concerned_id)
 
         # Trueを付けたら時間休のみの合計
@@ -270,7 +292,9 @@ class SubjectImpl(Subject):
         try:
             remain_times = holiday_acquire_obj.print_remains()
         except TypeError as e:
-            raise e
+            print(f"{concerned_id}: {e}")
+            logger = HolidayLogger.get_logger("ERROR", "-err")
+            logger.error(f"ID{concerned_id}: {e}")
         else:
             # 最終残り日数を繰り越しにする
             # これは切り捨てる部分 truncate_times
@@ -280,8 +304,8 @@ class SubjectImpl(Subject):
                 # base_time - 時間休合計の端数（時間休の合計/base_timeの余り）が切り捨て時間
                 truncate_times = holiday_acquire_obj.holiday_base_time - remainder
 
-            carry_times = remain_times - truncate_times
-            return carry_times / holiday_acquire_obj.holiday_base_time
+        carry_times = remain_times - truncate_times
+        return carry_times
 
     def execute(self) -> None:
         self.notify()

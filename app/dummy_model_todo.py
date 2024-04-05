@@ -53,6 +53,8 @@ class EventORM(db.Model):
     def __init__(self, staff_id):
         self.staff_id = staff_id
 
+    # SQLAlchemyでクラスオブジェクトを辞書型(dictionary)に変換する方法
+    # https://qiita.com/hayashi-ay/items/4dc431003e7866d2aff8
     def to_dict(self):
         return {
             "staff_id": self.staff_id,

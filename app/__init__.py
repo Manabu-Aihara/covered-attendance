@@ -1,34 +1,36 @@
+import os
+from datetime import timedelta
+import logging
+from logging.handlers import RotatingFileHandler
+
 from flask import Flask, request, session
-from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
-import logging
-from logging.handlers import RotatingFileHandler
-import os
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_bcrypt import Bcrypt
-from jinja2 import Environment
 from flask_wtf.csrf import CSRFProtect, CSRFError
-from datetime import timedelta
+from jinja2 import Environment
 
-# # loggerを定義
-# logger = logging.getLogger(__name__)
+from config import Config
 
-# # loggerのログレベルを設定
-# logger.setLevel(logging.WARNING)
+# loggerを定義
+logger = logging.getLogger(__name__)
 
-# # loggerのフォーマット、出力先ファイルを定義
-# formatter = logging.Formatter("%(asctime)s - %(levelname)s:%(name)s - %(message)s")
-# file_handler = logging.FileHandler("test.log")
-# file_handler.setFormatter(formatter)
+# loggerのログレベルを設定
+logger.setLevel(logging.WARNING)
 
-# # loggerのフォーマット、出力先ファイルを設定
-# logger.addHandler(file_handler)
+# loggerのフォーマット、出力先ファイルを定義
+formatter = logging.Formatter("%(asctime)s - %(levelname)s:%(name)s - %(message)s")
+file_handler = logging.FileHandler("test.log")
+file_handler.setFormatter(formatter)
 
-# logger.warning("warning")
-# logger.error("error")
+# loggerのフォーマット、出力先ファイルを設定
+logger.addHandler(file_handler)
+
+logger.warning("warning")
+logger.error("error", exc_info=True)
 
 
 LOGFILE_NAME = "DEBUG.log"
@@ -54,8 +56,6 @@ bcrypt = Bcrypt(app)
 jinja_env = Environment(extensions=["jinja2.ext.i18n"])
 app.jinja_env.add_extension("jinja2.ext.loopcontrols")
 
-# CORS(app)
-
 app.logger.setLevel(logging.DEBUG)
 log_handler = logging.FileHandler(LOGFILE_NAME)
 log_handler.setLevel(logging.DEBUG)
@@ -78,3 +78,7 @@ file_handler.setLevel(logging.INFO)
 app.logger.addHandler(file_handler)
 
 app.logger.setLevel(logging.INFO)
+
+from app.observer_exec import execute_observer
+
+execute_observer()

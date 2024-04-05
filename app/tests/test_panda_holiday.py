@@ -234,7 +234,7 @@ def test_acquire_holidays(app_context, subject, get_acquire_param, mocker):
         print(f"ID: 「{i}」")
         with open("insert_holidays.log", "a") as f:
             f.write(
-                f"INSERT panda.INTO M_PAIDHOLIDAY_LOG VALUES({i}, {carri_times}, None, None, 0, '{carri_times}時間付与')\n"
+                f"INSERT INTO panda.D_PAIDHOLIDAY_LOG VALUES({i}, {carri_times}, NULL, NULL, 0, '{carri_times}時間付与');\n"
             )
         original_insert_func(i, carri_times)
 

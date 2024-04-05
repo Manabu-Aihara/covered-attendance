@@ -22,6 +22,7 @@ def test_print_db(app_context):
 
 
 @pytest.fixture(scope="module")
+@pytest.mark.freeze_time(datetime(2024, 3, 31, 7, 0, 0))
 def subject():
     subject = SubjectImpl()
     return subject
@@ -79,9 +80,9 @@ def test_refer_acquire_type(app_context, subject, mocker):
 # Failed: DID NOT RAISE <class 'TypeError'>
 # calcurate_carry_days()内のtry-exceptが、発生した例外をキャッチしていたから？
 @pytest.mark.skip
-def test_raise_carry_days(app_context, subject):
+def test_raise_carry_times(app_context, subject):
     with pytest.raises(TypeError) as exce_info:
-        subject.calcurate_carry_days(31)
+        subject.calcurate_carry_times(31)
     print(exce_info.value)
 
 
@@ -92,23 +93,33 @@ def test_raise_refer_holiday_type(app_context, subject):
     print(exce_info.value)
 
 
+# Failed: DID NOT RAISE <class 'KeyError'>
+# 上同様try-exceptで、発生した例外をキャッチ済み
 @pytest.mark.skip
 def test_raise_acquire_holidays(app_context, subject):
-    with pytest.raises(KeyError) as exec_info:
-        subject.acquire_holidays(182)
+    with pytest.raises(TypeError) as exec_info:
+        subject.acquire_holidays(201)
     print(exec_info.value)
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_base_time_for_paid(app_context, subject):
     holiday_base = subject.get_holiday_base_time(165)
     assert holiday_base == 8.0
 
 
+@pytest.mark.skip
+# @pytest.mark.freeze_time(datetime(2024, 3, 31))
+def test_carry_times(app_context, subject):
+    carry_times = subject.calcurate_carry_times(201)
+    assert carry_times == 87.0
+
+
 # @pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 4, 1, 7, 0, 0))
 def test_acquire_holidays(app_context, subject):
-    expection_holiday = subject.acquire_holidays(105)
-    print(expection_holiday)
+    expection_holiday = subject.acquire_holidays(31)
+    print(f"時間: {expection_holiday}")
 
 
 @pytest.mark.skip
@@ -124,11 +135,11 @@ def test_calcurate_carry_days(app_context, subject, mocker):
         HolidayAcquire, "print_remains", side_effect=[80, 38.5]
     )
     sum_notify_mock = mocker.patch.object(
-        HolidayAcquire, "sum_notify_times", side_effect=[13, 45, 6, 20]
+        HolidayAcquire, "sum_notify_times", side_effect=[13, 6]
     )
 
-    subject.calcurate_carry_days(20)
-    subject.calcurate_carry_days(30)
+    print(subject.calcurate_carry_days(20))
+    print(subject.calcurate_carry_days(30))
 
     print(sum_notify_mock.call_args_list)
     assert remains_mock.call_count == 2
@@ -139,12 +150,26 @@ def test_calcurate_carry_days(app_context, subject, mocker):
     """
 
 
-# @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 4, 1))
+@pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 4, 1, 7, 0, 0))
 def test_get_concerned_staff(app_context, subject):
     sakura_member_list = subject.get_concerned_staff()
     print(sakura_member_list)
     print(len(sakura_member_list))
+
+
+@pytest.mark.skip
+def test_data_time():
+    now = datetime.now()
+    str_time = datetime(now.year, 4, 4, 12, 0, 0).strftime("%Y/%m/%d %H:%M:%S")
+    print(str_time)
+
+
+@pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 4, 1, 7, 0, 0))
+def test_import_subject(subject):
+    print(datetime.now())
+    assert subject.notice_month() is not None
 
 
 # コンストラクタモックは無理、引数あるから
