@@ -128,9 +128,9 @@ class SubjectImpl(Subject):
         # Python の datetime.now で秒以下を切り捨てる方法
         # https://hawksnowlog.blogspot.com/2022/06/python-datetime-now-without-seconds.html
         now = datetime.now().replace(second=0, microsecond=0)
-        it_time3 = datetime(now.year, 4, 5, 18, 12)
+        it_time3 = datetime(now.year, 3, 31, 7, 0)
         it_time9 = datetime(now.year, 9, 30, 7, 0)
-        it_time4 = datetime(now.year, 4, 5, 18, 0)
+        it_time4 = datetime(now.year, 4, 1, 7, 0)
         it_time10 = datetime(now.year, 10, 1, 7, 0)
         self._state = 3 if (now == it_time3) else self._state
         self._state = 9 if (now == it_time9) else self._state
@@ -140,12 +140,6 @@ class SubjectImpl(Subject):
         # print(f"今: {now}")
         # print(f"4月1日: {it_time4}")
         return self._state
-
-    # def output_holiday_count(self, work_type: AcquisitionType, subscript: int) -> int:
-    #     if subscript <= len(work_type.under5y) - 1:
-    #         return work_type.under5y[subscript]
-    #     else:
-    #         return work_type.onward
 
     def get_concerned_staff(self) -> List[int]:
         concerned_id_list = []
@@ -203,7 +197,7 @@ class SubjectImpl(Subject):
             .order_by(PaidHolidayLog.id.desc())
             .first()
         )
-        # print(f"君の名は: {carry_times}")
+        print(f"君の名は: {carry_times.CARRY_FORWARD}")
 
         # 今回carry_timeのみだと ← ココ重要
         # テーブル内データ: NULL → TypeErrorだけれども、raiseされない → (None,)だから
@@ -216,11 +210,10 @@ class SubjectImpl(Subject):
             """
         if carry_times is None or carry_times.CARRY_FORWARD is None:
             carry_forward_times = 0
-            # raise TypeError("繰り越しはありません。")
+            raise TypeError("繰り越しはありません。")
         else:
             carry_forward_times = carry_times.CARRY_FORWARD
 
-        # print(f"君の名は: {carry_times.CARRY_FORWARD}")
         return (
             acquisition_days * holiday_acquire_obj.holiday_base_time
             + carry_forward_times

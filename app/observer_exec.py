@@ -15,13 +15,13 @@ def execute_observer():
     observer_type = ObserverCheckType()
     observer_carry = ObserverCarry()
     observer_regist = ObserverRegist()
-    # subject.attach(observer_type)
+    subject.attach(observer_type)
     subject.attach(observer_carry)
-    # subject.attach(observer_regist)
+    subject.attach(observer_regist)
 
-    with app.app_context():
-        subject.execute()
+    # with app.app_context():
+    #     subject.execute()
 
-    # subject.detach(observer_type)
+    subject.detach(observer_type)
     subject.detach(observer_carry)
-    # subject.detach(observer_regist)
+    subject.detach(observer_regist)

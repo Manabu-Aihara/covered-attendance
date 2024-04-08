@@ -43,22 +43,32 @@ class ObserverRegist(Observer):
         ) == 10:
             print(f"Notify!---{notification_state}月年休付与の処理が入ります。---")
             for concerned_id in subject.get_concerned_staff():
-                holiday_base_time: float = subject.get_holiday_base_time(concerned_id)
-                result_times: float = subject.acquire_holidays(concerned_id)
-                # print(f"PAID TIMES: {concerned_id}-{result_times}")
-                self.insert_data(concerned_id, result_times)
-                db.session.flush()
-                db.session.rollback()
-                if result_times:
-                    result_days = result_times / holiday_base_time
+                try:
+                    holiday_base_time: float = subject.get_holiday_base_time(
+                        concerned_id
+                    )
+                    result_times: float = subject.acquire_holidays(concerned_id)
+                    # print(f"PAID TIMES: {concerned_id}-{result_times}")
+                    self.insert_data(concerned_id, result_times)
+                    db.session.flush()
+                    db.session.commit()
+                except TypeError as e:
+                    print(f"ID {concerned_id}: {e}")
+                    db.session.rollback()
+                except Exception as e:
+                    print(f"DB Exception: {e}")
+                    db.session.rollback()
                 else:
-                    result_days = 0
-                logger = HolidayLogger.get_logger("INFO", "-info")
-                logger.info(
-                    f"ID{concerned_id}: {round(result_days, 1)}日付与されました。"
-                )
+                    if result_times:
+                        result_days = result_times / holiday_base_time
+                    else:
+                        result_days = 0
+                    logger = HolidayLogger.get_logger("INFO", "-info")
+                    logger.info(
+                        f"ID{concerned_id}: {round(result_days, 1)}日付与されました。"
+                    )
 
-            db.session.commit()
+            # db.session.commit()
 
 
 class ObserverCarry(Observer):
@@ -73,7 +83,6 @@ class ObserverCarry(Observer):
             "前回からの繰り越し",
         )
         db.session.add(holiday_log_data)
-        # db.session.commit()
 
     def update(self, subject: Subject) -> None:
         # notification_state: int = subject.notice_month()
@@ -84,16 +93,21 @@ class ObserverCarry(Observer):
                 f"Notify!---{notification_state + 1}月年休付与前のチェックが入ります。---"
             )
             for concerned_id in subject.get_concerned_staff():
-                carry_times = subject.calcurate_carry_times(concerned_id)
-                # print(f"{concerned_id}: {carry_times}")
-                self.insert_carry(concerned_id, carry_times)
-                db.session.flush()
-                db.session.rollback()
-                # これが全部反映しないと、commitしないタイプ
-                logger = HolidayLogger.get_logger("INFO", "-info")
-                logger.info(f"ID{concerned_id}: {carry_times}時間繰り越しました。")
+                try:
+                    carry_times = subject.calcurate_carry_times(concerned_id)
+                    # print(f"{concerned_id}: {carry_times}")
+                    self.insert_carry(concerned_id, carry_times)
+                    db.session.flush()
+                    db.session.commit()
+                except Exception as e:
+                    print(f"DB Exception: {e}")
+                    db.session.rollback()
+                else:
+                    logger = HolidayLogger.get_logger("INFO", "-info")
+                    logger.info(f"ID{concerned_id}: {carry_times}時間繰り越しました。")
 
-            db.session.commit()
+        # これが全部反映しないと、commitしないタイプ
+        # db.session.commit()
 
 
 class ObserverCheckType(Observer):
@@ -112,25 +126,23 @@ class ObserverCheckType(Observer):
                 f"Notify!---{notification_state + 1}月年休付与前のチェックが入ります。---"
             )
             for concerned_id in subject.get_concerned_staff():
-                # before_type, after_type = subject.refer_acquire_type(concerned_id)
-                # TypeError: cannot unpack non-iterable NoneType object
-                # print(before_type, after_type)
-                your_types = subject.refer_acquire_type(concerned_id)
-                # TypeError: 'NoneType' object is not subscriptable
-                print(f"observer ID{concerned_id}: {your_types[1]}")
-                self.merge_type(concerned_id, your_types[0], your_types[1])
-                db.session.flush()
-                """
-                    `M_RECORD_PAIDHOLIDAY`.`ACQUISITION_TYPE`がNULLのうちは、下記例外キャッチは出来そうにない
-                    """
-                # except TypeError as e:
-                #     print(f"ID{concerned_id}: {e}")
-                #     logger = HolidayLogger.get_logger("ERROR", "-err")
-                #     logger.error(f"ID{concerned_id}: {e}")
-                #     db.session.rollback()
-                logger = HolidayLogger.get_logger("INFO", "-info")
-                logger.info(
-                    f"ID{concerned_id}の年休付与タイプは「{your_types[1]}」です。"
-                )
+                try:
+                    # before_type, after_type = subject.refer_acquire_type(concerned_id)
+                    # TypeError: cannot unpack non-iterable NoneType object
+                    # print(before_type, after_type)
+                    your_types = subject.refer_acquire_type(concerned_id)
+                    # TypeError: 'NoneType' object is not subscriptable
+                    print(f"observer ID{concerned_id}: {your_types[1]}")
+                    self.merge_type(concerned_id, your_types[0], your_types[1])
+                    db.session.flush()
+                    db.session.commit()
+                except Exception as e:
+                    print(f"DB Exception: {e}")
+                    db.session.rollback()
+                else:
+                    logger = HolidayLogger.get_logger("INFO", "-info")
+                    logger.info(
+                        f"ID{concerned_id}の年休付与タイプは「{your_types[1]}」です。"
+                    )
 
-            db.session.commit()
+            # db.session.commit()

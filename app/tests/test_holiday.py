@@ -10,7 +10,7 @@ TARGET_ID = 31
 
 
 @pytest.fixture
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+# @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def get_official_user(app_context):
     acquisition_object = HolidayAcquire(TARGET_ID)
     return acquisition_object
