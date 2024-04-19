@@ -2,22 +2,24 @@
 # https://www.loginradius.com/blog/engineering/guest-post/securing-flask-api-with-jwt/
 from functools import wraps
 from typing import Dict, Any
-import json
+import importlib
 from datetime import datetime, timedelta
 
 import jwt
 from flask import request, abort
 from flask_login import current_user
 
+import main
 from app import app, db
 from app.models import StaffLoggin
 
 
 def token_required(f):
+    global auth_user
+
     @wraps(f)
     def decorated(*args, **kwargs):
         # 以下コメントで、issue_tokenか!?
-        global token
         if "Authorization" in request.headers:
             # token = request.headers["Authorization"].split(" ")[1]
             # header_parts: list = token.split(".")
@@ -46,6 +48,7 @@ def token_required(f):
                 "__init__() missing 2 required positional arguments: 'PASSWORD' and 'ADMIN'"
                 """
             auth_user: StaffLoggin = db.session.get(StaffLoggin, data["user_id"])
+            # print(f"Ago token: {auth_user.get_reset_token()}")
             if auth_user is None:
                 return {
                     "message": "Invalid Authentication token!",
@@ -54,6 +57,15 @@ def token_required(f):
                 }, 401
         #     if not auth_user["active"]:
         #         abort(403)
+        except jwt.exceptions.DecodeError as e:
+            print(f"JWT Exception: {e}")
+            # importlib.reload(main)
+            # print("リロードしたと思います")
+            # return {
+            #     "message": "No way",
+            #     "data": auth_user.get_reset_token(),
+            #     "error": str(e),
+            # }
         except TypeError as e:
             return {
                 "message": "Something went wrong",
@@ -71,7 +83,7 @@ def issue_token(user_id: int) -> Dict[str, Any]:
     if current_user:
         payload = {"user_id": user_id}
         # add token expiration time (5 seconds):
-        payload["exp"] = datetime.now() + timedelta(seconds=5)
+        payload["exp"] = datetime.now() + timedelta(hours=1)
         try:
             # token should expire after 24 hrs
             token = jwt.encode(

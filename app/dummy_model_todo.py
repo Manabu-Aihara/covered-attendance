@@ -1,5 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+import re
+from datetime import datetime
 
 from flask_login import LoginManager
 
@@ -50,18 +52,24 @@ class EventORM(db.Model):
     summary = db.Column(db.String(50), nullable=True)
     progress = db.Column(db.String(25), index=True, nullable=True)
 
-    def __init__(self, staff_id):
-        self.staff_id = staff_id
+    # def __init__(self, staff_id):
+    #     self.staff_id = staff_id
 
     # SQLAlchemyでクラスオブジェクトを辞書型(dictionary)に変換する方法
     # https://qiita.com/hayashi-ay/items/4dc431003e7866d2aff8
     def to_dict(self):
+        # rp_start = str(self.start_time).replace(" ", "T")
+        # rp_end = str(self.end_time).replace(" ", "T")
+        # re_start = re.sub(r"$", ".000Z", rp_start)
+        # re_end = re.sub(r"$", ".000Z", rp_end)
+        f = "%Y-%m-%dT%H:%M:%S.000Z"
         return {
+            "id": self.id,
             "staff_id": self.staff_id,
-            "group_id": self.group_id,
-            "start_time": self.start_time,
-            "end_time": self.end_time,
+            "group": self.group_id,
+            "start": datetime.strftime(self.start_time, f),
+            "end": datetime.strftime(self.end_time, f),
             "title": self.title,
-            "summry": self.summary,
+            "summary": self.summary,
             "progress": self.progress,
         }

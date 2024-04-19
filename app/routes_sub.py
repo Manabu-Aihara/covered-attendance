@@ -1,5 +1,4 @@
-import json
-import requests
+from datetime import datetime
 from typing import List, Dict, Any
 
 from flask import render_template, redirect, request, jsonify, make_response, url_for
@@ -44,12 +43,12 @@ def print_all_todo(auth_user) -> List[TodoOrm]:
     return td_dict_list
 
 
-@app.route("/redirect")
-@login_required
-def redirect_func():
-    token_dict = issue_token(current_user.STAFFID)
-    # response.headers["Authorized"] = token["data"]
-    return redirect(url_for("post_access_token", token_data=token_dict["data"]))
+# @app.route("/redirect")
+# @login_required
+# def redirect_func():
+#     token_dict = issue_token(current_user.STAFFID)
+#     # response.headers["Authorized"] = token["data"]
+#     return redirect(url_for("post_access_token", token_data=token_dict["data"]))
 
 
 @app.route("/timetable/auth", methods=["GET", "POST"])
@@ -70,33 +69,55 @@ def refresh_token(auth_user):
     return new_token["data"]
 
 
-@app.route("/event/all", methods=["GET", "POST"])
+@app.route("/timetable/inquiry", methods=["GET", "POST"])
 # @login_required
 @token_required
-def print_all_event(auth_user):
-
+def print_user_inquiry(auth_user):
     return str(auth_user.STAFFID)
-    # ev_dict_list = []
-    # event_list: list = db.session.query(EventORM).all()
-    # for todo in event_list:
-    #     ev_dict_list.append(todo.to_dict())
-
-    # return ev_dict_list
 
 
-@app.route("/todo/add/<staff_id>", methods=["POST"])
-@login_required
-def append_todo(staff_id):
-    one_todo = TodoOrm(staff_id=staff_id)
-    one_todo.staff_id = request.json["staff_id"]
-    one_todo.group_id = request.json["group_id"]
-    one_todo.summary = request.json["summary"]
-    # one_todo.owner = request.json["owner"]
-    one_todo.done = request.json["done"]
-    db.session.add(one_todo)
+@app.route("/event/all", methods=["GET"])
+# @token_required
+def get_all_event():
+    event_dict_list = []
+    event_list: list = db.session.query(EventORM).all()
+    for event_item in event_list:
+        event_dict_list.append(event_item.to_dict())
+
+    return event_dict_list
+
+
+@app.route("/event/add", methods=["POST"])
+@token_required
+def append_event_item(auth_user):
+    event_item = EventORM()
+    event_item.staff_id = request.json["staff_id"]
+    event_item.group_id = request.json["group"]
+    f = "%Y-%m-%d %H:%M:%S"
+    start_ts = request.json["start_time"]
+    end_ts = request.json["end_time"]
+    print(f"hope string: {type(start_ts)}")
+    rp_start = start_ts.replace("T", " ").replace(".000Z", "")
+    rp_end = end_ts.replace("T", " ").replace(".000Z", "")
+    event_item.start_time = datetime.strptime(rp_start, f)
+    event_item.end_time = datetime.strptime(rp_end, f)
+    event_item.title = request.json["title"]
+    db.session.add(event_item)
     db.session.commit()
 
-    return redirect("/dummy-form")
+    return redirect("/event/all")
+
+
+@app.route("/event/update/<id>", methods=["POST"])
+@token_required
+def update_event_item(auth_user, id: str):
+    target_item = db.session.query(EventORM).filter(EventORM.id == int(id)).first()
+    target_item.summary = request.json["summary"]
+    target_item.progress = request.json["progress"]
+    db.session.merge(target_item)
+    db.session.commit()
+
+    return redirect("/event/all")
 
 
 def get_target_user_list(base_month: str) -> List[RecordPaidHoliday]:
