@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List
 
 from flask import render_template, redirect, request, jsonify, make_response, url_for
 
@@ -8,7 +8,7 @@ from flask_login.utils import login_required
 from flask_cors import CORS, cross_origin
 
 from app import app, db
-from app.auth_middleware import token_required, issue_token
+from app.auth_middleware import token_required, issue_token, get_user_group_id
 from app.dummy_model_todo import TodoOrm, EventORM
 from app.models import RecordPaidHoliday
 from app.models_aprv import PaidHolidayLog
@@ -54,7 +54,8 @@ def print_all_todo(auth_user) -> List[TodoOrm]:
 @app.route("/timetable/auth", methods=["GET", "POST"])
 @login_required
 def post_access_token():
-    token_dict = issue_token(current_user.STAFFID)
+    user_group_id = get_user_group_id()
+    token_dict = issue_token(user_group_id.STAFFID, user_group_id.CODE)
     # resp = make_response(jsonify(token_data))
     return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
 
@@ -62,8 +63,8 @@ def post_access_token():
 @app.route("/refresh", methods=["GET", "POST"])
 # @login_required
 @token_required
-def refresh_token(auth_user):
-    new_token = issue_token(auth_user.STAFFID)
+def refresh_token(auth_user, extension):
+    new_token = issue_token(auth_user.STAFFID, extension)
     flask_resp = make_response(jsonify(new_token))
 
     return new_token["data"]
@@ -72,13 +73,13 @@ def refresh_token(auth_user):
 @app.route("/timetable/inquiry", methods=["GET", "POST"])
 # @login_required
 @token_required
-def print_user_inquiry(auth_user):
-    return str(auth_user.STAFFID)
+def print_user_inquiry(auth_user, extension):
+    return {"staff_id": str(auth_user.STAFFID), "group_id": str(extension)}
 
 
 @app.route("/event/all", methods=["GET"])
-# @token_required
-def get_all_event():
+@token_required
+def get_all_event(auth_user, extension):
     event_dict_list = []
     event_list: list = db.session.query(EventORM).all()
     for event_item in event_list:
@@ -89,7 +90,7 @@ def get_all_event():
 
 @app.route("/event/add", methods=["POST"])
 @token_required
-def append_event_item(auth_user):
+def append_event_item(auth_user, extension):
     event_item = EventORM()
     event_item.staff_id = request.json["staff_id"]
     event_item.group_id = request.json["group"]
@@ -110,7 +111,7 @@ def append_event_item(auth_user):
 
 @app.route("/event/update/<id>", methods=["POST"])
 @token_required
-def update_event_item(auth_user, id: str):
+def update_event_item(auth_user, extension, id: str):
     target_item = db.session.query(EventORM).filter(EventORM.id == int(id)).first()
     target_item.summary = request.json["summary"]
     target_item.progress = request.json["progress"]
