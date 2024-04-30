@@ -43,7 +43,7 @@ def token_required(f):
                 abort(401)
             # return header_parts[1]
             token = header_parts[1]
-            print(token)
+            print(f"Made toke: {token}")
         if not token:
             return {
                 "message": "Authentication Token is missing!",
@@ -85,8 +85,9 @@ def token_required(f):
                 "error": str(e),
                 # "resource": dir(auth_user),
             }, 500
-
-        return f(auth_user, extension, *args, **kwargs)
+        else:
+            # print(f"StaffLogin token: {auth_user.get_reset_token()}")
+            return f(auth_user, extension, *args, **kwargs)
 
     return decorated
 
