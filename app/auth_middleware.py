@@ -57,7 +57,11 @@ def token_required(f):
                 "__init__() missing 2 required positional arguments: 'PASSWORD' and 'ADMIN'"
                 """
             # group_idがない
-            auth_user: StaffLoggin = db.session.get(StaffLoggin, data["user_id"])
+            auth_user: StaffLoggin = (
+                db.session.query(StaffLoggin)
+                .filter(StaffLoggin.STAFFID == data["user_id"])
+                .first()
+            )
             extension: int = data["group_id"]
             if auth_user is None:
                 return {

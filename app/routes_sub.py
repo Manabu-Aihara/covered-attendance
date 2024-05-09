@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import List
 
@@ -15,7 +16,7 @@ from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
 
 # 絶対こっち
-origins = ["http://localhost:5173"]
+origins = [os.getenv("CLOUD_TIMETABLE"), "http://localhost:5173"]
 CORS(app, supports_credentials=True, origins=origins)
 # app.config.update(SESSION_COOKIE_SAMESITE="None")
 # CORS(app)
@@ -58,6 +59,8 @@ def post_access_token():
     token_dict = issue_token(user_group_id.STAFFID, user_group_id.CODE)
     # resp = make_response(jsonify(token_data))
     return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
+    # cloud_site = os.getenv("CLOUD_TIMETABLE")
+    # return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
 
 
 @app.route("/refresh", methods=["GET", "POST"])
