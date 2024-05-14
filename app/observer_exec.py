@@ -19,8 +19,8 @@ def execute_observer():
     subject.attach(observer_carry)
     subject.attach(observer_regist)
 
-    # with app.app_context():
-    #     subject.execute()
+    with app.app_context():
+        subject.execute()
 
     subject.detach(observer_type)
     subject.detach(observer_carry)

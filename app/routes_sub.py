@@ -59,6 +59,8 @@ def post_access_token():
     token_dict = issue_token(user_group_id.STAFFID, user_group_id.CODE)
     # resp = make_response(jsonify(token_data))
     return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
+    # github_page = os.getenv("GIT_PROVIDE")
+    # return redirect(f"{github_page}/auth?token={token_dict['data']}")
     # cloud_site = os.getenv("CLOUD_TIMETABLE")
     # return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
 
@@ -87,8 +89,6 @@ def get_all_event(auth_user, extension):
     event_list: list = db.session.query(EventORM).all()
     for event_item in event_list:
         event_dict_list.append(event_item.to_dict())
-
-    return event_dict_list
 
 
 @app.route("/event/add", methods=["POST"])
@@ -122,6 +122,16 @@ def update_event_item(auth_user, extension, id: str):
     db.session.commit()
 
     return redirect("/event/all")
+
+
+@app.route("/date/update/<id>", methods=["POST"])
+@token_required
+def flush_date_item(auth_user, extension, id: str):
+    target_item = db.session.query(EventORM).filter(EventORM.id == int(id)).first()
+    target_item.start_time = request.json["start"]
+    target_item.end_time = request.json["end"]
+    db.session.merge(target_item)
+    db.session.flush()
 
 
 def get_target_user_list(base_month: str) -> List[RecordPaidHoliday]:
