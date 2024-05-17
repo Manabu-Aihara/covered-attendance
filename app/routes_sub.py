@@ -90,6 +90,8 @@ def get_all_event(auth_user, extension):
     for event_item in event_list:
         event_dict_list.append(event_item.to_dict())
 
+    return event_dict_list
+
 
 @app.route("/event/add", methods=["POST"])
 @token_required
@@ -130,8 +132,16 @@ def flush_date_item(auth_user, extension, id: str):
     target_item = db.session.query(EventORM).filter(EventORM.id == int(id)).first()
     target_item.start_time = request.json["start"]
     target_item.end_time = request.json["end"]
+    print(f"DnD time: {target_item}")
     db.session.merge(target_item)
     db.session.flush()
+
+
+@app.route("/date/update", methods=["POST"])
+@token_required
+def commit_date_item(auth_user, extension):
+    print(request.json)
+    return request.json
 
 
 def get_target_user_list(base_month: str) -> List[RecordPaidHoliday]:
