@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from typing import List
+import re
 
 from flask import render_template, redirect, request, jsonify, make_response, url_for
 
@@ -58,11 +59,11 @@ def post_access_token():
     user_group_id = get_user_group_id()
     token_dict = issue_token(user_group_id.STAFFID, user_group_id.CODE)
     # resp = make_response(jsonify(token_data))
-    return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
+    # return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
     # github_page = os.getenv("GIT_PROVIDE")
     # return redirect(f"{github_page}/auth?token={token_dict['data']}")
-    # cloud_site = os.getenv("CLOUD_TIMETABLE")
-    # return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
+    cloud_site = os.getenv("CLOUD_TIMETABLE")
+    return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
 
 
 @app.route("/refresh", methods=["GET", "POST"])
@@ -93,20 +94,23 @@ def get_all_event(auth_user, extension):
     return event_dict_list
 
 
+def convert_strToDate(str_date: str):
+    regex_data = re.sub(r"\.\d{3}Z", "", str_date)
+    replaced_str_data = regex_data.replace("T", " ")
+    print(f"変更Time: {replaced_str_data}")
+    f = "%Y-%m-%d %H:%M:%S"
+    # replaced_str_data = str_date.replace("T", " ").replace(".000Z", "")
+    return datetime.strptime(replaced_str_data, f)
+
+
 @app.route("/event/add", methods=["POST"])
 @token_required
 def append_event_item(auth_user, extension):
     event_item = EventORM()
     event_item.staff_id = request.json["staff_id"]
     event_item.group_id = request.json["group"]
-    f = "%Y-%m-%d %H:%M:%S"
-    start_ts = request.json["start_time"]
-    end_ts = request.json["end_time"]
-    print(f"hope string: {type(start_ts)}")
-    rp_start = start_ts.replace("T", " ").replace(".000Z", "")
-    rp_end = end_ts.replace("T", " ").replace(".000Z", "")
-    event_item.start_time = datetime.strptime(rp_start, f)
-    event_item.end_time = datetime.strptime(rp_end, f)
+    event_item.start_time = convert_strToDate(request.json["start_time"])
+    event_item.end_time = convert_strToDate(request.json["end_time"])
     event_item.title = request.json["title"]
     db.session.add(event_item)
     db.session.commit()
@@ -143,7 +147,23 @@ def flush_date_item(auth_user, extension, id: str):
 def commit_date_item(auth_user, extension):
     json_data = request.json
     print(json_data["data"])
-    return request.json
+    for dict_data in json_data["data"]:
+        try:
+            target_item = (
+                db.session.query(EventORM)
+                .filter(EventORM.id == dict_data["id"])
+                .first()
+            )
+            # print(convert_strToDate(dict_data["start"]))
+            target_item.start_time = convert_strToDate(dict_data["start"])
+            target_item.end_time = convert_strToDate(dict_data["end"])
+            db.session.merge(target_item)
+            db.session.flush()
+        except Exception as e:
+            print(f"DB Exception: {e}")
+            db.session.rollback()
+        else:
+            db.session.commit()
 
 
 def get_target_user_list(base_month: str) -> List[RecordPaidHoliday]:
