@@ -126,6 +126,7 @@ def update_event_item(auth_user, extension, id: str):
     return redirect("/event/all")
 
 
+# 使わないかもAPI
 @app.route("/date/update/<id>", methods=["POST"])
 @token_required
 def flush_date_item(auth_user, extension, id: str):
@@ -140,7 +141,8 @@ def flush_date_item(auth_user, extension, id: str):
 @app.route("/date/update", methods=["POST"])
 @token_required
 def commit_date_item(auth_user, extension):
-    print(request.json)
+    json_data = request.json
+    print(json_data["data"])
     return request.json
 
 
