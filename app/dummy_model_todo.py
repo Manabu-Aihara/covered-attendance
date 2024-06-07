@@ -52,8 +52,8 @@ class EventORM(db.Model):
     summary = db.Column(db.String(50), nullable=True)
     progress = db.Column(db.String(25), index=True, nullable=True)
 
-    # def __init__(self, staff_id):
-    #     self.staff_id = staff_id
+    # def __init__(self, id):
+    #     self.id = id
 
     # SQLAlchemyでクラスオブジェクトを辞書型(dictionary)に変換する方法
     # https://qiita.com/hayashi-ay/items/4dc431003e7866d2aff8

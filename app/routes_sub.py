@@ -59,11 +59,11 @@ def post_access_token():
     user_group_id = get_user_group_id()
     token_dict = issue_token(user_group_id.STAFFID, user_group_id.CODE)
     # resp = make_response(jsonify(token_data))
-    # return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
+    return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
     # github_page = os.getenv("GIT_PROVIDE")
     # return redirect(f"{github_page}/auth?token={token_dict['data']}")
-    cloud_site = os.getenv("CLOUD_TIMETABLE")
-    return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
+    # cloud_site = os.getenv("CLOUD_TIMETABLE")
+    # return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
 
 
 @app.route("/refresh", methods=["GET", "POST"])
@@ -126,6 +126,23 @@ def update_event_item(auth_user, extension, id: str):
     target_item.progress = request.json["progress"]
     db.session.merge(target_item)
     db.session.commit()
+
+    return redirect("/event/all")
+
+
+@app.route("/event/remove/<id>", methods=["DELETE"])
+@token_required
+def remove_event_item(auth_user, extension, id: str):
+    try:
+        target_item = db.session.query(EventORM).filter(EventORM.id == int(id)).first()
+        print(f"Delete: {isinstance(target_item, EventORM)}")
+        db.session.delete(target_item)
+        db.session.flush()
+    except Exception as e:
+        print(f"DB Exception: {e}")
+        db.session.rollback()
+    else:
+        db.session.commit()
 
     return redirect("/event/all")
 
