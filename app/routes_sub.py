@@ -59,11 +59,11 @@ def post_access_token():
     user_group_id = get_user_group_id()
     token_dict = issue_token(user_group_id.STAFFID, user_group_id.CODE)
     # resp = make_response(jsonify(token_data))
-    return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
+    # return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
     # github_page = os.getenv("GIT_PROVIDE")
     # return redirect(f"{github_page}/auth?token={token_dict['data']}")
-    # cloud_site = os.getenv("CLOUD_TIMETABLE")
-    # return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
+    cloud_site = os.getenv("CLOUD_TIMETABLE")
+    return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
 
 
 @app.route("/refresh", methods=["GET", "POST"])
