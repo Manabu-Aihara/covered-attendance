@@ -10,7 +10,12 @@ from flask_login.utils import login_required
 from flask_cors import CORS, cross_origin
 
 from app import app, db
-from app.auth_middleware import token_required, issue_token, get_user_group_id
+from app.auth_middleware import (
+    token_required,
+    issue_token,
+    get_user_group_id,
+    get_user_group,
+)
 from app.dummy_model_todo import TodoOrm, EventORM
 from app.models import RecordPaidHoliday
 from app.models_aprv import PaidHolidayLog
@@ -59,11 +64,11 @@ def post_access_token():
     user_group_id = get_user_group_id()
     token_dict = issue_token(user_group_id.STAFFID, user_group_id.CODE)
     # resp = make_response(jsonify(token_data))
-    # return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
+    return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
     # github_page = os.getenv("GIT_PROVIDE")
     # return redirect(f"{github_page}/auth?token={token_dict['data']}")
-    cloud_site = os.getenv("CLOUD_TIMETABLE")
-    return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
+    # cloud_site = os.getenv("CLOUD_TIMETABLE")
+    # return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
 
 
 @app.route("/refresh", methods=["GET", "POST"])
@@ -74,6 +79,13 @@ def refresh_token(auth_user, extension):
     flask_resp = make_response(jsonify(new_token))
 
     return new_token["data"]
+
+
+@app.route("/group-name", methods=["GET", "POST"])
+@token_required
+def get_team_name(auth_user, extension) -> str:
+    belong_team = get_user_group(extension)
+    return belong_team.SHORTNAME
 
 
 @app.route("/timetable/inquiry", methods=["GET", "POST"])
@@ -163,7 +175,7 @@ def flush_date_item(auth_user, extension, id: str):
 @token_required
 def commit_date_item(auth_user, extension):
     json_data = request.json
-    print(json_data["data"])
+    print(f"変更したい: {json_data['data']}")
     for dict_data in json_data["data"]:
         try:
             target_item = (

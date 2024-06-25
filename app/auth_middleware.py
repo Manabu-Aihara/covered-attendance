@@ -9,9 +9,9 @@ import jwt
 from flask import request, abort
 from flask_login import current_user
 
-import main
 from app import app, db
 from app.models import StaffLoggin, Team, User
+from app.dummy_model_todo import EventORM
 
 
 def get_user_group_id() -> Tuple[int, int]:
@@ -19,6 +19,15 @@ def get_user_group_id() -> Tuple[int, int]:
         db.session.query(User.STAFFID, Team.CODE)
         .filter(User.STAFFID == current_user.STAFFID)
         .join(Team, Team.CODE == User.TEAM_CODE)
+        .first()
+    )
+
+
+def get_user_group(group_code: int) -> Team:
+    return (
+        db.session.query(Team)
+        .filter(EventORM.staff_id == current_user.STAFFID)
+        .join(Team, Team.CODE == group_code)
         .first()
     )
 

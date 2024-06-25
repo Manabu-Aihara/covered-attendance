@@ -69,6 +69,8 @@ class EventORM(db.Model):
             "group": self.group_id,
             "start": datetime.strftime(self.start_time, f),
             "end": datetime.strftime(self.end_time, f),
+            # "start_time": self.start_time,
+            # "end_time": self.end_time,
             "title": self.title,
             "summary": self.summary,
             "progress": self.progress,
