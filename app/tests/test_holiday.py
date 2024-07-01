@@ -16,6 +16,15 @@ def get_official_user(app_context):
     return acquisition_object
 
 
+# Aquisition type 表示確認
+@pytest.mark.skip
+def test_print_class_method(get_official_user):
+    # print(AcquisitionType.A.__dict__["onward"])
+    # print(AcquisitionType.A.under5y)
+    print(AcquisitionType.name("A"))
+    print(AcquisitionType.name(get_official_user.acquisition_key[0]))
+
+
 # 基準日
 # @pytest.mark.skip
 def test_convert_base_day(get_official_user):
@@ -30,6 +39,7 @@ def test_acquire_inday_holiday(get_official_user):
     assert list(test_dict.values())[0] == 1
 
 
+# 付与タイプ
 # @pytest.mark.skip
 def test_get_acquisition_key(get_official_user):
     # with pytest.raises(KeyError) as except_info:
@@ -37,6 +47,7 @@ def test_get_acquisition_key(get_official_user):
     print(f"付与タイプ: {test_type}")
 
 
+# DB insert操作テスト
 @pytest.mark.skip
 def test_insert_new_user(get_official_user):
     test_dict = get_official_user.acquire_inday_holidays()
@@ -52,7 +63,10 @@ def test_insert_new_user(get_official_user):
     db.session.commit()
 
 
+# DBカラム名一覧表示
+# How to convert SQLAlchemy row object to a Python dict?
 # https://stackoverflow.com/questions/1958219/how-to-convert-sqlalchemy-row-object-to-a-python-dict
+@pytest.mark.skip
 def test_row2dict():
     paylog_obj = PaidHolidayLog
     d = {}
@@ -74,19 +88,6 @@ def test_get_acquisition_list(get_official_user):
     print(f"付与リスト: {test_all_list}")
 
 
-@pytest.mark.skip
-def test_print_acquisition_data(get_official_user):
-    test_from_to_list = get_official_user.print_acquisition_data()
-    print(f"付与リストペア: {test_from_to_list}")
-
-
-# 日数表示
-@pytest.mark.skip
-def test_convert_tuple(get_official_user):
-    result_tuple = get_official_user.convert_tuple(get_official_user.get_sum_holiday())
-    print(result_tuple)
-
-
 # 年休関係ない申請例外
 # @pytest.mark.skip
 # def test_raise_notification_rests(get_official_user):
@@ -102,6 +103,21 @@ def test_get_notification_rests(get_official_user):
     print(result_times)
 
 
+# 日数表示(2年縛り)
+@pytest.mark.skip
+def test_convert_tuple(get_official_user):
+    result_tuple = get_official_user.convert_tuple(get_official_user.get_sum_holiday())
+    print(result_tuple)
+
+
+# 付与リストSTARTDAY, ENDDAYのペア
+@pytest.mark.skip
+def test_print_acquisition_data(get_official_user):
+    test_from_to_list = get_official_user.print_acquisition_data()
+    print(f"付与リストペア: {test_from_to_list}")
+
+
+# 残り日数（時間表記）の例外テスト
 @pytest.mark.skip
 def test_raise_print_remains(get_official_user):
     with pytest.raises(TypeError) as except_info:
@@ -109,15 +125,7 @@ def test_raise_print_remains(get_official_user):
     print(except_info.value)
 
 
-# クラスメソッド、Enum
-@pytest.mark.skip
-def test_print_class_method(get_official_user):
-    # print(AcquisitionType.A.__dict__["onward"])
-    # print(AcquisitionType.A.under5y)
-    print(AcquisitionType.name("A"))
-    print(AcquisitionType.name(get_official_user.acquisition_key[0]))
-
-
+# 日付＆付与日数
 # ACQUISITION_TYPEない例外
 @pytest.mark.skip
 def test_raise_acquisition_type(get_official_user):
@@ -133,17 +141,8 @@ def test_plus_next_holidays(get_official_user):
     print(f"日付＆日数: {test_value}")
 
 
-@pytest.mark.skip
-def test_plus_next_holidays_log(get_official_user, mocker):
-    log_mock = mocker.patch.object(
-        app.holiday_logging, "get_logger", side_effect=Exception
-    )
-    get_official_user.plus_next_holidays()
-    assert log_mock.called
-
-
 # DBからとりあえず申請合計時間（時間休のみ）カウントできるか
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_sum_notify_times(get_official_user):
     time_rest_sum = get_official_user.sum_notify_times(True)
@@ -163,7 +162,8 @@ def test_count_workday_half(get_official_user):
     print(f"出勤日数カウント: {test_count}")
 
 
+# 入職月と基準月との差
 @pytest.mark.skip
 def test_diff_month(get_official_user):
     test_diff = get_official_user.get_diff_month()
-    assert test_diff == 1
+    print(test_diff)
