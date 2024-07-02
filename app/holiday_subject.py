@@ -124,6 +124,7 @@ class SubjectImpl(Subject):
         for observer in self._observers:
             observer.update(self)
 
+    # 反応する日時
     def notice_month(self) -> int:
         # Python の datetime.now で秒以下を切り捨てる方法
         # https://hawksnowlog.blogspot.com/2022/06/python-datetime-now-without-seconds.html
@@ -141,6 +142,7 @@ class SubjectImpl(Subject):
         # print(f"4月1日: {it_time4}")
         return self._state
 
+    # 対象となるスタッフを抽出、結構重要
     def get_concerned_staff(self) -> List[int]:
         concerned_id_list = []
 
@@ -197,17 +199,17 @@ class SubjectImpl(Subject):
             .order_by(PaidHolidayLog.id.desc())
             .first()
         )
-        print(f"君の名は: {carry_times.CARRY_FORWARD}")
+        # print(carry_times.CARRY_FORWARD)
 
-        # 今回carry_timeのみだと ← ココ重要
-        # テーブル内データ: NULL → TypeErrorだけれども、raiseされない → (None,)だから
-        # テーブル内データ自体存在しない → TypeError
         """
-            201 raise!
+        重要：
+        今回carry_timeのみだと…
+        テーブル内データ: NULL → TypeErrorだけれども、raiseされない → (None,)だから
+        テーブル内データ自体存在しない → TypeError
+        raise!
             if carry_times.CARRY_FORWARD is None:
-            31 raise!
             if carry_times is None:
-            """
+        """
         if carry_times is None or carry_times.CARRY_FORWARD is None:
             carry_forward_times = 0
             raise TypeError("繰り越しはありません。")
@@ -224,12 +226,14 @@ class SubjectImpl(Subject):
     出勤日数から、年休付与タイプを参照
     3月、9月に起動
     @Param
-        concerned_id: int
+        concerned_id: int 該当者ID
     @Return
         : tuple<None | str, None | str>
+        以前の付与タイプと、今回の付与タイプ
         """
 
     # その前に…
+    # 出勤日数から、付与タイプを導く
     def divide_acquire_type(self, count: int) -> str:
         for char in ["B", "C", "D", "E"]:
             if count in list(WorkdayType.name(char).value):
@@ -246,14 +250,16 @@ class SubjectImpl(Subject):
     def refer_acquire_type(
         self, concerned_id: int
     ) -> Tuple[Optional[str], Optional[str]]:
+
         holiday_acquire_obj = HolidayAcquire(concerned_id)
         base_day = HolidayAcquire(concerned_id).convert_base_day(
             holiday_acquire_obj.in_day
         )
 
-        # 年間出勤日数の計算
         # HolidayAcquire::get_acquisition_list(base_day)[0] -> 入職日除く最初の付与日
         # if date.today() < holiday_acquire_obj.get_acquisition_list(base_day)[0]:
+        # こっちの方がわかり易い
+        # 要するに、付与歴から、入職日付与以外付与されてないスタッフさんかどうか
         if len(holiday_acquire_obj.get_acquisition_list(base_day)) == 1:
             sum_workday_count = holiday_acquire_obj.count_workday_half_year()
             print(f"original subject ID{concerned_id}: {sum_workday_count}")
@@ -272,6 +278,13 @@ class SubjectImpl(Subject):
         past_type = holiday_acquire_obj.get_acquisition_key()
 
         return past_type, new_type
+
+    """
+        3月、9月に起動
+        繰越時間の算出
+        @Params: int 該当者ID
+        @Return: float
+        """
 
     @error_handler
     def calcurate_carry_times(self, concerned_id: int) -> float:

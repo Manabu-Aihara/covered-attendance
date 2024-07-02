@@ -36,7 +36,7 @@ def test_output_holiday_count():
     print(count)
 
 
-# ほぼ本番のやつ
+# ほぼ本番のやつ＊使用注意
 @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_observer(app_context):
@@ -61,7 +61,7 @@ def test_observer(app_context):
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_refer_acquire_type(app_context, subject, mocker):
     mocker.patch.object(subject, "notice_month", return_value=datetime.now().month)
-    print(datetime.now())
+    # print(datetime.now())
     workday_mock = mocker.patch.object(
         HolidayAcquire, "count_workday", return_value=200
     )

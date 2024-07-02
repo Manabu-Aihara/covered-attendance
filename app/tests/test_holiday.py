@@ -156,6 +156,7 @@ def test_count_workday(get_official_user):
     print(f"出勤日数カウント: {test_count}")
 
 
+# 出勤日数カウント(半年未満)
 @pytest.mark.skip
 def test_count_workday_half(get_official_user):
     test_count = get_official_user.count_workday_half_year()
