@@ -1,7 +1,6 @@
 import pytest
 from datetime import datetime
 
-import app
 from app import db
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire, AcquisitionType

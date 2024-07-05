@@ -5,12 +5,25 @@ from typing import List, Tuple
 from app.holiday_acquisition import HolidayAcquire
 from app.holiday_subject import SubjectImpl
 from app.holiday_observer import ObserverRegist, ObserverCheckType, ObserverCarry
-from app.models_aprv import PaidHolidayLog
+
+# テスト下準備、フィクスチャ用にテスト用DBのデータを使うため
+# https://stackoverflow.com/questions/49117806/what-is-the-best-way-to-parameterize-a-pytest-function-using-a-fixture-that-retu
+"""
+    該当メンバーIDを返す
+    @Return: List<int>
+    """
 
 
 def concern_id_from_panda() -> List[int]:
     subject = SubjectImpl()
     return subject.get_concerned_staff()
+
+
+"""
+    入職半年未満か判定
+    @Params: int 該当ID
+    @Return: bool
+    """
 
 
 def search_half_flag(concern_id: int) -> bool:
@@ -32,6 +45,12 @@ def search_half_flag(concern_id: int) -> bool:
     # return list_tank
 
 
+"""
+    search_half_flagによって、メンバーIDをリスト化
+    @Return: Tuple<List<int>, List<int>>
+    """
+
+
 def work_count_to_mock() -> Tuple[List[int], List[int]]:
     count_list = []
     count_half_list = []
@@ -43,6 +62,12 @@ def work_count_to_mock() -> Tuple[List[int], List[int]]:
             count_half_list.append(holiday_acquire_obj.count_workday_half_year())
 
     return count_list, count_half_list
+
+
+"""
+    付与時間を算出
+    @Return: List<float>
+    """
 
 
 def plus_holidays_to_mock() -> List[float]:
@@ -64,12 +89,19 @@ def plus_holidays_to_mock() -> List[float]:
     return plus_time_list
 
 
+"""
+ここからフィクスチャ
+holiday_subject::SubjectImplインスタンスを返す
+"""
+
+
 @pytest.fixture(scope="module")
 def subject():
     subject = SubjectImpl()
     return subject
 
 
+# 該当ID
 @pytest.fixture(name="panda_id")
 @pytest.mark.freeze_time(datetime(2024, 4, 1))
 def concerned_id_from_panda_indirect(app_context):
@@ -77,13 +109,16 @@ def concerned_id_from_panda_indirect(app_context):
     return concern_id_from_panda()
 
 
+# 勤務日数
 @pytest.fixture(name="panda_count")
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def count_workday_from_panda_indirect(app_context):
     return [x for x in work_count_to_mock()[0]]
+    # 下記、例えば付与日一ヶ月前だと12/11倍で仮定する
     # return [round(x * 12 / 11) for x in work_count_to_mock()[0]]
 
 
+# 勤務日数（半年未満メンバー）
 @pytest.fixture(name="panda_half_count")
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def count_half_workday_from_panda_indirect(app_context):
@@ -91,19 +126,14 @@ def count_half_workday_from_panda_indirect(app_context):
     # return [round(x * 12 / 11) for x in work_count_to_mock()[1]]
 
 
+# 付与時間
 @pytest.fixture(name="panda_plus")
 @pytest.mark.freeze_time(datetime(2024, 4, 1))
 def plus_holidays_indirect(app_context):
     return plus_holidays_to_mock()
-    # 以下不可
-    # holiday_acquire_obj = HolidayAcquire(panda_id)
-    # days = holiday_acquire_obj.plus_next_holidays().values()
-    # return panda_id, days * holiday_acquire_obj.holiday_base_time
 
 
-# とりあえず、この方法しか上手くいかん。
-# https://stackoverflow.com/questions/49117806/what-is-the-best-way-to-parameterize-a-pytest-function-using-a-fixture-that-retu
-# @pytest.fixture(params=range(0, 25))
+# ID、勤務日数、勤務（半年未満）
 @pytest.fixture
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def get_work_param(panda_id, panda_count, panda_half_count):
@@ -113,6 +143,7 @@ def get_work_param(panda_id, panda_count, panda_half_count):
     return {"ID": panda_id, "Work": panda_count, "Work_H": panda_half_count}
 
 
+# ID、付与時間
 @pytest.fixture
 @pytest.mark.freeze_time(datetime(2024, 4, 1))
 def get_acquire_param(panda_id, panda_plus):
@@ -120,9 +151,11 @@ def get_acquire_param(panda_id, panda_plus):
     return {"ID": panda_id, "Holiday": panda_plus}
 
 
+# ここからテスト
+# とりあえず、フィクスチャが動作するか（勤務日数）
 @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
-def test_print_fixtures(get_work_param):
+def test_print_fixture_count(get_work_param):
     print("expensive")
     print(f"{get_work_param.get('ID')}: {get_work_param.get('Work')}日")
     print(len(get_work_param.get("ID")))
@@ -130,7 +163,8 @@ def test_print_fixtures(get_work_param):
     print(len(get_work_param.get("Work_H")))
 
 
-# @pytest.mark.skip
+# とりあえず、フィクスチャが動作するか（付与時間）
+@pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 4, 1))
 def test_print_fixture_plus(get_acquire_param):
     print("expensive")
@@ -142,21 +176,17 @@ def test_print_fixture_plus(get_acquire_param):
 date_now = datetime.now()
 
 
-# @pytest.mark.skip
-# @pytest.mark.usefixtures("app_context")
-# class TestCheckType:
-
-
+# 勤務日数から、付与タイプをDMLで出力
 @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_merge_observer(app_context, subject, get_work_param, mocker):
     observer = ObserverCheckType()
     subject.attach(observer)
 
+    # 以下、モック化
     workday_mock = mocker.patch.object(
         HolidayAcquire, "count_workday", side_effect=get_work_param.get("Work")
     )
-    # get_work_param.get("Work")の重複になる！
     workday_half_mock = mocker.patch.object(
         HolidayAcquire,
         "count_workday_half_year",
@@ -165,16 +195,23 @@ def test_merge_observer(app_context, subject, get_work_param, mocker):
 
     original_update_func = observer.merge_type
 
+    """
+    holiday_observer::merge_typeのダミー関数、引数は同じにする
+    """
+
     def dummy_update_db(i: int, past: str, post: str):
         # print(f"---{search_half_flag(i)}---")
         # if search_half_flag(i) is True:
-        with open(f"update_type_cat{date_now.strftime('%m%d%H%M')}.log", "a") as f:
+        # 下記ログファイルにDMLとして、出力
+        with open(f"update_type_panda{date_now.strftime('%m%d%H%M')}.log", "a") as f:
             f.write(
-                f"UPDATE panda.M_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE='{post}' WHERE STAFFID={i};\n"
+                f"UPDATE panda.M_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE\
+                    ='{post}' WHERE STAFFID={i};\n"
             )
-
+        # ダミーの中、オリジナルメソッドを実行
         original_update_func(i, past, post)
 
+    # モック化することで、DBを汚さず、ダミー関数が実行されるはず
     update_mock = mocker.patch.object(
         observer, "merge_type", side_effect=dummy_update_db
     )
@@ -187,35 +224,39 @@ def test_merge_observer(app_context, subject, get_work_param, mocker):
     print(f"---workday_half.COUNT---: {workday_half_mock.call_count}")
 
 
+# 繰り越し日数をDMLで出力するダミー
 @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 9, 30))
 def test_carry_observer(app_context, subject, mocker):
     observer = ObserverCarry()
     subject.attach(observer)
 
-    # 結局、session.addの引数にならなかった
-    phl_mock = mocker.MagicMock(spec=PaidHolidayLog)
-    dummy_obj = mocker.patch("app.models_aprv.PaidHolidayLog", phl_mock)
+    # モックオブジェクトがオリジナルと同じ型か
+    # phl_mock = mocker.MagicMock(spec=PaidHolidayLog)
+    # dummy_obj = mocker.patch("app.models_aprv.PaidHolidayLog", phl_mock)
 
-    assert isinstance(dummy_obj, PaidHolidayLog)
+    # assert isinstance(dummy_obj, PaidHolidayLog)
 
-    # original_func = db.session.add
     original_insert_func = observer.insert_carry
 
-    def dummy_add_db(i: int, carri_days: float = subject.calcurate_carry_days):
-        with open("insert_carry.log", "a") as f:
+    def dummy_carry_add_db(i: int, carri_days: float = subject.calcurate_carry_days):
+        with open(f"insert_carry_panda{date_now.strftime('%m%d%H%M')}.log", "a") as f:
             f.write(
-                f"INSERT INTO D_PAIDHOLIDAY_LOG VALUES({i}, 0, None, None, {carri_days}, '前回からの繰り越し')\n"
+                f"INSERT INTO panda.D_PAIDHOLIDAY_LOG VALUES(\
+                    {i}, 0, None, None, {carri_days}, '前回からの繰り越し');\n"
             )
         original_insert_func(i, carri_days)
 
-    # add_mock = mocker.patch.object(db.session, "add", side_effect=dummy_add_db)
-    add_mock = mocker.patch.object(observer, "insert_carry", side_effect=dummy_add_db)
+    add_mock = mocker.patch.object(
+        observer, "insert_carry", side_effect=dummy_carry_add_db
+    )
     observer.update(subject)
 
-    print(add_mock.call_args_list)
+    # 呼び出された引数リスト
+    print(f"---insert.ARGS---: {add_mock.call_args_list}")
 
 
+# 年休付与のダミー
 @pytest.mark.skip
 @pytest.mark.freeze_time(datetime(2024, 4, 1))
 def test_acquire_holidays(app_context, subject, get_acquire_param, mocker):
@@ -230,15 +271,20 @@ def test_acquire_holidays(app_context, subject, get_acquire_param, mocker):
 
     original_insert_func = observer.insert_data
 
-    def dummy_add_db(i: int, carri_times: float):
+    def dummy_holidays_add_db(i: int, carri_times: float):
         print(f"ID: 「{i}」")
-        with open("insert_holidays.log", "a") as f:
+        with open(
+            f"insert_holidays_panda{date_now.strftime('%m%d%H%M')}.log", "a"
+        ) as f:
             f.write(
-                f"INSERT INTO panda.D_PAIDHOLIDAY_LOG VALUES({i}, {carri_times}, NULL, NULL, 0, '{carri_times}時間付与');\n"
+                f"INSERT INTO panda.D_PAIDHOLIDAY_LOG VALUES(\
+                    {i}, {carri_times}, NULL, NULL, 0, '{carri_times}時間付与');\n"
             )
         original_insert_func(i, carri_times)
 
-    insert_mock = mocker.patch.object(observer, "insert_data", side_effect=dummy_add_db)
+    insert_mock = mocker.patch.object(
+        observer, "insert_data", side_effect=dummy_holidays_add_db
+    )
     # observer.update(subject)
     subject.execute()
 
