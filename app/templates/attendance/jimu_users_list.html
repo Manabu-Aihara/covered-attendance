@@ -2,7 +2,7 @@
 
 {% block child_content %}
 <h3>所属スタッフ出退勤</h3>
-<br/>
+<br />
 <div class="text-center">
     <a href="{{ url_for('jimu_select_page', STAFFID=current_user.STAFFID) }}" class="btn btn-success">戻　る</a>　　　
 </div>
@@ -26,9 +26,10 @@
             </thead>
             <tbody>
                 {% if usrs is not none %}
-                {% for u in usrs %}
 
-                {% if u.OUTDAY is none and jimu_usr.TEAM_CODE == u.TEAM_CODE and jimu_usr.TEAM_CODE != 1%}
+                {% for u in usrs %}
+                {#{% if u.OUTDAY is none and jimu_usr.TEAM_CODE == u.TEAM_CODE and jimu_usr.TEAM_CODE != 1 %}#}
+                {% if u.OUTDAY is none and jimu_usr.TEAM_CODE != 1 and jimu_usr.STAFFID != 194 %}
 
                 <tr>
                     <td>{{ u.STAFFID }}</td>
@@ -45,20 +46,23 @@
                         {% elif u.CONTRACT_CODE == 5 %}
                         ３２ｈ常勤
                         {% endif %}
-                    </td>                
-                    <td><a href="{{ url_for('indextime', STAFFID=u.STAFFID, intFlg=2) }}" class="btn btn-warning">出退勤編集</a></td>
-                    <td><a href="{{ url_for('indextime', STAFFID=u.STAFFID, intFlg=3) }}" class="btn btn-info">出退勤参照（1日～末）</a></td>
-                    <td><a href="{{ url_for('jimu_every_dl', STAFFID=u.STAFFID, startday=26) }}" class="btn btn-info">出退勤参照（26日～25日）</a></td>
-                    <td><a href="{{ url_for('jimu_nenkyu_detail', STAFFID=u.STAFFID) }}" class="btn btn-primary">有休情報</a></td>
+                    </td>
+                    <td><a href="{{ url_for('indextime', STAFFID=u.STAFFID, intFlg=2) }}"
+                            class="btn btn-warning">出退勤編集</a></td>
+                    <td><a href="{{ url_for('indextime', STAFFID=u.STAFFID, intFlg=3) }}"
+                            class="btn btn-info">出退勤参照（1日～末）</a></td>
+                    <td><a href="{{ url_for('jimu_every_dl', STAFFID=u.STAFFID, startday=26) }}"
+                            class="btn btn-info">出退勤参照（26日～25日）</a></td>
+                    <td><a href="{{ url_for('jimu_nenkyu_detail', STAFFID=u.STAFFID) }}"
+                            class="btn btn-primary">有休情報</a></td>
                 </tr>
-
+                <!-- <p>出口１</p> -->
                 {% endif %}
-
-
                 {% endfor %}
 
                 {% for u in us %}
-                {% if u.OUTDAY is none and jimu_usr.TEAM_CODE == 1 and jimu_usr.CONTRACT_CODE != 2 and u.STAFFID != 10000 %}
+                {% if u.OUTDAY is none and jimu_usr.TEAM_CODE == 1 and jimu_usr.CONTRACT_CODE != 2 and u.STAFFID !=
+                10000 %}
 
                 <tr>
                     <td>{{ u.STAFFID }}</td>
@@ -75,17 +79,56 @@
                         {% elif u.CONTRACT_CODE == 5 %}
                         ３２ｈ常勤
                         {% endif %}
-                    </td>                
-                    <td><a href="{{ url_for('indextime', STAFFID=u.STAFFID, intFlg=2) }}" class="btn btn-warning">出退勤編集</a></td>
-                    <td><a href="{{ url_for('indextime', STAFFID=u.STAFFID, intFlg=3) }}" class="btn btn-info">出退勤参照（1日～末日）</a></td>
-                    <td><a href="{{ url_for('jimu_every_dl', STAFFID=u.STAFFID, startday=26) }}" class="btn btn-info">出退勤参照（26日～25日）</a></td>
-                    <td><a href="{{ url_for('jimu_nenkyu_detail', STAFFID=u.STAFFID) }}" class="btn btn-primary">有休情報</a></td>
+                    </td>
+                    <td><a href="{{ url_for('indextime', STAFFID=u.STAFFID, intFlg=2) }}"
+                            class="btn btn-warning">出退勤編集</a></td>
+                    <td><a href="{{ url_for('indextime', STAFFID=u.STAFFID, intFlg=3) }}"
+                            class="btn btn-info">出退勤参照（1日～末日）</a></td>
+                    <td><a href="{{ url_for('jimu_every_dl', STAFFID=u.STAFFID, startday=26) }}"
+                            class="btn btn-info">出退勤参照（26日～25日）</a></td>
+                    <td><a href="{{ url_for('jimu_nenkyu_detail', STAFFID=u.STAFFID) }}"
+                            class="btn btn-primary">有休情報</a></td>
                 </tr>
+                <!-- <p>出口２</p> -->
+                {% endif %}
+                {% endfor %}
+
+                {% if jimu_usr.STAFFID == 194 %}
+                {% for u in ref_list %}
+                {% if u.OUTDAY is none %}
+                <tr>
+                    <td>{{ u.STAFFID }}</td>
+                    <td>{{ u.LNAME }} {{ u.FNAME }}</td>
+                    <td>
+                        {% if u.CONTRACT_CODE == 1 %}
+                        ８ｈ常勤
+                        {% elif u.CONTRACT_CODE == 2%}
+                        パート
+                        {% elif u.CONTRACT_CODE == 3%}
+                        ６ｈ常勤
+                        {% elif u.CONTRACT_CODE == 4 %}
+                        ７ｈ常勤
+                        {% elif u.CONTRACT_CODE == 5 %}
+                        ３２ｈ常勤
+                        {% endif %}
+                    </td>
+                    <td><a href="{{ url_for('indextime', STAFFID=u.STAFFID, intFlg=2) }}"
+                            class="btn btn-warning">出退勤編集</a></td>
+                    <td><a href="{{ url_for('indextime', STAFFID=u.STAFFID, intFlg=3) }}"
+                            class="btn btn-info">出退勤参照（1日～末）</a></td>
+                    <td><a href="{{ url_for('jimu_every_dl', STAFFID=u.STAFFID, startday=26) }}"
+                            class="btn btn-info">出退勤参照（26日～25日）</a></td>
+                    <td><a href="{{ url_for('jimu_nenkyu_detail', STAFFID=u.STAFFID) }}"
+                            class="btn btn-primary">有休情報</a></td>
+                </tr>
+                <!-- <p>こちらが正解</p> -->
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+
 
                 {% endif %}
 
-                {% endfor %}
-                {% endif %}   
             </tbody>
         </table>
     </div>
@@ -93,7 +136,7 @@
     <div class="h1">
         <br><br><br><br><br>
         <br><br><br><br><br>
-    </div>       
+    </div>
 
-<div>
-{% endblock %}
+    <div>
+        {% endblock %}

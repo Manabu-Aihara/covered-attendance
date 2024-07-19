@@ -63,7 +63,8 @@ def token_required(f):
             data = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
             # current_user = models.User().get_by_id(data["user_id"])
             """
-                "__init__() missing 2 required positional arguments: 'PASSWORD' and 'ADMIN'"
+                "__init__() missing 2 required positional arguments:
+                'PASSWORD' and 'ADMIN'"
                 """
             # group_idがない
             auth_user: StaffLoggin = (

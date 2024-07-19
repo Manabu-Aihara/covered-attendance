@@ -24,17 +24,6 @@ def GetData(TABLE, colCODE, colNAME, OrderCol):
 
     return GetList
 
-#***** DBdataShot付き取得*******#
-def GetDataS(TABLE, colCODE, colNAME, OrderCol):
-    
-    GetList = []
-    dblist = db.session.query(TABLE, colCODE.label("CODE"), colNAME.label("SHORTNAME") ).order_by(OrderCol)
-    GetList.append([0, ""])
-    for row in dblist:
-        GetList.append([row.CODE, row.SHORTNAME])
-
-    return GetList
-
 #DB登録用　int型が空白だったらNoneを代入
 def intCheck(intValue):
     

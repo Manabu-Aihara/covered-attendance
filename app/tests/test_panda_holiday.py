@@ -240,6 +240,7 @@ def test_carry_observer(app_context, subject, mocker):
     original_insert_func = observer.insert_carry
 
     def dummy_carry_add_db(i: int, carri_days: float = subject.calcurate_carry_days):
+        # 下記ログファイルにDMLとして、出力
         with open(f"insert_carry_panda{date_now.strftime('%m%d%H%M')}.log", "a") as f:
             f.write(
                 f"INSERT INTO panda.D_PAIDHOLIDAY_LOG VALUES(\
@@ -273,6 +274,7 @@ def test_acquire_holidays(app_context, subject, get_acquire_param, mocker):
 
     def dummy_holidays_add_db(i: int, carri_times: float):
         print(f"ID: 「{i}」")
+        # 下記ログファイルにDMLとして、出力
         with open(
             f"insert_holidays_panda{date_now.strftime('%m%d%H%M')}.log", "a"
         ) as f:
