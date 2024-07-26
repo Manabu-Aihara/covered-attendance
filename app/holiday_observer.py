@@ -51,7 +51,6 @@ class ObserverRegist(Observer):
                     # print(f"PAID TIMES: {concerned_id}-{result_times}")
                     self.insert_data(concerned_id, result_times)
                     db.session.flush()
-                    db.session.commit()
                 except TypeError as e:
                     print(f"ID {concerned_id}: {e}")
                     db.session.rollback()
@@ -98,7 +97,6 @@ class ObserverCarry(Observer):
                     # print(f"{concerned_id}: {carry_times}")
                     self.insert_carry(concerned_id, carry_times)
                     db.session.flush()
-                    db.session.commit()
                 except Exception as e:
                     print(f"DB Exception: {e}")
                     db.session.rollback()
@@ -135,7 +133,6 @@ class ObserverCheckType(Observer):
                     print(f"observer ID{concerned_id}: {your_types[1]}")
                     self.merge_type(concerned_id, your_types[0], your_types[1])
                     db.session.flush()
-                    db.session.commit()
                 except Exception as e:
                     print(f"DB Exception: {e}")
                     db.session.rollback()

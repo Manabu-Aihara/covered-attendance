@@ -267,7 +267,7 @@ def edit_list_user():
     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
 
     """
-        2024/07/25
+        2024/07/23
         修正分
         """
     user_infos: List[Tuple[int, str, str, str, str, datetime]] = (
@@ -279,6 +279,9 @@ def edit_list_user():
     )
     role_list_context = get_user_role_list()
 
+    # 惜しい…
+    # user_complete_list = user_infos + role_list_context
+
     user_complete_list = []
     for user_info in user_infos:
         for role_context in role_list_context:
@@ -287,9 +290,6 @@ def edit_list_user():
                 list_info = list(user_info)
                 list_info.append(role_context)
                 user_complete_list.append(list_info)
-
-    # 惜しい…
-    # user_complete_list = user_infos + role_list_context
 
     if request.method == "POST":
         return redirect(url_for("edit_data_user", STAFFID=STAFFID))
@@ -533,7 +533,7 @@ def edit_data_user(STAFFID, intFlg):
         flash(form.errors, "danger")
 
     return render_template(
-        "admin/edit_data_user.html",
+        "admin/edit_data_user_diff.html",
         form=form,
         STAFFID=STAFFID,
         u=u,

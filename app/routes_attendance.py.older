@@ -332,8 +332,8 @@ def indextime(STAFFID, intFlg):
         for c in cal:
             data0 = request.form.get("dat" + str(i))  # フラッグID
             data1 = request.form.get("row" + str(i))  # 日付
-            data2 = TimeCheck(request.form.get("stime" + str(i)))  # 開始時間
-            data3 = TimeCheck(request.form.get("ftime" + str(i)))  # 終了時間
+            data2 = request.form.get("stime" + str(i))  # 開始時間
+            data3 = request.form.get("ftime" + str(i))  # 終了時間
             data_4 = request.form.get("skyori" + str(i))  # 移動距離
             data5 = request.form.get("oncall" + str(i))  # オンコール
             data6 = request.form.get("oncall_cnt" + str(i))  # オンコール回数
@@ -430,13 +430,11 @@ def indextime(STAFFID, intFlg):
                 InsertFlg = 1
             elif data3 != "00:00":
                 InsertFlg = 1
-            elif data4 is not None and data4 != "0.0" and data4 != "":
+            elif data4 is not None:
                 InsertFlg = 1
             elif data5 == "on":
                 InsertFlg = 1
             elif blankCheck(data7) is not None:
-                InsertFlg = 1
-            elif blankCheck(data11) is not None:
                 InsertFlg = 1
             elif blankCheck(data12) is not None:
                 InsertFlg = 1
