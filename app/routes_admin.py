@@ -222,13 +222,32 @@ def user_create_admin():
     )
 
 
+"""
+    @Params:
+        query_name: str 実質返すクエリー
+        table_code: int DBテーブルコード
+        user_code: int User内コード
+    @Return:
+        result_query: str DBテーブルコードから返す名称
+        """
+
+
 def get_user_role(query_name: str, table_code: int, user_code: int = 0) -> str:
     result_query = db.session.query(query_name).filter(table_code == user_code).first()
     if result_query is None:
+        # リスト対応させるため、空の場合は空文字を返す
         result_query = ""
         return result_query
     else:
         return result_query[0]
+
+
+"""
+    DBから役職など5項目、dictのlistで返す
+    @Return:
+        list<dict<str, str>>
+        """
+# common_fun.py内関数を使ってもOK
 
 
 def get_user_role_list() -> List[Dict[str, str]]:
@@ -290,6 +309,8 @@ def edit_list_user():
                 list_info = list(user_info)
                 list_info.append(role_context)
                 user_complete_list.append(list_info)
+
+    """ ここまで """
 
     if request.method == "POST":
         return redirect(url_for("edit_data_user", STAFFID=STAFFID))

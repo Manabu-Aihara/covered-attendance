@@ -25,6 +25,7 @@
   <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 </head>
 {% include "attendance/approval_modal.html" %}
+{% from "jimu_list_macro.html" import generate_jimu_row %}
 <div class="disp center-block">
   <nav class="navbar navbar-default navbar-bgc">
     <div class="container">

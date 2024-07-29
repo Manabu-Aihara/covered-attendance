@@ -680,8 +680,13 @@ def jimu_users_list(STAFFID):
     # STAFFIDログインしてる人
     jimu_usr = User.query.get(STAFFID)
 
-    usrs = User.query.filter_by(TEAM_CODE=jimu_usr.TEAM_CODE).all()
-    us = User.query.all()
+    team_user_list = (
+        User.query.filter(User.TEAM_CODE == jimu_usr.TEAM_CODE)
+        .filter(jimu_usr.OUTDAY == None)
+        .all()
+    )
+
+    all_user_list = db.session.query(User).filter(jimu_usr.OUTDAY == None).all()
 
     """
         2024/7/19
@@ -690,7 +695,7 @@ def jimu_users_list(STAFFID):
     filters194 = []
     # if STAFFID == 194:
     filters194.append(User.DEPARTMENT_CODE == jimu_usr.DEPARTMENT_CODE)
-    filters194.append(User.DEPARTMENT_CODE == 7)
+    filters194.append(User.DEPARTMENT_CODE == 7 and User.OUTDAY == None)
     reference_user_list: List[User] = (
         db.session.query(User).filter(or_(*filters194)).all()
     )
@@ -699,8 +704,8 @@ def jimu_users_list(STAFFID):
     return render_template(
         "attendance/jimu_users_list.html",
         jimu_usr=jimu_usr,
-        usrs=usrs,
-        us=us,
+        team_u_list=team_user_list,
+        all_u=all_user_list,
         ref_list=reference_user_list,
         stf_login=stf_login,
     )
