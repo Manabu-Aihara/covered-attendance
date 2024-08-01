@@ -29,7 +29,7 @@
         {{ generate_jimu_row(team_u_list) }}
         {% endif %}
 
-        {% if jimu_usr.TEAM_CODE == 1 and jimu_usr.CONTRACT_CODE != 2 and u.STAFFID != 10000 %}
+        {% if jimu_usr.TEAM_CODE == 1 and jimu_usr.CONTRACT_CODE != 2 and jimu_usr.STAFFID != 10000 %}
         {{ generate_jimu_row(all_u) }}
         {% endif %}
 

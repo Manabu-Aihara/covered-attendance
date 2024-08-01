@@ -143,7 +143,7 @@ class AttendanceAnalysys:
                 flash("保存しました。", "success")
                 
             elif self.data11 != "6":
-                if self.data2 == "00:00" and self.data3 == "00:00" and self.data11 != "" and self.data7 != "16" and self.data11 != "16":
+                if self.data2 == "00:00" and self.data3 == "00:00" and self.data11 != "":
                     flash(str(self.data1) + "について、正しい勤務時間を入力してください。", "warning")
                 
                 elif self.data2 == "00:00" and self.data3 == "00:00" and self.data11 == "":

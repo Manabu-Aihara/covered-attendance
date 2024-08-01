@@ -95,11 +95,21 @@ def indextime(STAFFID, intFlg):
     ptn = ["^[0-9０-９]+$", "^[0-9.０-９．]+$"]
     specification = ["readonly", "checked", "selected", "hidden", "disabled"]
     typ = ["submit", "text", "time", "checkbox", "number", "month"]
+    team_name = [
+        "本社",
+        "WADEWADE訪問看護ステーション宇都宮",
+        "WADEWADE訪問看護ステーション下野",
+        "WADEWADE訪問看護ステーション鹿沼",
+        "KODOMOTOナースステーションうつのみや",
+        "わでわで在宅支援センターうつのみや",
+        "わでわで子どもそうだんしえん",
+        "WADEWADE訪問看護ステーションつくば",
+    ]
     """
         24/7/25
         変更分
         """
-    team_name = db.session.query(Team.NAME).all()
+    # team_name = db.session.query(Team.NAME).all()
 
     ##### カレンダーとM_NOTIFICATION土日出勤の紐づけ関数 #####
 
@@ -325,6 +335,7 @@ def indextime(STAFFID, intFlg):
             for row in delAttendance:
                 db.session.delete(row)
                 db.session.flush()  # <-保留状態
+                print(f"消滅します {row.id}")
 
         reload_y = request.form.get("reload_h")
         ##### データ取得 #####
@@ -479,6 +490,7 @@ def indextime(STAFFID, intFlg):
     # 初期値
     i = 1
     for c in cal:
+        # print(f"*: {c}")
         #
         # AttendanceDada[i][1] = datetime.strptime(str(y, m, i), "%Y-%m-%d")
         # 日付(YYYY-MM-DD)
@@ -504,6 +516,7 @@ def indextime(STAFFID, intFlg):
         AttendanceDada[i][14] = 0
         # 備考
         i = i + 1
+    # print(f"Maybe 31: {i}")
 
     Parttime = (
         db.session.query(
@@ -631,10 +644,12 @@ def indextime(STAFFID, intFlg):
             workday_count += 1
 
         w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
-        w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) // 60
-        AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m / 100
+        """ 24/8/1 修正分 """
+        w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) / (60 * 60)
+        AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m
 
         s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
+        # print(f"{Shin}")
 
     ln_s_kyori = 0
     if s_kyori is not None:
@@ -643,9 +658,10 @@ def indextime(STAFFID, intFlg):
         ln_s_kyori = math.floor(ln_s_kyori * 10) / 10
 
     w_h = sum_0 // (60 * 60)
-    w_m = (sum_0 - w_h * 60 * 60) // 60
+    """ 24/8/1 修正分 """
+    w_m = (sum_0 - w_h * 60 * 60) / (60 * 60)
     # 勤務時間合計
-    working_time = w_h + w_m / 100
+    working_time = w_h + w_m
     working_time_10 = sum_0 / (60 * 60)
 
     sum_over_0 = 0
@@ -673,7 +689,7 @@ def indextime(STAFFID, intFlg):
         AttendanceDada[Shin.WORKDAY.day][13] += syukkin_times[n]
 
     return render_template(
-        "attendance/index.html",
+        "attendance/index_diff.html",
         title="ホーム",
         cal=cal,
         shinseis=shinseis,

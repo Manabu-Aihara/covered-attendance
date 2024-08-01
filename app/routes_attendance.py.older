@@ -1,23 +1,9 @@
-import os, math
-from functools import wraps
-from datetime import datetime, timedelta, date, time
-from decimal import Decimal, ROUND_HALF_UP
-import jpholiday
-from dateutil.relativedelta import relativedelta
-from monthdelta import monthmod
-
-from flask_login import logout_user
-from flask_login import current_user, login_user
-from flask import abort
+from app import routes_attendance_option, jimu_oncall_count
 from flask import render_template, flash, redirect, request, session
+from werkzeug.urls import url_parse
 from flask.helpers import url_for
 from flask_login.utils import login_required
-from sqlalchemy import and_
-from werkzeug.security import generate_password_hash
-from werkzeug.urls import url_parse
-
 from app import app, db
-from app import routes_attendance_option, jimu_oncall_count
 from app.forms import (
     LoginForm,
     AdminUserCreateForm,
@@ -27,39 +13,53 @@ from app.forms import (
     SaveForm,
     SelectMonthForm,
 )
+from flask_login import current_user, login_user
 from app.models import (
     User,
     Shinsei,
     StaffLoggin,
     Todokede,
     RecordPaidHoliday,
-    D_HOLIDAY_HISTORY,
     CountAttendance,
     TimeAttendance,
-    D_JOB_HISTORY,
-    M_TIMECARD_TEMPLATE,
-    Team,
 )
+from flask_login import logout_user
+from flask import abort
+from functools import wraps
+from werkzeug.security import generate_password_hash
+from datetime import datetime, timedelta, date, time
+from decimal import Decimal, ROUND_HALF_UP
+import jpholiday
+import os
+from dateutil.relativedelta import relativedelta
+from monthdelta import monthmod
 from app.attendance_classes import AttendanceAnalysys
 from app.calender_classes import MakeCalender
-from app.calc_work_classes import DataForTable, CalcTimeClass, get_last_date
-from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
+from app.calc_work_classes import (
+    DataForTable,
+    CalcTimeClass,
+    get_last_date,
+)
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
+
+# 一定時間セッションにアクセスがなければ、セッションに格納されている情報は自動的に破棄される
 app.permanent_session_lifetime = timedelta(minutes=360)
 
 
 """***** 打刻ページ *****"""
 
 
-@app.route("/indextime/<STAFFID>/<int:intFlg>", methods=["GET", "POST"])
+@app.route("/indextime/<STAFFID>", methods=["GET", "POST"])
 @login_required
-def indextime(STAFFID, intFlg):
+def indextime(STAFFID):
     if app.permanent_session_lifetime == 0:
         return redirect(url_for("logout_mes"))
 
+    shinseis = Shinsei.query.filter_by(STAFFID=STAFFID).all()
+    shin = Shinsei.query.filter_by(STAFFID=STAFFID)
     u = User.query.get(STAFFID)
-    # rp_holiday = RecordPaidHoliday.query.get(STAFFID)
+    rp_holiday = RecordPaidHoliday.query.get(STAFFID)
     cnt_attemdance = CountAttendance.query.get(STAFFID)
     tm_attendance = TimeAttendance.query.get(STAFFID)
     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
@@ -68,6 +68,7 @@ def indextime(STAFFID, intFlg):
     form_month = SelectMonthForm()
     form = SaveForm()
 
+    # 表カラム
     tbl_clm = [
         "日付",
         "曜日",
@@ -77,29 +78,26 @@ def indextime(STAFFID, intFlg):
         "開始時間",
         "終了時間",
         "走行距離",
-        "届出<br>（午前）",
+        "届出（午前）",
         "残業申請",
         "備考",
         "届出（午後）",
     ]
+
     wk = ["日", "土", "月", "火", "水", "木", "金"]
-    d_week = {
-        "Sun": "日",
-        "Mon": "月",
-        "Tue": "火",
-        "Wed": "水",
-        "Thu": "木",
-        "Fri": "金",
-        "Sat": "土",
-    }
     ptn = ["^[0-9０-９]+$", "^[0-9.０-９．]+$"]
     specification = ["readonly", "checked", "selected", "hidden", "disabled"]
     typ = ["submit", "text", "time", "checkbox", "number", "month"]
-    """
-        24/7/25
-        変更分
-        """
-    team_name = db.session.query(Team.NAME).all()
+    team_name = [
+        "本社",
+        "WADEWADE訪問看護ステーション宇都宮",
+        "WADEWADE訪問看護ステーション下野",
+        "WADEWADE訪問看護ステーション鹿沼",
+        "KODOMOTOナースステーションうつのみや",
+        "わでわで在宅支援センターうつのみや",
+        "わでわで子どもそうだんしえん",
+        "WADEWADE訪問看護ステーションつくば",
+    ]
 
     ##### カレンダーとM_NOTIFICATION土日出勤の紐づけ関数 #####
 
@@ -147,6 +145,9 @@ def indextime(STAFFID, intFlg):
         bk = ""
 
     ##### M_NOTIFICATIONとindexの紐づけ #####
+    """
+        23/9/4 ここは必要なくなるか
+        """
     td1 = Todokede.query.get(1)
     td2 = Todokede.query.get(2)
     td3 = Todokede.query.get(3)  # 年休（全日）はNotification2にはない
@@ -169,31 +170,33 @@ def indextime(STAFFID, intFlg):
     td20 = Todokede.query.get(20)
 
     ##### 月選択の有無 #####
-    # dsp_page = ""
-    # 参照モードの場合、
     dsp_page = ""
-    if intFlg == 3:
-        # 参照モード
-        dsp_page = "pointer-events: none;"
 
+    # sessionに"y"属性がある？
     if "y" in session:
         workday_data = session["workday_data"]
         y = session["y"]
         m = session["m"]
 
-    # if datetime.today().month > 2:
-    #     if datetime.today().year > int(session["y"]) or (datetime.today().year == int(session["y"]) and
-    #                                                      datetime.today().month > int(session["m"]) + 1):
-    # dsp_page = "pointer-events: none;"
-    # dsp_page = ""
-    # elif datetime.today().month == 1:
-    #     if datetime.today().year > int(session["y"]) or (datetime.today().year - 1 == int(session["y"]) and int(session["m"]) <= 11):
-    # dsp_page = "pointer-events: none;"
-    # dsp_page = ""
-    # else:
-    #     if datetime.today().year > int(session["y"]):
-    # dsp_page = "pointer-events: none;"
-    # dsp_page = ""
+        # 結果全部dsp_page = ""だからいらない？
+        if datetime.today().month > 2:
+            if datetime.today().year > int(session["y"]) or (
+                datetime.today().year == int(session["y"])
+                and datetime.today().month > int(session["m"]) + 1
+            ):
+                # dsp_page = "pointer-events: none;"
+                dsp_page = ""
+        elif datetime.today().month == 1:
+            if datetime.today().year > int(session["y"]) or (
+                datetime.today().year - 1 == int(session["y"])
+                and int(session["m"]) <= 11
+            ):
+                # dsp_page = "pointer-events: none;"
+                dsp_page = ""
+        else:
+            if datetime.today().year > int(session["y"]):
+                # dsp_page = "pointer-events: none;"
+                dsp_page = ""
 
     else:
         workday_data = datetime.today().strftime("%Y-%m-%d")
@@ -204,11 +207,409 @@ def indextime(STAFFID, intFlg):
     cal = []
     hld = []
 
+    # 超手作りカレンダー
     mkc = MakeCalender(cal, hld, y, m)
     mkc.mkcal()
 
-    template1 = 0
-    template2 = 0
+    shinseis = Shinsei.query.filter(Shinsei.STAFFID == STAFFID).all()
+
+    ##### 年休登録 #####
+    if shinseis is None:
+        pass
+    else:
+        if User.query.get(STAFFID) is None:
+            pass
+        else:
+            usr = User.query.get(STAFFID)
+            rp_holiday = RecordPaidHoliday.query.get(STAFFID)
+
+            inday = usr.INDAY
+            team_code = usr.TEAM_CODE
+            lname = usr.LNAME
+            fname = usr.FNAME
+            lkana = usr.LKANA
+            fkana = usr.FKANA
+            contract_code = usr.CONTRACT_CODE
+
+            """
+               要関数化
+                """
+            if inday is not None:
+                ########## 本日計算ベース #########
+                ##### 基準月に変換 #####
+                # """
+                #     入社日が4月〜9月
+                #     10月1日入社日として、10月1日に年休付与
+                #     """
+                if inday.month >= 4 and inday.month < 10:
+                    change_day = inday.replace(month=10, day=1)  # 基準月
+                    giveday = change_day  # 初回付与日
+                # """
+                #     入社日が10月〜12月
+                #     4月1日入社日として、翌年4月1日に年休付与
+                # """
+                elif inday.month >= 10 and inday.month <= 12:
+                    change_day = inday.replace(month=4, day=1)  # 基準月
+                    giveday = change_day + relativedelta(months=12)  # 初回付与日
+                # """
+                #     入社日が1月〜3月
+                #     4月1日入社日として、4月1日に年休付与
+                # """
+                elif inday.month < 4:
+                    change_day = inday.replace(month=4, day=1)  # 基準月
+                    giveday = change_day  # 初回付与日
+
+                ##### 基準付与日設定 #####
+                # 新入職員
+                if (
+                    datetime.today() < giveday
+                    and monthmod(datetime.today(), giveday)[0].months < 6
+                ):
+                    last_giveday = inday  # 今回付与
+                    next_giveday = giveday  # 次回付与
+                elif (
+                    datetime.today() > giveday
+                    and monthmod(giveday, datetime.today())[0].months < 6
+                ):
+                    while giveday < datetime.today():
+                        giveday = giveday + relativedelta(months=12)
+
+                    last_giveday = giveday - relativedelta(months=12)  # 今回付与
+                    next_giveday = giveday  # 次回付与
+                else:
+                    while giveday < datetime.today():
+                        giveday = giveday + relativedelta(months=12)
+
+                    last_giveday = giveday - relativedelta(months=12)  # 今回付与
+                    next_giveday = giveday  # 次回付与
+
+                ########## 基準付与日のSQLへの登録 ##########
+                ##### 新規登録職員 #####
+                if (
+                    rp_holiday.LAST_DATEGRANT is None
+                    and rp_holiday.NEXT_DATEGRANT is None
+                ):  # 新規登録職員＝今回付与、次回付与のない状態
+                    if last_giveday == inday:  # 新入職員＝今回付与がない場合
+                        rp_holiday.STAFFID = STAFFID
+                        rp_holiday.INDAY = inday
+                        rp_holiday.LAST_DATEGRANT = inday
+                        rp_holiday.NEXT_DATEGRANT = next_giveday
+                        rp_holiday.TEAM_CODE = team_code
+                        rp_holiday.LNAME = lname
+                        rp_holiday.FNAME = fname
+                        rp_holiday.LKANA = lkana
+                        rp_holiday.FKANA = fkana
+                        rp_holiday.CONTRACT_CODE = contract_code
+                        db.session.commit()
+
+                        if (
+                            rp_holiday.LAST_CARRIEDOVER == None
+                        ):  # 前回繰越データ自体がない場合
+                            rp_holiday.LAST_CARRIEDOVER = 0
+                            db.session.commit()
+
+                        if (
+                            rp_holiday.USED_PAIDHOLIDAY == None
+                        ):  # 使用日数データ自体がない場合
+                            rp_holiday.USED_PAIDHOLIDAY = 0
+                            db.session.commit()
+
+                        if (
+                            rp_holiday.REMAIN_PAIDHOLIDAY == None
+                        ):  # 年休残データ自体がない場合
+                            rp_holiday.REMAIN_PAIDHOLIDAY = 0
+                            db.session.commit()
+
+                    else:  # 新データ設定時、新規入職者
+                        rp_holiday.LAST_DATEGRANT = last_giveday
+                        rp_holiday.NEXT_DATEGRANT = next_giveday
+                        db.session.commit()
+
+                        if (
+                            rp_holiday.LAST_CARRIEDOVER == None
+                        ):  # 前回繰越データ自体がない場合
+                            rp_holiday.LAST_CARRIEDOVER = 0
+                            db.session.commit()
+
+                        if (
+                            rp_holiday.USED_PAIDHOLIDAY == None
+                        ):  # 使用日数データ自体がない場合
+                            rp_holiday.USED_PAIDHOLIDAY = 0
+                            db.session.commit()
+
+                        if (
+                            rp_holiday.REMAIN_PAIDHOLIDAY == None
+                        ):  # 年休残データ自体がない場合
+                            rp_holiday.REMAIN_PAIDHOLIDAY = 0
+                            db.session.commit()
+
+                ##### 既登録職員 #####
+                else:
+                    rp_holiday.STAFFID = STAFFID
+                    rp_holiday.INDAY = inday
+                    rp_holiday.LAST_DATEGRANT = last_giveday
+                    rp_holiday.NEXT_DATEGRANT = next_giveday
+                    db.session.commit()
+
+                    if (
+                        rp_holiday.LAST_CARRIEDOVER == None
+                    ):  # 前回繰越データ自体がない場合
+                        rp_holiday.LAST_CARRIEDOVER = 0
+                        db.session.commit()
+
+                    if (
+                        rp_holiday.USED_PAIDHOLIDAY == None
+                    ):  # 使用日数データ自体がない場合
+                        rp_holiday.USED_PAIDHOLIDAY = 0
+                        db.session.commit()
+
+                    if (
+                        rp_holiday.REMAIN_PAIDHOLIDAY == None
+                    ):  # 年休残データ自体がない場合
+                        rp_holiday.REMAIN_PAIDHOLIDAY = 0
+                        db.session.commit()
+
+                    ##### 今回付与日数（本日ベース） #####
+                    inday = rp_holiday.INDAY
+                    ddm = monthmod(inday, datetime.today())[0].months
+                    dm = monthmod(inday, last_giveday)[0].months
+
+                    ##### 常勤 #####
+                    if rp_holiday.CONTRACT_CODE != 2:
+                        if inday.month == 4 or inday.month == 10:
+                            if ddm < 6:
+                                aquisition_days = 2
+                            elif ddm < 12:
+                                aquisition_days = 10
+                            elif dm < 24:
+                                aquisition_days = 11
+                            elif dm < 36:
+                                aquisition_days = 12
+                            elif dm < 48:
+                                aquisition_days = 14
+                            elif dm < 60:
+                                aquisition_days = 16
+                            elif dm < 72:
+                                aquisition_days = 18
+                            elif dm >= 72:
+                                aquisition_days = 20
+                        elif inday.month == 5 or inday.month == 11:
+                            if ddm < 5:
+                                aquisition_days = 2
+                            elif ddm < 11:
+                                aquisition_days = 10
+                            elif dm < 23:
+                                aquisition_days = 11
+                            elif dm < 35:
+                                aquisition_days = 12
+                            elif dm < 47:
+                                aquisition_days = 14
+                            elif dm < 59:
+                                aquisition_days = 16
+                            elif dm < 71:
+                                aquisition_days = 18
+                            elif dm >= 71:
+                                aquisition_days = 20
+                        elif inday.month == 6 or inday.month == 12:
+                            if ddm < 4:
+                                aquisition_days = 1
+                            elif ddm < 10:
+                                aquisition_days = 10
+                            elif dm < 22:
+                                aquisition_days = 11
+                            elif dm < 34:
+                                aquisition_days = 12
+                            elif dm < 46:
+                                aquisition_days = 14
+                            elif dm < 58:
+                                aquisition_days = 16
+                            elif dm < 70:
+                                aquisition_days = 18
+                            elif dm >= 70:
+                                aquisition_days = 20
+                        elif inday.month == 7 or inday.month == 1:
+                            if ddm < 3:
+                                aquisition_days = 1
+                            elif ddm < 9:
+                                aquisition_days = 10
+                            elif dm < 21:
+                                aquisition_days = 11
+                            elif dm < 33:
+                                aquisition_days = 12
+                            elif dm < 45:
+                                aquisition_days = 14
+                            elif dm < 57:
+                                aquisition_days = 16
+                            elif dm < 69:
+                                aquisition_days = 18
+                            elif dm >= 69:
+                                aquisition_days = 20
+                        elif inday.month == 8 or inday.month == 2:
+                            if ddm < 2:
+                                aquisition_days = 0
+                            elif ddm < 8:
+                                aquisition_days = 10
+                            elif dm < 20:
+                                aquisition_days = 11
+                            elif dm < 32:
+                                aquisition_days = 12
+                            elif dm < 44:
+                                aquisition_days = 14
+                            elif dm < 56:
+                                aquisition_days = 16
+                            elif dm < 68:
+                                aquisition_days = 18
+                            elif dm >= 68:
+                                aquisition_days = 20
+                        elif inday.month == 9 or inday.month == 3:
+                            if ddm < 1:
+                                aquisition_days = 0
+                            elif ddm < 7:
+                                aquisition_days = 10
+                            elif dm < 19:
+                                aquisition_days = 11
+                            elif dm < 31:
+                                aquisition_days = 12
+                            elif dm < 43:
+                                aquisition_days = 14
+                            elif dm < 55:
+                                aquisition_days = 16
+                            elif dm < 67:
+                                aquisition_days = 18
+                            elif dm >= 67:
+                                aquisition_days = 20
+
+                        ##### 繰越残日数２年消滅設定 #####
+                        if (
+                            monthmod(inday, datetime.today())[0].months == 24
+                            and rp_holiday.REMAIN_PAIDHOLIDAY >= 12
+                        ):
+                            rp_holiday.REMAIN_PAIDHOLIDAY = (
+                                rp_holiday.REMAIN_PAIDHOLIDAY - 0
+                            )
+                        elif dm < 30 and rp_holiday.REMAIN_PAIDHOLIDAY >= 21:
+                            rp_holiday.REMAIN_PAIDHOLIDAY = (
+                                rp_holiday.REMAIN_PAIDHOLIDAY - 10
+                            )
+                        elif dm < 42 and rp_holiday.REMAIN_PAIDHOLIDAY >= 23:
+                            rp_holiday.REMAIN_PAIDHOLIDAY = (
+                                rp_holiday.REMAIN_PAIDHOLIDAY - 11
+                            )
+                        elif dm < 54 and rp_holiday.REMAIN_PAIDHOLIDAY >= 26:
+                            rp_holiday.REMAIN_PAIDHOLIDAY = (
+                                rp_holiday.REMAIN_PAIDHOLIDAY - 12
+                            )
+                        elif dm < 66 and rp_holiday.REMAIN_PAIDHOLIDAY >= 30:
+                            rp_holiday.REMAIN_PAIDHOLIDAY = (
+                                rp_holiday.REMAIN_PAIDHOLIDAY - 14
+                            )
+                        elif dm < 78 and rp_holiday.REMAIN_PAIDHOLIDAY >= 34:
+                            rp_holiday.REMAIN_PAIDHOLIDAY = (
+                                rp_holiday.REMAIN_PAIDHOLIDAY - 16
+                            )
+                        elif dm < 90 and rp_holiday.REMAIN_PAIDHOLIDAY >= 38:
+                            rp_holiday.REMAIN_PAIDHOLIDAY = (
+                                rp_holiday.REMAIN_PAIDHOLIDAY - 18
+                            )
+                        elif dm >= 90 and rp_holiday.REMAIN_PAIDHOLIDAY >= 40:
+                            rp_holiday.REMAIN_PAIDHOLIDAY = (
+                                rp_holiday.REMAIN_PAIDHOLIDAY - 20
+                            )
+
+                        db.session.commit()
+                        enable_days = (
+                            aquisition_days + rp_holiday.LAST_CARRIEDOVER
+                        )  # 使用可能日数
+
+                        ##### 取得日　取得日数　年休種類 #####
+                        nenkyu_all_days = 0
+                        nenkyu_half_days = 0
+
+                        for shs in shinseis:
+                            if rp_holiday.LAST_DATEGRANT == "":
+                                if (
+                                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d") >= inday
+                                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+                                    < rp_holiday.NEXT_DATEGRANT
+                                ):
+                                    if shs.NOTIFICATION == "3":
+                                        nenkyu_all_days += 1
+
+                                    elif (
+                                        shs.NOTIFICATION == "4"
+                                        or shs.NOTIFICATION == "16"
+                                    ):
+                                        nenkyu_half_days += 0.5
+
+                                    if (
+                                        shs.NOTIFICATION2 == "4"
+                                        or shs.NOTIFICATION2 == "16"
+                                    ):
+                                        nenkyu_half_days += 0.5
+                            else:
+                                if (
+                                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+                                    >= rp_holiday.LAST_DATEGRANT
+                                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+                                    < rp_holiday.NEXT_DATEGRANT
+                                ):
+                                    if shs.NOTIFICATION == "3":
+                                        nenkyu_all_days += 1
+
+                                    elif (
+                                        shs.NOTIFICATION == "4"
+                                        or shs.NOTIFICATION == "16"
+                                    ):
+                                        nenkyu_half_days += 0.5
+
+                                    if (
+                                        shs.NOTIFICATION2 == "4"
+                                        or shs.NOTIFICATION2 == "16"
+                                    ):
+                                        nenkyu_half_days += 0.5
+
+                        a = nenkyu_all_days + nenkyu_half_days  # 年休使用日数
+
+                        b = (
+                            rp_holiday.LAST_CARRIEDOVER + aquisition_days - a
+                        )  # 年休残日数
+
+                        rp_holiday.USED_PAIDHOLIDAY = a
+                        rp_holiday.REMAIN_PAIDHOLIDAY = b
+                        db.session.commit()
+
+                    ##### パート #####
+                    elif rp_holiday.CONTRACT_CODE == 2:
+
+                        ##### 取得日　取得日数　年休種類 #####
+                        p_nenkyu_all_days = 0
+                        p_nenkyu_half_days = 0
+
+                        for shs in shinseis:
+                            if (
+                                datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+                                >= rp_holiday.LAST_DATEGRANT
+                                and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+                                < rp_holiday.NEXT_DATEGRANT
+                            ):
+                                if shs.NOTIFICATION == "3":
+                                    p_nenkyu_all_days += 1
+
+                                elif (
+                                    shs.NOTIFICATION == "4" or shs.NOTIFICATION == "16"
+                                ):
+                                    p_nenkyu_half_days += 0.5
+
+                                if (
+                                    shs.NOTIFICATION2 == "4"
+                                    or shs.NOTIFICATION2 == "16"
+                                ):
+                                    p_nenkyu_half_days += 0.5
+
+                        p_a = p_nenkyu_all_days + p_nenkyu_half_days  # 年休使用日数
+
+                        rp_holiday.USED_PAIDHOLIDAY = p_a
+                        db.session.commit()
 
     onc = []
     onc_1 = []
@@ -219,89 +620,49 @@ def indextime(STAFFID, intFlg):
     onc_6 = []
     onc_7 = []
     onc_8 = []
-
-    s_kyori = []  ################################################## 使用
-    syukkin_times_0 = []  ################################################# 使用
-    syukkin_holiday_times_0 = []  ################################################# 使用
-    real_time = []
-    real_time_sum = []
-    over_time_0 = []
-
     team = u.TEAM_CODE  # この職員のチームコード
     jobtype = u.JOBTYPE_CODE  # この職員の職種
 
     users = User.query.all()
 
-    d = get_last_date(y, m)
-    FromDay = date(y, m, 1)
-    ToDay = date(y, m, d)
-    shinseis = (
-        db.session.query(Shinsei)
-        .filter(
-            and_(Shinsei.STAFFID == STAFFID, Shinsei.WORKDAY.between(FromDay, ToDay))
-        )
-        .all()
-    )
+    # for user in users:
     n = STAFFID
+    FromDay = datetime(y, m, 26) - relativedelta(months=1)
+    ToDay = datetime(y, m, 25)
+    shins = Shinsei.query.filter(
+        Shinsei.STAFFID == STAFFID, Shinsei.WORKDAY >= FromDay, Shinsei.WORKDAY <= ToDay
+    ).all()
 
-    # 出退勤テンプレートの取得(月途中で契約変更された場合の考慮)
-    template = (
-        db.session.query(M_TIMECARD_TEMPLATE.TEMPLATE_NO)
-        .filter(
-            and_(
-                D_JOB_HISTORY.STAFFID == STAFFID,
-                D_JOB_HISTORY.START_DAY <= FromDay,
-                D_JOB_HISTORY.END_DAY >= ToDay,
-                D_JOB_HISTORY.JOBTYPE_CODE == M_TIMECARD_TEMPLATE.JOBTYPE_CODE,
-                D_JOB_HISTORY.CONTRACT_CODE == M_TIMECARD_TEMPLATE.CONTRACT_CODE,
-            )
-        )
-        .group_by(M_TIMECARD_TEMPLATE.TEMPLATE_NO)
-    )
-    # 月の途中の契約変更1回までは対応
-    for templates in template:
-        if template1 == 0:
-            template1 = templates.TEMPLATE_NO
-        else:
-            template2 = templates.TEMPLATE_NO
+    if shins:
 
-    shinseis = (
-        db.session.query(
-            Shinsei.STAFFID,
-            Shinsei.STARTTIME,
-            Shinsei.ENDTIME,
-            Shinsei.WORKDAY,
-            Shinsei.HOLIDAY,
-            Shinsei.OVERTIME,
-            Shinsei.NOTIFICATION,
-            Shinsei.NOTIFICATION2,
-            Shinsei.ONCALL,
-            Shinsei.ENGEL_COUNT,
-            Shinsei.MILEAGE,
-            Shinsei.ONCALL_COUNT,
-            Shinsei.ENGEL_COUNT,
-            Shinsei.ALCOHOL,
-            Shinsei.REMARK,
-            User.FNAME,
-            User.LNAME,
-            D_JOB_HISTORY.JOBTYPE_CODE,
-            D_JOB_HISTORY.CONTRACT_CODE,
-            M_TIMECARD_TEMPLATE.TEMPLATE_NO,
-        )
-        .filter(
-            and_(
-                Shinsei.STAFFID == STAFFID,
-                Shinsei.STAFFID == User.STAFFID,
-                Shinsei.WORKDAY.between(FromDay, ToDay),
-                Shinsei.STAFFID == D_JOB_HISTORY.STAFFID,
-                D_JOB_HISTORY.START_DAY <= Shinsei.WORKDAY,
-                D_JOB_HISTORY.END_DAY >= Shinsei.WORKDAY,
-                D_JOB_HISTORY.JOBTYPE_CODE == M_TIMECARD_TEMPLATE.JOBTYPE_CODE,
-                D_JOB_HISTORY.CONTRACT_CODE == M_TIMECARD_TEMPLATE.CONTRACT_CODE,
-            )
-        )
-        .order_by(Shinsei.WORKDAY)
-    )
+        for shin in shins:
+
+            ##### ２６日基準 カウント
+            d = get_last_date(y, m)
+
+            FromDay = datetime(y, m, 26) - relativedelta(months=1)
+            ToDay = datetime(y, m, 25)
+
+            base_day = datetime.strptime(shin.WORKDAY, "%Y-%m-%d")
+            if ToDay >= base_day and FromDay <= base_day:
+                if shin.ONCALL == "1" and User.query.get(n).TEAM_CODE == team:
+                    onc.append("cnt")
+                elif shin.ONCALL == "1" and User.query.get(n).TEAM_CODE == 1:
+                    onc_1.append("cnt_1")
+                elif shin.ONCALL == "1" and User.query.get(n).TEAM_CODE == 2:
+                    onc_2.append("cnt_2")
+                elif shin.ONCALL == "1" and User.query.get(n).TEAM_CODE == 3:
+                    onc_3.append("cnt_3")
+                elif shin.ONCALL == "1" and User.query.get(n).TEAM_CODE == 4:
+                    onc_4.append("cnt_4")
+                elif shin.ONCALL == "1" and User.query.get(n).TEAM_CODE == 5:
+                    onc_5.append("cnt_5")
+                elif shin.ONCALL == "1" and User.query.get(n).TEAM_CODE == 6:
+                    onc_6.append("cnt_6")
+                elif shin.ONCALL == "1" and User.query.get(n).TEAM_CODE == 7:
+                    onc_7.append("cnt_7")
+                elif shin.ONCALL == "1" and User.query.get(n).TEAM_CODE == 8:
+                    onc_8.append("cnt_8")
 
     length_oncall = len(onc)
     length_oncall_1 = len(onc_1)
@@ -316,15 +677,6 @@ def indextime(STAFFID, intFlg):
     reload_y = ""
     ##### 保存ボタン押下処理（１日始まり） 打刻ページ表示で使用 #####
     if form.validate_on_submit():
-
-        # 削除処理
-        delAttendance = db.session.query(Shinsei).filter(
-            and_(Shinsei.STAFFID == STAFFID, Shinsei.WORKDAY.between(FromDay, ToDay))
-        )
-        if delAttendance:
-            for row in delAttendance:
-                db.session.delete(row)
-                db.session.flush()  # <-保留状態
 
         reload_y = request.form.get("reload_h")
         ##### データ取得 #####
@@ -342,10 +694,8 @@ def indextime(STAFFID, intFlg):
             data9 = request.form.get("engel" + str(i))  # エンゼル回数
             data10 = request.form.get("bikou" + str(i))  # 備考
             data11 = request.form.get("todokede_pm" + str(i))  # 届出PM
-            data12 = request.form.get("alcohol" + str(i))  # 届出PM
 
             ##### 勤怠条件分け #####
-            InsertFlg = 0
             atd = AttendanceAnalysys(
                 c,
                 data0,
@@ -360,315 +710,88 @@ def indextime(STAFFID, intFlg):
                 data9,
                 data10,
                 data11,
-                data12,
                 STAFFID,
-                InsertFlg,
             )
             atd.analysys()
 
-            ##### 走行距離小数第1位表示に変換 #####
-            if data_4 is not None and data_4 != "":
-                ZEN = "".join(chr(0xFF01 + j) for j in range(94))
-                HAN = "".join(chr(0x21 + k) for k in range(94))
-                ZEN2HAN = str.maketrans(ZEN, HAN)
-                data__4 = data_4.translate(ZEN2HAN)
-
-                def is_num(s):
-                    try:
-                        float(s)
-                    except ValueError:
-                        return flash("数字以外は入力できません。")
-                    else:
-                        return s
-
-                data___4 = is_num(data__4)
-
-                data4 = str(
-                    Decimal(data___4).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
-                )
-            else:
-                data4 = None
-
-            if data5 == "on":
-                oncall = 1
-            else:
-                oncall = 0
-
-            if data6 != "0":
-                oncall_cnt = data6
-            elif data6 == "" or data6 == "0":
-                oncall_cnt = "0"
-
-            todokede = data7
-
-            if data8 == "on":
-                zangyou = 1
-            else:
-                zangyou = 0
-
-            if data9 != "0":
-                engel = data9
-            elif data9 == "" or data9 == "0":
-                engel = "0"
-
-            holiday = ""
-            if jpholiday.is_holiday_name(datetime.strptime(data1, "%Y-%m-%d")):
-                holiday = "2"
-            elif get_day_of_week_jp(datetime.strptime(data1, "%Y-%m-%d")) == "1":
-                holiday = "1"
-
-            if data12 == "on":
-                alc = 1
-            else:
-                alc = 0
-
-            todokede_PM = data11
-
-            # 登録するかの判定
-            # 開始時間
-            if data2 != "00:00":
-                InsertFlg = 1
-            elif data3 != "00:00":
-                InsertFlg = 1
-            elif data4 is not None:
-                InsertFlg = 1
-            elif data5 == "on":
-                InsertFlg = 1
-            elif blankCheck(data7) is not None:
-                InsertFlg = 1
-            elif blankCheck(data12) is not None:
-                InsertFlg = 1
-            elif blankCheck(oncall_cnt) is not None:
-                InsertFlg = 1
-            elif blankCheck(data9) is not None:
-                InsertFlg = 1
-            elif data10 != "":
-                InsertFlg = 1
-
-            if InsertFlg == 1:
-
-                AddATTENDANCE = Shinsei(
-                    STAFFID,
-                    data1,
-                    holiday,
-                    data2,
-                    data3,
-                    data_4,
-                    oncall,
-                    oncall_cnt,
-                    engel,
-                    data7,
-                    todokede_PM,
-                    zangyou,
-                    alc,
-                    data10,
-                )
-
-                db.session.add(AddATTENDANCE)
-
             i = i + 1
 
-        db.session.commit()
+        ##### 年間月別勤務時間・日数関係　常勤 ###############
+        shinseis = Shinsei.query.filter_by(STAFFID=STAFFID).all()
+        u = User.query.get(STAFFID)
+        rp_holiday = RecordPaidHoliday.query.get(STAFFID)
+        tm_attendance = TimeAttendance.query.get(STAFFID)
+        cnt_attemdance = CountAttendance.query.get(STAFFID)
 
-    # 配列に初期値入れてデータの存在するとこに入れる
-    # オンコールカウント用　2次元配列
-    AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
+        # 各表示初期値
+        oncall = []
+        oncall_holiday = []
+        oncall_cnt = []
+        engel_cnt = []
 
-    # 初期値
-    i = 1
-    for c in cal:
-        #
-        # AttendanceDada[i][1] = datetime.strptime(str(y, m, i), "%Y-%m-%d")
-        # 日付(YYYY-MM-DD)
-        AttendanceDada[i][1] = c.strftime("%Y-%m-%d")
-        # 日付(DD)
-        AttendanceDada[i][2] = c.strftime("%d")
-        # 曜日(日本語)
-        AttendanceDada[i][3] = d_week[c.strftime("%a")]
-        # オンコール当番
-        # オンコール対応
-        # エンゼル対応
-        # 開始時間
-        AttendanceDada[i][7] = "00:00"
-        # 終了時間
-        AttendanceDada[i][8] = "00:00"
-        # 走行距離
-        AttendanceDada[i][9] = 0.0
-        # 申請(AM)
-        # 申請(PM)
-        # 残業申請
-        # アルコールチェック
-        # 勤務時間
-        AttendanceDada[i][14] = 0
-        # 備考
-        i = i + 1
+        nenkyu = []
+        nenkyu_half = []
+        tikoku = []
+        soutai = []
+        kekkin = []
+        syuttyou = []
+        syuttyou_half = []
+        reflesh = []
+        s_kyori = []
 
-    Parttime = (
-        db.session.query(
-            D_HOLIDAY_HISTORY.STAFFID, Shinsei.WORKDAY, D_HOLIDAY_HISTORY.HOLIDAY_TIME
-        )
-        .filter(
-            and_(
-                Shinsei.STAFFID == STAFFID,
-                Shinsei.STAFFID == D_HOLIDAY_HISTORY.STAFFID,
-                Shinsei.WORKDAY.between(FromDay, ToDay),
-                Shinsei.STAFFID == D_HOLIDAY_HISTORY.STAFFID,
-                D_HOLIDAY_HISTORY.START_DAY <= Shinsei.WORKDAY,
-                D_HOLIDAY_HISTORY.END_DAY >= Shinsei.WORKDAY,
+        syukkin_times_0 = []
+        syukkin_holiday_times_0 = []
+        over_time_0 = []
+
+        # パート以外の場合
+
+        ##### 年間月別勤務時間・日数関係　パート ###############
+        shinseis = Shinsei.query.filter_by(STAFFID=STAFFID).all()
+        u = User.query.get(STAFFID)
+        rp_holiday = RecordPaidHoliday.query.get(STAFFID)
+        tm_attendance = TimeAttendance.query.get(STAFFID)
+        cnt_attemdance = CountAttendance.query.get(STAFFID)
+
+    else:  # 初期登録
+        for c in cal:
+            sh = (
+                Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
+                .filter(Shinsei.WORKDAY == c.strftime("%Y-%m-%d"))
+                .first()
             )
-        )
-        .subquery()
-    )
-
-    shinseis = (
-        (
-            db.session.query(
-                Shinsei.STAFFID,
-                Shinsei.STARTTIME,
-                Shinsei.ENDTIME,
-                Shinsei.WORKDAY,
-                Shinsei.HOLIDAY,
-                Shinsei.OVERTIME,
-                Shinsei.NOTIFICATION,
-                Shinsei.NOTIFICATION2,
-                Shinsei.ONCALL,
-                Shinsei.ENGEL_COUNT,
-                Shinsei.MILEAGE,
-                Shinsei.ALCOHOL,
-                Shinsei.REMARK,
-                Shinsei.ONCALL_COUNT,
-                Shinsei.ENGEL_COUNT,
-                User.FNAME,
-                User.LNAME,
-                D_JOB_HISTORY.JOBTYPE_CODE,
-                D_JOB_HISTORY.CONTRACT_CODE,
-                Parttime.c.HOLIDAY_TIME,
-                M_TIMECARD_TEMPLATE.TEMPLATE_NO,
-            ).filter(
-                and_(
-                    Shinsei.STAFFID == STAFFID,
-                    Shinsei.STAFFID == User.STAFFID,
-                    Shinsei.WORKDAY.between(FromDay, ToDay),
-                    Shinsei.STAFFID == D_JOB_HISTORY.STAFFID,
-                    D_JOB_HISTORY.START_DAY <= Shinsei.WORKDAY,
-                    D_JOB_HISTORY.END_DAY >= Shinsei.WORKDAY,
-                    D_JOB_HISTORY.JOBTYPE_CODE == M_TIMECARD_TEMPLATE.JOBTYPE_CODE,
-                    D_JOB_HISTORY.CONTRACT_CODE == M_TIMECARD_TEMPLATE.CONTRACT_CODE,
+            if sh is None and STAFFID != 10000:
+                WORKDAY = c.strftime("%Y-%m-%d")
+                STARTTIME = "00:00"
+                ENDTIME = "00:00"
+                MILEAGE = "0.0"
+                STAFFID = STAFFID
+                ONCALL = 0
+                ONCALL_COUNT = "0"
+                NOTIFICATION = ""
+                NOTIFICATION2 = ""
+                OVERTIME = 0
+                ENGEL_COUNT = "0"
+                REMARK = ""
+                HOLIDAY = ""
+                ALCOHOL = 0
+                sh = Shinsei(
+                    STAFFID,
+                    WORKDAY,
+                    HOLIDAY,
+                    STARTTIME,
+                    ENDTIME,
+                    MILEAGE,
+                    ONCALL,
+                    ONCALL_COUNT,
+                    ENGEL_COUNT,
+                    NOTIFICATION,
+                    NOTIFICATION2,
+                    OVERTIME,
+                    ALCOHOL,
+                    REMARK,
                 )
-            )
-        )
-        .outerjoin(
-            Parttime,
-            and_(
-                Parttime.c.STAFFID == Shinsei.STAFFID,
-                Parttime.c.WORKDAY == Shinsei.WORKDAY,
-            ),
-        )
-        .order_by(Shinsei.STAFFID, Shinsei.WORKDAY)
-    )
-
-    sum_0 = 0
-    workday_count = 0
-    for Shin in shinseis:
-        # 日付
-        # 曜日
-        # 勤務日
-        # オンコール当番
-        AttendanceDada[Shin.WORKDAY.day][4] = Shin.ONCALL
-        # オンコール対応
-        AttendanceDada[Shin.WORKDAY.day][5] = NoneCheck(Shin.ONCALL_COUNT)
-        # エンゼル対応
-        AttendanceDada[Shin.WORKDAY.day][6] = NoneCheck(Shin.ENGEL_COUNT)
-        # 開始時間
-        AttendanceDada[Shin.WORKDAY.day][7] = TimeCheck(Shin.STARTTIME)
-        # 終了時間
-        AttendanceDada[Shin.WORKDAY.day][8] = TimeCheck(Shin.ENDTIME)
-        # 走行距離
-        AttendanceDada[Shin.WORKDAY.day][9] = Shin.MILEAGE
-        # 申請(AM)
-        AttendanceDada[Shin.WORKDAY.day][10] = Shin.NOTIFICATION
-        # 申請(PM)
-        AttendanceDada[Shin.WORKDAY.day][11] = Shin.NOTIFICATION2
-        # 残業申請
-        AttendanceDada[Shin.WORKDAY.day][12] = Shin.OVERTIME
-        # アルコールチェック
-        AttendanceDada[Shin.WORKDAY.day][13] = Shin.ALCOHOL
-        # 備考
-        AttendanceDada[Shin.WORKDAY.day][15] = Shin.REMARK
-
-        # 参照モード
-        dtm = datetime.strptime(Shin.ENDTIME, "%H:%M") - datetime.strptime(
-            Shin.STARTTIME, "%H:%M"
-        )
-        real_time = dtm
-        # 常勤看護師の場合
-
-        settime = CalcTimeClass(
-            dtm,
-            Shin.NOTIFICATION,
-            Shin.NOTIFICATION2,
-            Shin.STARTTIME,
-            Shin.ENDTIME,
-            Shin.OVERTIME,
-            Shin.CONTRACT_CODE,
-            AttendanceDada,
-            over_time_0,
-            real_time,
-            real_time_sum,
-            syukkin_holiday_times_0,
-            Shin.HOLIDAY,
-            Shin.JOBTYPE_CODE,
-            STAFFID,
-            Shin.WORKDAY,
-            Shin.HOLIDAY_TIME,
-        )
-        settime.calc_time()
-
-        sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
-        if AttendanceDada[Shin.WORKDAY.day][14] > 0:
-            workday_count += 1
-
-        w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
-        w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) // 60
-        AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m / 100
-
-        s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
-
-    ln_s_kyori = 0
-    if s_kyori is not None:
-        for s in s_kyori:
-            ln_s_kyori += float(s)
-        ln_s_kyori = math.floor(ln_s_kyori * 10) / 10
-
-    w_h = sum_0 // (60 * 60)
-    w_m = (sum_0 - w_h * 60 * 60) // 60
-    # 勤務時間合計
-    working_time = w_h + w_m / 100
-    working_time_10 = sum_0 / (60 * 60)
-
-    sum_over_0 = 0
-    for n in range(len(over_time_0)):
-        sum_over_0 += over_time_0[n]
-    o_h = sum_over_0 // (60 * 60)
-    o_m = (sum_over_0 - o_h * 60 * 60) // 60
-    over = o_h + o_m / 100
-    over_10 = sum_over_0 / (60 * 60)
-
-    sum_hol_0 = 0
-    for n in range(len(syukkin_holiday_times_0)):
-        sum_hol_0 += syukkin_holiday_times_0[n]
-    h_h = sum_hol_0 // (60 * 60)
-    h_m = (sum_hol_0 - h_h * 60 * 60) // 60
-    holiday_work = h_h + h_m / 100
-    holiday_work_10 = sum_hol_0 / (60 * 60)
-
-    # 配列に入った出勤時間(秒単位)を時間と分に変換
-    syukkin_times = [
-        n // (60 * 60) + ((n - (n // (60 * 60)) * 60 * 60) // 60) / 100
-        for n in syukkin_times_0
-    ]
-    for n in range(len(syukkin_times)):
-        AttendanceDada[Shin.WORKDAY.day][13] += syukkin_times[n]
+                db.session.add(sh)
+                db.session.commit()
 
     return render_template(
         "attendance/index.html",
@@ -709,6 +832,7 @@ def indextime(STAFFID, intFlg):
         td15=td15,
         td16=td16,
         workday_data=workday_data,
+        rp_holiday=rp_holiday,
         cnt_attemdance=cnt_attemdance,
         reload_y=reload_y,
         td17=td17,
@@ -730,12 +854,4 @@ def indextime(STAFFID, intFlg):
         length_oncall_8=length_oncall_8,
         dsp_page=dsp_page,
         STAFFID=STAFFID,
-        template1=template1,
-        template2=template2,
-        AttendanceDada=AttendanceDada,
-        working_time=working_time,
-        ln_s_kyori=ln_s_kyori,
-        workday_count=workday_count,
-        holiday_work=holiday_work,
-        intFlg=intFlg,
     )

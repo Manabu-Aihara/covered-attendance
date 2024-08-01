@@ -191,6 +191,7 @@ form.form-bottom button.judgement {
 
 #page-top-wrap {
   position: relative;
+  z-index: 1;
 }
 #page-top-wrap p {
   width: 50px;

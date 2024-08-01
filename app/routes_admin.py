@@ -298,6 +298,7 @@ def edit_list_user():
     )
     role_list_context = get_user_role_list()
 
+    # user_infosの末尾にrole_list_contextを追加
     # 惜しい…
     # user_complete_list = user_infos + role_list_context
 
@@ -554,7 +555,7 @@ def edit_data_user(STAFFID, intFlg):
         flash(form.errors, "danger")
 
     return render_template(
-        "admin/edit_data_user_diff.html",
+        "admin/edit_data_user.html",
         form=form,
         STAFFID=STAFFID,
         u=u,
