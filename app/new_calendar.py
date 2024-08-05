@@ -13,7 +13,7 @@ class NewCalendar:
 
     def get_itermonthdays(self) -> List[tuple]:
         calendar_obj = calendar.Calendar()
-        twin_cals = calendar_obj.itermonthdays2(self.year, self.month)
+        twin_cals = calendar_obj.itermonthdays4(self.year, self.month)
         day_and_weeknum = []
         for twin_cal in twin_cals:
             if twin_cal[0] == 0:
@@ -39,7 +39,7 @@ class NewCalendar:
         )
         return weekdays
 
-    def get_nth_dow(self, day):
+    def get_nth_dow(self, day: int) -> int:
         first_dow = calendar.monthrange(self.year, self.month)[0]
         offset = (first_dow - self.firstweekday) % 7
         return (day + offset - 1) // 7 + 1

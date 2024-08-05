@@ -298,7 +298,7 @@ def edit_list_user():
     )
     role_list_context = get_user_role_list()
 
-    # user_infosの末尾にrole_list_contextを追加
+    # user_infoの末尾にrole_contextを追加
     # 惜しい…
     # user_complete_list = user_infos + role_list_context
 

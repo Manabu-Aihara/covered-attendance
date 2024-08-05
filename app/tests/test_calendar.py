@@ -52,7 +52,7 @@ attendance_list_C = [12, 10, 12, 12, 10, 11]
 # おニューカレンダーテスト
 @pytest.fixture
 def make_new_calendar():
-    new_calendar = NewCalendar(2023, 9)
+    new_calendar = NewCalendar(2024, 7)
     return new_calendar
 
 
