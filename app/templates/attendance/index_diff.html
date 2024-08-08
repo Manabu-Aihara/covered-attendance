@@ -1,629 +1,435 @@
-<!DOCTYPE html>
-<html lang="ja">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous" />
-    <link href="{{bootstrap_find_resource('css/bootstrap.css', cdn='bootstrap')}}" rel="stylesheet">
-    <link rel= "stylesheet" type= "text/css" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- bootstrap-datepicker -->
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.ja.min.js"></script>    
-    <title>yoboiryo株式会社 System - サインイン</title>
-    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/half.js') }}"></script> 
-    <script src="{{ url_for('static', filename='js/choiceallarea.js') }}"></script>   
-  </head>
+{% extends "parent.html" %}
 
+{% block attendance_content %}
 
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous" />
+  <link href="{{bootstrap_find_resource('css/bootstrap.css', cdn='bootstrap')}}" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+  <!-- bootstrap-datepicker -->
+  <link rel="stylesheet" type="text/css"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+  <script type="text/javascript"
+    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+  <script type="text/javascript"
+    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.ja.min.js"></script>
+  <title>yoboiryo株式会社 System - サインイン</title>
+  <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/half.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/choiceallarea.js') }}"></script>
+</head>
 
-  <div class="disp center-block">
-    <nav class="navbar navbar-default navbar-bgc">
-      <div class="container">
-        <div class="navbar-header mr-auto">
-          <a class="navbar-brand navbar-fntc">yoboiryo株式会社</a>
-          <a class="navbar-brand navbar-fntc" href="{{ url_for('select_links') }}"><small>ホーム</small></a>
-          {% if stf_login.ADMIN is true %}
-          <a class="navbar-brand navbar-fntc" href="{{url_for('home_admin')}}"><small>管理者</small></a>
-          {% endif %}
-          {% if current_user.is_anonymous %}
-          <a class="navbar-brand navbar-fntc" href="{{ url_for('login') }}"><small>ログイン</small></a>
-          {% else %}
-          <a class="navbar-brand navbar-fntc" href="{{ url_for('logout') }}"><small>ログアウト</small></a>
-          {% endif %}
-          <a class="navbar-brand navbar-fntc navbar-right"><small><span id="min"></span></small></a>
-        </div>
-      </div>
-    </nav>
-
-  <body>
-    <div id="kintai-input" class="center-block">
-      <br />
+<body>
+  {{ display_top_belt(stf_login, current_user) }}
+  {% if STAFFID != 10000 %}
+  <h3>
+    <form method="POST" action="{{ url_for('index_select', STAFFID=STAFFID, intFlg=intFlg) }}">
+      {{ form_month.csrf_token }}
+      <input type="{{ typ[1] }}" id="select_month" class="h5" name="workday_name" value="{{ workday_data }}">　
       {% import "bootstrap/wtf.html" as wtf %}
-      <h4>複数端末(ブラウザ)で使用される方は、必ず１度<a id="for_logout_mes" class="h4" href="{{ url_for('logout') }}">ログアウト</a>してから使用して下さい</h4>
+      {{ wtf.form_field(form_month.slct, class="btn btn-primary") }}
+    </form>
+  </h3>
+  {% endif %}
 
-      <div class="container my-2"> 
-
-     
+  <div class="idx-tbl">
+    <form method="POST" action="{{ url_for('indextime', STAFFID=STAFFID, intFlg=intFlg) }}" onsubmit="mes()">
+      <div class="posilock">
+        <ul class="btn-list2">
+          <li>
+            {% if intFlg == 1 or intFlg == 2 %}
+            <input id="save" class="btn btn-loyal btn-blue" type="{{ typ[0] }}" value="　　　保　　　　存　　　">
+            {% else %}
+            <input type="button" onclick="dl_pdf()" class="btn btn-loyal btn-orange" value="PDF ダウンロード">
+            {% endif %}
+          </li>
+          <li>
+            {% if intFlg == 1 or intFlg == 2 %}
+            <a class="btn btn-loyal btn-green" href="{{ url_for('select_links') }}">戻　る</a>
+            {% else %}
+            <a class="btn btn-loyal btn-green"
+              href="{{ url_for('jimu_users_list', STAFFID=current_user.STAFFID) }}">戻　る</a>
+            {% endif %}
+          </li>
+        </ul>
       </div>
+      <div id="dl_pdf">
+        <div class="text-center">
+          <h3>{{ y }}年{{ m }}月分　　　出退勤</h3>
+          <h4>社員ID：{{ u.STAFFID }}　　　氏名：{{ u.LNAME}} {{ u.FNAME }}</h4>
+        </div>
 
-      {% if STAFFID != 10000 %}
-
-
-      <h3>
-
-          <form method="POST" action="{{ url_for('index_select', STAFFID=STAFFID, intFlg=intFlg) }}">
-            {{ form_month.csrf_token }}
-            <input type="{{ typ[1] }}" id="select_month" class="h5" name="workday_name" value="{{ workday_data }}">　
-            {{ wtf.form_field(form_month.slct, class="btn btn-primary") }}
-          </form>
-
-      </h3>
-
-      {% endif %}
-
-      <div class="idx-tbl" >
-        <form method="POST" action="{{ url_for('indextime', STAFFID=STAFFID, intFlg=intFlg) }}" onsubmit="mes()">
-          <div class="posilock">
-
-            
-            <ul class="btn-list2">
-              <li>            
-                {% if intFlg == 1 or intFlg == 2 %}
-                <input id="save" class="btn btn-loyal btn-blue" type="{{ typ[0] }}" value="　　　保　　　　存　　　">
-                {% else %}
-                <input type="button" onclick="dl_pdf()" class="btn btn-loyal btn-orange" value="PDF ダウンロード">
-                {% endif %}
-              </li>
-              <li>
-                {% if intFlg == 1 or intFlg == 2 %}
-                  <a class="btn btn-loyal btn-green" href="{{ url_for('select_links') }}">戻　る</a>
-                {% else %}
-                  <a class="btn btn-loyal btn-green" href="{{ url_for('jimu_users_list', STAFFID=current_user.STAFFID) }}">戻　る</a>
-                {% endif %}
-              </li>
-            </ul>
-          </div>
-        <div id="dl_pdf">
-          <div class="text-center">
-            <h3>{{ y }}年{{ m }}月分　　　出退勤</h3>
-            <h4>社員ID：{{ u.STAFFID }}　　　氏名：{{ u.LNAME}} {{ u.FNAME }}</h4>
-          </div>
- 
         <table id="dl_pdf2" class="table table-striped table-hover" style="{{ dsp_page }}">
           <div class="form-group">
-            
+            <thead class="st1">
+              <tr class="text-center">
+                <th colspan="14" class="text-center">
+                  {{ appear_warnning() }}
+                  {{ form.csrf_token }}
+                </th>
+              </tr>
+              <tr class="text-center">
+                <th class="text-center"></th>
+                <th class="text-center">
+                  <div></div>
+                </th>
+                <th class="text-center youbi">
+                  <div></div>
+                </th>
+                <th class="text-center" id="shinseis_flag"></th>
+                {% if template1 == 1 or template2 == 1 %}
+                <th class="text-center">
+                  <div>当番</div>
+                </th>
+                <th class="text-center">
+                  <div>対応件数</div>
+                </th>
+                <th class="text-center">
+                  <div>エンゼル</div>
+                </th>
+                {% endif %}
+                <th class="text-center">
+                  <div>出勤</div>
+                </th>
+                <th class="text-center">
+                  <div>退勤</div>
+                </th>
+                {% if template1 == 2 or template2 == 2 %}
+                <th class="text-center">
+                  <div>走行距離<br>(km)</div>
+                </th>
+                {% endif %}
+                <th class="text-center">
+                  <div>届出(AM)</div>
+                </th>
+                <th class="text-center">
+                  <div>届出(PM)</div>
+                </th>
+                <th class="text-center">
+                  <div>残業<br>申請</div>
+                </th>
+                <th class="text-center">
+                  <div class="alc">
+                    <p class="alcohol">ALC<br>Check</p>
+                    <p class="fukidashi">運転前と運転後にアルコールチェックをして問題なければチェックを入れて下さい。</p>
+                  </div>
+                </th>
+                <th class="text-center">
+                  <div>実働時間</div>
+                </th>
+                <th class="text-center">
+                  <div>備考</div>
+                </th>
+              </tr>
+            </thead>
+          </div><!-- .form-group -->
 
-              <div>
-                <thead class="st1">
-                  <tr class="text-center">
-                    <th colspan="14" class="text-center">
-   
- 
-   
+          <tbody>
+            {% set ms = namespace(m=0) %} {% set ns = namespace(n = hld|length) %}
+            {% for i in range(1, AttendanceDada | length) %}
+            <tr>
+              <!-- これは隠しかな -->
+              <td>
+                <div class="text-center">
+                  <input class="form-control hiduke-sun kinshi" type="{{ typ[1] }}" name="row{{ ms.m }}"
+                    value="{{ AttendanceDada[i][1] }}" {{ specification[3] }} size="0" />
+                </div>
+              </td>
+              <!-- 日付 -->
+              <td class="date">
+                {% if AttendanceDada[i][3] == '日' %}
+                {% set DateStyle = "hiduke-sun" %}
+                {% set YoubiStyle = "youbi-sun" %}
+                {% elif AttendanceDada[i][3] == '土' %}
+                {% set DateStyle = "hiduke-sat" %}
+                {% set YoubiStyle = "youbi-sat" %}
+                {% elif hld[-ns.n] %}
+                {% set DateStyle = "hiduke-hld" %}
+                {% set YoubiStyle = "youbi" %}
+                {% else %}
+                {% set DateStyle = "hiduke-base" %}
+                {% set YoubiStyle = "youbi" %}
+                {% endif %}
+                <span class="{{ DateStyle }}">{{ AttendanceDada[i][2] }}</span>
+              </td>
+              <!-- 曜日 -->
+              <td class="youbi text-center">
+                <span class="{{ YoubiStyle }}">{{ AttendanceDada[i][3] }}</span>
+              </td>
+              {% set ns.n = ns.n - 1 %}
+              <!-- オンコール対応 -->
+              {% if template1 == 1 or template2 == 1 %}
+              <td class="text-center">
+                <div class="custom-control custom-checkbox checkbox-lg">
+                  {% if AttendanceDada[i][4] == '1' %}
+                  <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
+                    <input type="{{ typ[3] }}" name="oncall{{ ms.m }}" {{ specification[1] }} />
+                  </div>
+                  {% else %}
+                  <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
+                    <input type="{{ typ[3] }}" name="oncall{{ ms.m }}" />
+                  </div>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="text-center oncall">
+                <div>
+                  <input id="hlf" class="form-control form-control-sm" type="number" name="oncall_cnt{{ ms.m }}"
+                    step="1" inputmode="numeric" pattern="{{ ptn[0] }}" size="2" value="{{ AttendanceDada[i][5] }}"
+                    style="text-align:right;font-size:0.9em;" />
+                </div>
+              </td>
+              <td class="text-center oncall">
+                <div>
+                  <input id="hlf" class="form-control form-control-sm" type="number" name="engel{{ ms.m }}" step="1"
+                    inputmode="numeric" pattern="{{ ptn[0] }}" size="2" value="{{ AttendanceDada[i][6] }}"
+                    style="text-align:right;font-size:0.9em;" />
+                </div>
+              </td>
+              {% endif %}
+              <!-- 開始時間 -->
+              <td class="text-center">
+                <div style="font-size:0.9em;" id="forsave1_{{ ms.m }}">
+                  {% if (AttendanceDada[i][7] != "00:00" and AttendanceDada[i][8] != "00:00") or
+                  ((AttendanceDada[i][7] == "00:00" and AttendanceDada[i][8] == "00:00") and
+                  (AttendanceDada[i][10] != "" or AttendanceDada[i][11] != "")) %}
+                  <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="stime{{ ms.m }}"
+                    value="{{ AttendanceDada[i][7] }}">
+                  {% elif AttendanceDada[i][7] == "00:00" and AttendanceDada[i][8] != "00:00" %}
+                  <input class="form-control form-control-sm alert-time" type="{{ typ[2] }}" name="stime{{ ms.m }}"
+                    value="{{ AttendanceDada[i][7] }}">
+                  {% else %}
+                  <input class="form-control form-control-sm" type="{{ typ[2] }}" name="stime{{ ms.m }}"
+                    value="{{ AttendanceDada[i][7] }}">
+                  {% endif %}
+                </div>
+              </td>
+              <!-- 終業時間 -->
+              <td class="text-center">
+                <div style="font-size:0.9em;" id="forsave2_{{ ms.m }}">
+                  {% if (AttendanceDada[i][7] != "00:00" and AttendanceDada[i][8] != "00:00") %}
+                  <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="ftime{{ ms.m }}"
+                    value="{{ AttendanceDada[i][8] }}" onchange="func1()">
+                  {% elif (AttendanceDada[i][7] == "00:00" and AttendanceDada[i][8] == "00:00") and
+                  (AttendanceDada[i][10] or AttendanceDada[i][11]) %}
+                  <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="ftime{{ ms.m }}"
+                    value="{{ AttendanceDada[i][8] }}" onchange="func1()">
+                  {% elif AttendanceDada[i][7] != "00:00" and AttendanceDada[i][8] == "00:00" %}
+                  <input class="form-control form-control-sm alert-time" type="{{ typ[2] }}" name="ftime{{ ms.m }}"
+                    value="{{ AttendanceDada[i][8] }}" onchange="func1()">
+                  {% else %}
+                  <input class="form-control form-control-sm" type="{{ typ[2] }}" name="ftime{{ ms.m }}"
+                    value="{{ AttendanceDada[i][8] }}" onchange="func1()">
+                  {% endif %}
+                </div>
+              </td>
+              <!-- 走行距離 -->
+              {% if template1 == 2 or template2 == 2 %}
+              <td>
+                <div class="skyori-w text-center" {{ sk }} id="skyori">
+                  <input id="hlf" class="form-control form-control-sm kyori" type="number" step="0.1"
+                    onclick="this.select(0,this.value.length)" name="skyori{{ ms.m }}" pattern="{{ ptn[1] }}"
+                    value="{{ AttendanceDada[i][9] }}" size="4" style="font-size:0.9em;">
+                </div>
+              </td>
+              {% endif %}
+              <!-- 申請AM -->
+              <td class="text-center">
+                <select class="form-control form-control-sm" name="todokede{{ ms.m }}">
+                  <option value=""></option>
+                  {#
+                  {% if AttendanceDada[i][10] == "1" %}
+                  <!-- <option value="{{ td1.CODE }}" {{ specification[2] }}>{{ td1.NAME }}</option> -->
+                  {% else %}
+                  ... #}
+                  {% for notifi_opt in notifi_lst %}
+                  {% if AttendanceDada[i][10] == notifi_opt.CODE %}
+                  <option value="{{ notifi_opt.CODE }}" {{ specification[2] }}>{{ notifi_opt.NAME }}</option>
+                  {% else %}
+                  <option value="{{ notifi_opt.CODE }}">{{ notifi_opt.NAME }}</option>
+                  {% endif %}
+                  {% endfor %}
+                </select>
+              </td>
 
-                      <div class="disp">
-                        <div class="container base-w">
-                          {% with warnings = get_flashed_messages(category_filter=["warning"]) %}
-                          {% with successes = get_flashed_messages(category_filter=["success"]) %}
-                          {% if successes and warnings %}
-                          <div>
-                          </div>
-                          {% elif successes %}
-                          <div class="success">
-                            {{ successes[-1] }}
-                          </div>
-                          {% endif %}
-                                    
-                          {% if warnings %}
-                          <div class="warnings">
-                            <ul>
-                              {% for msg in warnings %}
-                              <li>{{ msg }}</li>
-                              {% endfor %}
-                            </ul>
-                          </div>         
-                          {% endif %}
-
-                          {% endwith %}
-                          {% endwith %}
-                        </div>
-                      </div>                      
-
-                      {{ form.csrf_token }}
-                    </th>
-                  </tr>
-
-           
-
-                  <tr class="text-center">
-                    <th class="text-center"></th>
-                    <th class="text-center"><div></div></th>
-                    <th class="text-center youbi"><div></div></th>
-                    <th class="text-center" id="shinseis_flag"></th>
-                    {% if template1 == 1 or template2 == 1 %}
-                    <th class="text-center"><div>当番</div></th>
-                    <th class="text-center"><div>対応件数</div></th>
-                    <th class="text-center"><div>エンゼル</div></th>
-                    {% endif %}
-                    <th class="text-center"><div>出勤</div></th>
-                    <th class="text-center"><div>退勤</div></th>
-                    {% if template1 == 2 or template2 == 2 %}
-                    <th class="text-center"><div>走行距離<br>(km)</div></th>                    
-                    {% endif %}
-                    <th class="text-center"><div>届出(AM)</div></th>
-                    <th class="text-center"><div>届出(PM)</div></th>                    
-                    <th class="text-center"><div>残業<br>申請</div></th>
-                    <th class="text-center"><div class="alc"><p class="alcohol">ALC<br>Check</p><p class="fukidashi">運転前と運転後にアルコールチェックをして問題なければチェックを入れて下さい。</p></div></th>
-                    <th class="text-center"><div>実働時間</div></th>
-                    <th class="text-center"><div>備考</div></th>
-                  </tr>            
-                </thead>
-              </div>
-
-              <tbody>               
-                
-                {% set ms = namespace(m=0) %} {% set ns = namespace(n = hld|length) %} {% for i in range(1, AttendanceDada | length) %}
-                <tr>
-                  <!-- これは隠しかな --> 
-                  <td>
-                    <div class="text-center">
-
-                      <input class="form-control hiduke-sun kinshi" type="{{ typ[1] }}" name="row{{ ms.m }}" value="{{ AttendanceDada[i][1] }}" {{ specification[3] }} size="0" />
-                   
-                    </div>
-                  </td>
-                  <!-- 日付 --> 
-                  <td class="date">
-                    {% if AttendanceDada[i][3] == '日' %}
-                      {% set DateStyle = "hiduke-sun" %}
-                      {% set YoubiStyle = "youbi-sun" %}
-                    {% elif AttendanceDada[i][3] == '土' %}
-                      {% set DateStyle = "hiduke-sat" %}
-                      {% set YoubiStyle = "youbi-sat" %}
-                    {% elif hld[-ns.n] %}
-                      {% set DateStyle = "hiduke-hld" %}
-                      {% set YoubiStyle = "youbi" %}
+              <!-- 申請PM -->
+              <td class="text-center">
+                <div>
+                  <select class="form-control form-control-sm" name="todokede_pm{{ ms.m }}"
+                    style="border:1px solid;border-color:#dcdcdc;font-size:0.9em;">
+                    {% if AttendanceDada[i][11] == "" %}
+                    <option value="" {{ specification[2] }}></option>
                     {% else %}
-                      {% set DateStyle = "hiduke-base" %}
-                      {% set YoubiStyle = "youbi" %}
+                    <option value=""></option>
                     {% endif %}
-                    
-                    <span class="{{ DateStyle }}">{{ AttendanceDada[i][2] }}</span>
-                    
-                  </td>
-                  <!-- 曜日 --> 
-                  <td class="youbi text-center">
-                    <span class="{{ YoubiStyle }}">{{ AttendanceDada[i][3] }}</span>
-                  </td>
-                  {% set ns.n = ns.n - 1 %} 
-                  <!-- オンコール対応 --> 
-                  {% if template1 == 1 or template2 == 1 %}
-                  <td class="text-center">
-                    <div class="custom-control custom-checkbox checkbox-lg">
-                      {% if AttendanceDada[i][4] == '1' %}
+                    {% for notifi_opt in notifi_pm_lst %}
+                    {% if AttendanceDada[i][11] == notifi_opt.CODE %}
+                    <option value="{{ notifi_opt.CODE }}" {{ specification[2] }}>{{ td1.NAME }}</option>
+                    {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10]
+                    == "7" or AttendanceDada[i][10] == "8" %}
+                    <option value="{{ notifi_opt.CODE }}" {{ specification[4] }}></option>
+                    {% else %}
+                    <option value="{{ notifi_opt.CODE }}">{{ notifi_opt.NAME }}</option>
+                    {% endif %}
+                    {% endfor %}
+                  </select>
+                </div>
+              </td>
 
-                      <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
-                        <input type="{{ typ[3] }}" name="oncall{{ ms.m }}" {{ specification[1] }} />
-                      </div>
-                      {% else %}
+              <td class="text-center">
+                <div>
+                  {% if AttendanceDada[i][12] == "1" %}
 
-                      <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
-                        <input type="{{ typ[3] }}" name="oncall{{ ms.m }}" />
-                      </div>
-                      {% endif %}
-                    </div>
-                  </td>                  
+                  <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
+                    <input type="{{ typ[3] }}" name="zangyou{{ ms.m }}" {{ specification[1] }}>
+                  </div>
+                  {% else %}
 
+                  <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
+                    <input type="{{ typ[3] }}" name="zangyou{{ ms.m }}" />
+                  </div>
                   {% endif %}
+                </div>
+              </td>
+              <!-- アルコールチェック -->
+              <td class="text-center">
+                <div>
+                  {% if AttendanceDada[i][13] == 1 %}
 
-                  {% if template1 == 1 or template2 == 1 %}
-                  <td class="text-center oncall">
-                    <div>
-                      <input id="hlf" class="form-control form-control-sm" type="number" name="oncall_cnt{{ ms.m }}" step="1" inputmode="numeric" pattern="{{ ptn[0] }}" size="2" value="{{ AttendanceDada[i][5] }}" style="text-align:right;font-size:0.9em;" />
-                    </div>
-                  </td>                  
-                  
-                    
+                  <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
+                    <input type="{{ typ[3] }}" name="alcohol{{ ms.m }}" {{ specification[1] }} />
+                  </div>
+                  {% else %}
+
+                  <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
+                    <input type="{{ typ[3] }}" name="alcohol{{ ms.m }}" />
+                  </div>
                   {% endif %}
+                </div>
+              </td>
 
-                  {% if template1 == 1 or template2 == 1 %}
-                  <td class="text-center oncall">
-                    <div>
-                      <input id="hlf" class="form-control form-control-sm" type="number" name="engel{{ ms.m }}" step="1" inputmode="numeric" pattern="{{ ptn[0] }}" size="2" value="{{ AttendanceDada[i][6] }}" style="text-align:right;font-size:0.9em;" />
-                    </div>
-                  </td>
+              <td>
+                <div class="text-center" {{ bk }}>
 
-                  {% endif %}
+                  <span id="hlf" class="form-control form-control-sm">{{ AttendanceDada[i][14] }}</span>
 
-                  <td class="text-center">
-                    <div style="font-size:0.9em;" id="forsave1_{{ ms.m }}">
-                      {% if (AttendanceDada[i][7] != "00:00" and AttendanceDada[i][8] != "00:00") or ((AttendanceDada[i][7] == "00:00" and AttendanceDada[i][8] == "00:00") and (AttendanceDada[i][10] != "" or AttendanceDada[i][11] != "")) %}
-                      <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="stime{{ ms.m }}" value="{{ AttendanceDada[i][7] }}">
-                      {% elif AttendanceDada[i][7] == "00:00" and AttendanceDada[i][8] != "00:00" %}
-                      <input class="form-control form-control-sm alert-time" type="{{ typ[2] }}" name="stime{{ ms.m }}" value="{{ AttendanceDada[i][7] }}">
-                      {% else %}
-                      <input class="form-control form-control-sm" type="{{ typ[2] }}" name="stime{{ ms.m }}" value="{{ AttendanceDada[i][7] }}">
-                      {% endif %}
-                    </div>
-                  </td>
-
-                  <td class="text-center">
-                    <div style="font-size:0.9em;" id="forsave2_{{ ms.m }}">
-                      {% if (AttendanceDada[i][7] != "00:00" and AttendanceDada[i][8] != "00:00") %}
-                      <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="ftime{{ ms.m }}" value="{{ AttendanceDada[i][8] }}" onchange="func1()">
-                      {% elif (AttendanceDada[i][7] == "00:00" and AttendanceDada[i][8] == "00:00") and (AttendanceDada[i][10] or AttendanceDada[i][11]) %}
-                      <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="ftime{{ ms.m }}" value="{{ AttendanceDada[i][8] }}" onchange="func1()">                      
-                      {% elif AttendanceDada[i][7] != "00:00" and AttendanceDada[i][8] == "00:00" %}
-                      <input class="form-control form-control-sm alert-time" type="{{ typ[2] }}" name="ftime{{ ms.m }}" value="{{ AttendanceDada[i][8] }}" onchange="func1()">                     
-                      {% else %}
-                      <input class="form-control form-control-sm" type="{{ typ[2] }}" name="ftime{{ ms.m }}" value="{{ AttendanceDada[i][8] }}" onchange="func1()">
-                      {% endif %}
-                    </div>
-                  </td>
-
-                  {% if template1 == 2 or template2 == 2 %}
-                  <td>
-                    <div class="skyori-w text-center" {{ sk }} id="skyori">
-                        <input id="hlf" class="form-control form-control-sm kyori" type="number" step="0.1" onclick="this.select(0,this.value.length)" name="skyori{{ ms.m }}" pattern="{{ ptn[1] }}" value="{{ AttendanceDada[i][9] }}" size="4" style="font-size:0.9em;" >
-                    </div>
-                  </td>                  
-                  {% endif %}
-
-                  <td class="text-center">
-                    <div>
-                      <select class="form-control form-control-sm" name="todokede{{ ms.m }}">
-                        {% if AttendanceDada[i][10] == "" %}
-                        <option value="" {{ specification[2] }}></option>
-                        {% else %}
-                        <option value=""></option>
-                        {% endif %}
-                        {% if AttendanceDada[i][10] == "1" %}
-                        <option value="{{ td1.CODE }}" {{ specification[2] }}>{{ td1.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td1.CODE }}">{{ td1.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "2" %}
-                        <option value="{{ td2.CODE }}" {{ specification[2] }}>{{ td2.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td2.CODE }}">{{ td2.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "3" %}
-                        <option value="{{ td3.CODE }}" {{ specification[2] }}>{{ td3.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td3.CODE }}">{{ td3.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "4" %}
-                        <option value="{{ td4.CODE }}" {{ specification[2] }}>{{ td4.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td4.CODE }}">{{ td4.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "5" %}
-                        <option value="{{ td5.CODE }}" {{ specification[2] }}>{{ td5.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td5.CODE }}">{{ td5.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "6" %}
-                        <option value="{{ td6.CODE }}" {{ specification[2] }}>{{ td6.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td6.CODE }}">{{ td6.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "7" %}
-                        <option value="{{ td7.CODE }}" {{ specification[2] }}>{{ td7.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td7.CODE }}">{{ td7.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td8.CODE }}" {{ specification[2] }}>{{ td8.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td8.CODE }}">{{ td8.NAME }}</option>
-                        {% endif %} 
-                        {% if AttendanceDada[i][10] == "10" %}
-                        <option value="{{ td10.CODE }}" {{ specification[2] }}>{{ td10.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td10.CODE }}">{{ td10.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "11" %}
-                        <option value="{{ td11.CODE }}" {{ specification[2] }}>{{ td11.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td11.CODE }}">{{ td11.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "12" %}
-                        <option value="{{ td12.CODE }}" {{ specification[2] }}>{{ td12.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td12.CODE }}">{{ td12.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "13" %}
-                        <option value="{{ td13.CODE }}" {{ specification[2] }}>{{ td13.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td13.CODE }}">{{ td13.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "14" %}
-                        <option value="{{ td14.CODE }}" {{ specification[2] }}>{{ td14.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td14.CODE }}">{{ td14.NAME }}</option>
-                        {% endif %} {% if AttendanceDada[i][10] == "15" %}
-                        <option value="{{ td15.CODE }}" {{ specification[2] }}>{{ td15.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td15.CODE }}">{{ td15.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][10] == "9" %}
-                        <option value="{{ td9.CODE }}" {{ specification[2] }}>{{ td9.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td9.CODE }}">{{ td9.NAME }}</option>
-                        {% endif %} 
-                        {% if AttendanceDada[i][10]== "16" %}
-                        <option value="{{ td16.CODE }}" {{ specification[2] }}>{{ td16.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td16.CODE }}">{{ td16.NAME }}</option>
-                        {% endif %}                        
-                        {% if AttendanceDada[i][10]== "17" %}
-                        <option value="{{ td17.CODE }}" {{ specification[2] }}>{{ td17.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td17.CODE }}">{{ td17.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][10]== "18" %}
-                        <option value="{{ td18.CODE }}" {{ specification[2] }}>{{ td18.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td18.CODE }}">{{ td18.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][10]== "19" %}
-                        <option value="{{ td19.CODE }}" {{ specification[2] }}>{{ td19.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td19.CODE }}">{{ td19.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][10]== "20" %}
-                        <option value="{{ td20.CODE }}" {{ specification[2] }}>{{ td20.NAME }}</option>
-                        {% else %}
-                        <option value="{{ td20.CODE }}">{{ td20.NAME }}</option>
-                        {% endif %}                        
-                      </select>
-                    </div>
-                  </td>
-
-                  <td class="text-center">
-                    <div>
-                      <select class="form-control form-control-sm" name="todokede_pm{{ ms.m }}" style="border:1px solid;border-color:#dcdcdc;font-size:0.9em;" >
-                        {% if AttendanceDada[i][11] == "" %}
-                        <option value="" {{ specification[2] }}></option>
-                        {% else %}
-                        <option value=""></option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "1" %}
-                        <option value="{{ td1.CODE }}" {{ specification[2] }}>{{ td1.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td1.CODE }}" {{ specification[4] }}></option>                        
-                        {% else %}
-                        <option value="{{ td1.CODE }}">{{ td1.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "2" %}
-                        <option value="{{ td2.CODE }}" {{ specification[2] }}>{{ td2.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td2.CODE }}" {{ specification[4] }}></option>                        
-                        {% else %}
-                        <option value="{{ td2.CODE }}">{{ td2.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "4" %}
-                        <option value="{{ td4.CODE }}" {{ specification[2] }}>{{ td4.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td4.CODE }}" {{ specification[4] }}></option>                        
-                        {% else %}
-                        <option value="{{ td4.CODE }}">{{ td4.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "6" %}
-                        <option value="{{ td6.CODE }}" {{ specification[2] }}>{{ td6.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td6.CODE }}" {{ specification[4] }}></option>                        
-                        {% else %}
-                        <option value="{{ td6.CODE }}">{{ td6.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "10" %}
-                        <option value="{{ td10.CODE }}" {{ specification[2] }}>{{ td10.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td10.CODE }}" {{ specification[4] }}></option>                        
-                        {% else %}
-                        <option value="{{ td10.CODE }}">{{ td10.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "11" %}
-                        <option value="{{ td11.CODE }}" {{ specification[2] }}>{{ td11.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td11.CODE }}" {{ specification[4] }}></option>                        
-                        {% else %}
-                        <option value="{{ td11.CODE }}">{{ td11.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "12" %}
-                        <option value="{{ td12.CODE }}" {{ specification[2] }}>{{ td12.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td12.CODE }}" {{ specification[4] }}></option>                                               
-                        {% else %}
-                        <option value="{{ td12.CODE }}">{{ td12.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "13" %}
-                        <option value="{{ td13.CODE }}" {{ specification[2] }}>{{ td13.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td13.CODE }}" {{ specification[4] }}></option>                        
-                        {% else %}
-                        <option value="{{ td13.CODE }}">{{ td13.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "14" %}
-                        <option value="{{ td14.CODE }}" {{ specification[2] }}>{{ td14.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td14.CODE }}" {{ specification[4] }}></option>                        
-                        {% else %}
-                        <option value="{{ td14.CODE }}">{{ td14.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "15" %}
-                        <option value="{{ td15.CODE }}" {{ specification[2] }}>{{ td15.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td15.CODE }}" {{ specification[4] }}></option>                        
-                        {% else %}
-                        <option value="{{ td15.CODE }}">{{ td15.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "9" %}
-                        <option value="{{ td9.CODE }}" {{ specification[2] }}>{{ td9.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td9.CODE }}" {{ specification[4] }}></option>                        
-                        {% else %}
-                        <option value="{{ td9.CODE }}">{{ td9.NAME }}</option>
-                        {% endif %}
-                        {% if AttendanceDada[i][11] == "16" %}
-                        <option value="{{ td16.CODE }}" {{ specification[2] }}>{{ td16.NAME }}</option>
-                        {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10] == "7" or AttendanceDada[i][10] == "8" %}
-                        <option value="{{ td16.CODE }}" {{ specification[4] }}></option>                        
-                        {% else %}
-                        <option value="{{ td16.CODE }}">{{ td16.NAME }}</option>
-                        {% endif %}
-
-                      </select>
-                    </div>
-                  </td>
-
-                  <td class="text-center">
-                    <div>
-                      {% if AttendanceDada[i][12] == "1" %}
-
-                      <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
-                        <input type="{{ typ[3] }}" name="zangyou{{ ms.m }}" {{ specification[1] }} >
-                      </div>
-                      {% else %}
-
-                      <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
-                        <input type="{{ typ[3] }}" name="zangyou{{ ms.m }}" />
-                      </div>
-                      {% endif %}
-                    </div>
-                  </td>
-                  <!-- アルコールチェック -->
-                  <td class="text-center">
-                    <div>
-                      {% if AttendanceDada[i][13] == 1 %}
-
-                      <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
-                        <input type="{{ typ[3] }}" name="alcohol{{ ms.m }}" {{ specification[1] }} />
-                      </div>
-                      {% else %}
-
-                      <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
-                        <input type="{{ typ[3] }}" name="alcohol{{ ms.m }}" />
-                      </div>
-                      {% endif %}
-                    </div>
-                  </td>
-
-                  <td>
-                    <div class="text-center" {{ bk }}>
-                      
-                      <span id="hlf" class="form-control form-control-sm">{{ AttendanceDada[i][14] }}</span>
-
-                    </div>
-                  </td>
+                </div>
+              </td>
 
 
-                  <td class="text-center">
-                    <div>
-                      <input class="form-control form-control-sm" type="{{ typ[1] }}" name="bikou{{ ms.m }}" size="44" value="{{ AttendanceDada[i][15] }}" style="font-size:0.9em;" >
-                    </div>
-                  </td>                  
-                  {% set ms.m = ms.m + 1 %}
+              <td class="text-center">
+                <div>
+                  <input class="form-control form-control-sm" type="{{ typ[1] }}" name="bikou{{ ms.m }}" size="44"
+                    value="{{ AttendanceDada[i][15] }}" style="font-size:0.9em;">
+                </div>
+              </td>
+              {% set ms.m = ms.m + 1 %}
 
-                </tr>
-                {% endfor %}
-
-                
+            </tr>
+            {% endfor %}
 
 
-                <input type="text" name="reload_h" id="reload_h" hidden="true"/>                                 
-              </tbody>
 
-            </form>
-          </div>            
-        </table>
 
-          <p>合計走行距離：{{ ln_s_kyori }}</p>
-          <p>月労働時間計：{{ working_time }}</p>                 
-          <p>出勤日数：{{ workday_count }}</p>
-          <p>祝日手当時間：{{ holiday_work }}</p>
+            <input type="text" name="reload_h" id="reload_h" hidden="true" />
+          </tbody>
 
-        </div>
-        <br />
-        <div class="h1">
+    </form>
+  </div>
+  </table>
 
-        </div>
+  <p>合計走行距離：{{ ln_s_kyori }}</p>
+  <p>月労働時間計：{{ working_time }}</p>
+  <p>出勤日数：{{ workday_count }}</p>
+  <p>祝日手当時間：{{ holiday_work }}</p>
 
-        {% block scripts %}
-        <script
-          src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-          integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-          crossorigin="anonymous">
-        </script>
-        <script
-          src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-          integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-          crossorigin="anonymous">
-        </script>
-        <script
-          src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-          integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-          crossorigin="anonymous">
-        </script>
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/js/bootstrap-datepicker.min.js"></script>
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/locales/bootstrap-datepicker.ja.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-        <script>
-          window.addEventListener('scroll', function() {
-            scroll_position = window.pageYOffset;
-            console.log( scroll_position );
-            document.querySelector('input[type=text][name=reload_h]').value = scroll_position;
-          });          
-        </script>
-        <script>
-          window.onload = function(){
-              window.scroll(0, {{ reload_y|tojson }}); 
+  </div>
+  <br />
+  <div class="h1">
+
+  </div>
+
+  {% block scripts %}
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous">
+    </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+    integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous">
+    </script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+    integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
+    </script>
+  <script type="text/javascript"
+    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/js/bootstrap-datepicker.min.js"></script>
+  <script type="text/javascript"
+    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/locales/bootstrap-datepicker.ja.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+    integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    window.addEventListener('scroll', function () {
+      scroll_position = window.pageYOffset;
+      console.log(scroll_position);
+      document.querySelector('input[type=text][name=reload_h]').value = scroll_position;
+    });          
+  </script>
+  <script>
+    window.onload = function () {
+      window.scroll(0, {{ reload_y| tojson }}); 
           }          
-        </script>
-        <script>
-          $('#select_month').datepicker({
-          format: "yyyy-mm",
-          language: "ja",
-          autoclose: true, //日付選択で自動的にカレンダーを閉じる
-          minViewMode: 'months',
-          orientation:'bottom left'
-          });
-        </script>
-        <!--<script>
+  </script>
+  <script>
+    $('#select_month').datepicker({
+      format: "yyyy-mm",
+      language: "ja",
+      autoclose: true, //日付選択で自動的にカレンダーを閉じる
+      minViewMode: 'months',
+      orientation: 'bottom left'
+    });
+  </script>
+  <!--<script>
           $(function(){
             $(window).on("beforeunload",function(e){
               return "ブラウザを閉じても良いでしょうか？"; // 文字列はメッセージに反映されません。必ずreturnすればブランクでもOKです。
             });
           });
         </script>-->
-        <script>
-          function dl_pdf(){
-            const element = document.getElementById('dl_pdf'); // 対象要素を指定
-            const option = {
-                height: 100,
-                margin: 1, // 余白
-                filename: '{{ y|tojson }}-{{ m|tojson }}社員月別勤務状況（１日基準）{{ u.STAFFID|tojson }} {{ u.LNAME|tojson }}{{ u.FNAME|tojson }} .pdf', // ファイル名
-                image: { type: 'jpeg', quality: 1 }, // PDFの生成に使用される画像のタイプとクオリティ
-                html2canvas: { scale: 3, useCORS: true }, // html2canvasで使用される設定を記述。useCORS: trueを設定すると別ドメインの画像を表示できる（サイトによってはできないこともある）
-                jsPDF: { format: 'a2', orientation: 'portrait' }, // jsPDFで使用される設定を記述
-            };
+  <script>
+    function dl_pdf() {
+      const element = document.getElementById('dl_pdf'); // 対象要素を指定
+      const option = {
+        height: 100,
+        margin: 1, // 余白
+        filename: '{{ y|tojson }}-{{ m|tojson }}社員月別勤務状況（１日基準）{{ u.STAFFID|tojson }} {{ u.LNAME|tojson }}{{ u.FNAME|tojson }} .pdf', // ファイル名
+        image: { type: 'jpeg', quality: 1 }, // PDFの生成に使用される画像のタイプとクオリティ
+        html2canvas: { scale: 3, useCORS: true }, // html2canvasで使用される設定を記述。useCORS: trueを設定すると別ドメインの画像を表示できる（サイトによってはできないこともある）
+        jsPDF: { format: 'a2', orientation: 'portrait' }, // jsPDFで使用される設定を記述
+      };
 
-            html2pdf()
-                .from(element)
-                .set(option)
-                .save()
-          }
-        </script>
-        <script>
-          var st = new Date();
-          var startTime = st.getTime();
-          var finishTime = startTime + (1000 * 60 * 20);
-          var mes = document.getElementById("min");
-          min.textContent = "ログアウトの予定時刻 " + new Date(finishTime).toLocaleTimeString();
+      html2pdf()
+        .from(element)
+        .set(option)
+        .save()
+    }
+  </script>
+  <script>
+    var st = new Date();
+    var startTime = st.getTime();
+    var finishTime = startTime + (1000 * 60 * 20);
+    var mes = document.getElementById("min");
+    min.textContent = "ログアウトの予定時刻 " + new Date(finishTime).toLocaleTimeString();
 
-          function realTime () {
-            if (finishTime <= new Date().getTime()) {
-            window.location.href = 'https://yobo-system.net/logout_mes';
-            }
-          }
-          setInterval(realTime,1000);
-        </script>  
-        {% endblock %}
-      </div>
-    </div>
-  </body>
+    function realTime() {
+      if (finishTime <= new Date().getTime()) {
+        window.location.href = 'https://yobo-system.net/logout_mes';
+      }
+    }
+    setInterval(realTime, 1000);
+  </script>
+  {% endblock %}
   </div>
-
-</html>
-
+  </div>
+  {% endblock %}

@@ -658,21 +658,25 @@ def indextime(STAFFID, intFlg):
     for n in range(len(over_time_0)):
         sum_over_0 += over_time_0[n]
     o_h = sum_over_0 // (60 * 60)
-    o_m = (sum_over_0 - o_h * 60 * 60) // 60
-    over = o_h + o_m / 100
+    """ 24/8/1 修正分 """
+    o_m = (sum_over_0 - o_h * 60 * 60) / (60 * 60)
+    over = o_h + o_m
     over_10 = sum_over_0 / (60 * 60)
 
     sum_hol_0 = 0
     for n in range(len(syukkin_holiday_times_0)):
         sum_hol_0 += syukkin_holiday_times_0[n]
     h_h = sum_hol_0 // (60 * 60)
-    h_m = (sum_hol_0 - h_h * 60 * 60) // 60
-    holiday_work = h_h + h_m / 100
+    """ 24/8/1 修正分 """
+    h_m = (sum_hol_0 - h_h * 60 * 60) / (60 * 60)
+    holiday_work = h_h + h_m
     holiday_work_10 = sum_hol_0 / (60 * 60)
 
     # 配列に入った出勤時間(秒単位)を時間と分に変換
+    """ 24/8/8 修正分 """
     syukkin_times = [
-        n // (60 * 60) + ((n - (n // (60 * 60)) * 60 * 60) // 60) / 100
+        # n // (60 * 60) + ((n - (n // (60 * 60)) * 60 * 60) // 60) / 100
+        n // (60 * 60) + (n - (n // (60 * 60) * 3600)) / (60 * 60)
         for n in syukkin_times_0
     ]
     for n in range(len(syukkin_times)):

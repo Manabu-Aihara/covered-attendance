@@ -62,9 +62,15 @@ def test_get_itermonthdays(make_new_calendar):
     print(result)
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_get_month_holidays_num(make_new_calendar):
-    print(make_new_calendar.__get_jp_holidays_num())
+    print(f"int: {make_new_calendar.get_jp_holidays_num()}")
+
+
+@pytest.mark.skip
+def test_make_calendar_table(make_new_calendar):
+    result_list = make_new_calendar.make_calendar_table()
+    print(f"list: {result_list}")
 
 
 @pytest.mark.skip

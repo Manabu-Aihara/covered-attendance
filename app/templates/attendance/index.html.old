@@ -201,7 +201,7 @@
                   {% if template1 == 1 or template2 == 1 %}
                   <td class="text-center">
                     <div class="custom-control custom-checkbox checkbox-lg">
-                      {% if AttendanceDada[i][4] == '1' %}
+                      {% if AttendanceDada[i][4] == 1 %}
 
                       <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
                         <input type="{{ typ[3] }}" name="oncall{{ ms.m }}" {{ specification[1] }} />

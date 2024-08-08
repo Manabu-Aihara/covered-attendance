@@ -169,28 +169,32 @@ def indextime(STAFFID, intFlg):
         bk = ""
 
     ##### M_NOTIFICATIONとindexの紐づけ #####
-    td1 = Todokede.query.get(1)
-    td2 = Todokede.query.get(2)
-    td3 = Todokede.query.get(3)  # 年休（全日）はNotification2にはない
-    td4 = Todokede.query.get(4)
-    td5 = Todokede.query.get(5)  # 出張（全日）はNotification2にはない
-    td6 = Todokede.query.get(6)
-    td7 = Todokede.query.get(7)  # リフレッシュ休暇はNotification2にはない
-    td8 = Todokede.query.get(8)  # 欠勤はNotification2にはない
-    td9 = Todokede.query.get(9)
-    td10 = Todokede.query.get(10)
-    td11 = Todokede.query.get(11)
-    td12 = Todokede.query.get(12)
-    td13 = Todokede.query.get(13)
-    td14 = Todokede.query.get(14)
-    td15 = Todokede.query.get(15)
-    td16 = Todokede.query.get(16)
-    td17 = Todokede.query.get(17)
-    td18 = Todokede.query.get(18)
-    td19 = Todokede.query.get(19)
-    td20 = Todokede.query.get(20)
+    # td1 = Todokede.query.get(1)
+    # td2 = Todokede.query.get(2)
+    # td3 = Todokede.query.get(3)  # 年休（全日）はNotification2にはない
+    # td4 = Todokede.query.get(4)
+    # td5 = Todokede.query.get(5)  # 出張（全日）はNotification2にはない
+    # td6 = Todokede.query.get(6)
+    # td7 = Todokede.query.get(7)  # リフレッシュ休暇はNotification2にはない
+    # td8 = Todokede.query.get(8)  # 欠勤はNotification2にはない
+    # td9 = Todokede.query.get(9)
+    # td10 = Todokede.query.get(10)
+    # td11 = Todokede.query.get(11)
+    # td12 = Todokede.query.get(12)
+    # td13 = Todokede.query.get(13)
+    # td14 = Todokede.query.get(14)
+    # td15 = Todokede.query.get(15)
+    # td16 = Todokede.query.get(16)
+    # td17 = Todokede.query.get(17)
+    # td18 = Todokede.query.get(18)
+    # td19 = Todokede.query.get(19)
+    # td20 = Todokede.query.get(20)
 
-    notification_items = [db.session.query(Todokede, i) for i in range(1, 21)]
+    notification_items = [db.session.get(Todokede, i) for i in range(1, 21)]
+    exclude_list = [3, 5, 7, 8, 17, 18, 19, 20]
+    notification_pm_list = [
+        n for i, n in enumerate(notification_items, 1) if i not in exclude_list
+    ]
 
     ##### 月選択の有無 #####
     # dsp_page = ""
@@ -315,11 +319,12 @@ def indextime(STAFFID, intFlg):
         # cal = []
         calendar_obj = NewCalendar(y, m)
         str_date_list = [
-            f"{day_tuple[0]}-{day_tuple[1]}-{day_tuple[2]}"
-            for day_tuple in calendar_obj.get_itermonthdays()
+            f"{y}-{m}-{date_tuple[0]}"
+            for date_tuple in calendar_obj.get_itermonthdays()
         ]
         i = 0
         for c in cal:
+            # for str_date in str_date_list:
             data0 = request.form.get("dat" + str(i))  # フラッグID
             data1 = request.form.get("row" + str(i))  # 日付
             data2 = TimeCheck(request.form.get("stime" + str(i)))  # 開始時間
@@ -335,6 +340,7 @@ def indextime(STAFFID, intFlg):
             data12 = request.form.get("alcohol" + str(i))  # 届出PM
 
             ##### 勤怠条件分け #####
+            # c = datetime.strptime(str_date, "%Y-%m-%d")[0]
             InsertFlg = 0
             atd = AttendanceAnalysys(
                 c,
@@ -365,8 +371,10 @@ def indextime(STAFFID, intFlg):
 
             holiday = ""
             if jpholiday.is_holiday_name(datetime.strptime(data1, "%Y-%m-%d")):
+                # 要は祝日
                 holiday = "2"
             elif get_day_of_week_jp(datetime.strptime(data1, "%Y-%m-%d")) == "1":
+                # 要は土日
                 holiday = "1"
 
             oncall: int = 0
@@ -430,9 +438,15 @@ def indextime(STAFFID, intFlg):
     AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
     # AttendanceDada[日付][項目]
 
+    calendar_obj = NewCalendar(y, m)
+    str_date_list = [
+        f"{y}-{m}-{date_tuple[0]}" for date_tuple in calendar_obj.get_itermonthdays()
+    ]
     # 初期値
     i = 1
     for c in cal:
+        # for str_date in str_date_list:
+        #     c = datetime.strptime(str_date, "%Y-%m-%d")
         # print(f"cal 一個: {c}")
         #
         # AttendanceDada[i][1] = datetime.strptime(str(y, m, i), "%Y-%m-%d")
@@ -462,6 +476,7 @@ def indextime(STAFFID, intFlg):
 
     attendace_qry_obj = AttendanceQuery(STAFFID, FromDay, ToDay)
     attendance_query_list = attendace_qry_obj.get_attendance_query()
+    # print(f"{len(AttendanceDada)} {attendance_query_list}")
 
     sum_0 = 0
     workday_count = 0
@@ -551,21 +566,25 @@ def indextime(STAFFID, intFlg):
     for n in range(len(over_time_0)):
         sum_over_0 += over_time_0[n]
     o_h = sum_over_0 // (60 * 60)
-    o_m = (sum_over_0 - o_h * 60 * 60) // 60
-    over = o_h + o_m / 100
+    """ 24/8/1 修正分 """
+    o_m = (sum_over_0 - o_h * 60 * 60) / (60 * 60)
+    over = o_h + o_m
     over_10 = sum_over_0 / (60 * 60)
 
     sum_hol_0 = 0
     for n in range(len(syukkin_holiday_times_0)):
         sum_hol_0 += syukkin_holiday_times_0[n]
     h_h = sum_hol_0 // (60 * 60)
-    h_m = (sum_hol_0 - h_h * 60 * 60) // 60
-    holiday_work = h_h + h_m / 100
+    """ 24/8/1 修正分 """
+    h_m = (sum_hol_0 - h_h * 60 * 60) / (60 * 60)
+    holiday_work = h_h + h_m
     holiday_work_10 = sum_hol_0 / (60 * 60)
 
     # 配列に入った出勤時間(秒単位)を時間と分に変換
+    """ 24/8/8 修正分 """
     syukkin_times = [
-        n // (60 * 60) + ((n - (n // (60 * 60)) * 60 * 60) // 60) / 100
+        # n // (60 * 60) + ((n - (n // (60 * 60)) * 60 * 60) // 60) / 100
+        n // (60 * 60) + (n - (n // (60 * 60) * 3600)) / (60 * 60)
         for n in syukkin_times_0
     ]
     for n in range(len(syukkin_times)):
@@ -574,8 +593,10 @@ def indextime(STAFFID, intFlg):
     return render_template(
         "attendance/index_diff.html",
         title="ホーム",
+        notifi_lst=notification_items,
+        notifi_pm_lst=notification_pm_list,
         cal=cal,
-        shinseis=attendance_query_list,
+        shinseis=shinseis,
         y=y,
         m=m,
         form=form,
@@ -593,29 +614,9 @@ def indextime(STAFFID, intFlg):
         ptn=ptn,
         specification=specification,
         wk=wk,
-        td1=td1,
-        td2=td2,
-        td3=td3,
-        td4=td4,
-        td5=td5,
-        td6=td6,
-        td7=td7,
-        td8=td8,
-        td9=td9,
-        td10=td10,
-        td11=td11,
-        td12=td12,
-        td13=td13,
-        td14=td14,
-        td15=td15,
-        td16=td16,
         workday_data=workday_data,
         cnt_attemdance=cnt_attemdance,
         reload_y=reload_y,
-        td17=td17,
-        td18=td18,
-        td19=td19,
-        td20=td20,
         stf_login=stf_login,
         length_oncall=length_oncall,
         team=team,
