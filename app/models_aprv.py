@@ -36,9 +36,8 @@ class NotificationList(db.Model):
     END_DAY = db.Column(db.Date, nullable=True)
     END_TIME = db.Column(db.Time, nullable=True)
     REMARK = db.Column(db.String(255))
-    D_PAIDHOLIDAY_LOGs = db.relationship(
-        "PaidHolidayLog", backref="D_NOTIFICATION_LIST"
-    )
+
+    paid_holiday_log = db.relationship("PaidHolidayLog")
 
     def __init__(
         self,

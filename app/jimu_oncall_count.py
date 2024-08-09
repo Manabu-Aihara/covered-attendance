@@ -680,13 +680,16 @@ def jimu_users_list(STAFFID):
     # STAFFIDログインしてる人
     jimu_usr = User.query.get(STAFFID)
 
-    team_user_list = (
-        User.query.filter(User.TEAM_CODE == jimu_usr.TEAM_CODE)
-        .filter(jimu_usr.OUTDAY == None)
-        .all()
+    base_user_list = (
+        db.session.query(User.STAFFID, User.LNAME, User.FNAME, KinmuTaisei.NAME)
+        .join(KinmuTaisei, User.CONTRACT_CODE == KinmuTaisei.CONTRACT_CODE)
+        .filter(User.OUTDAY == None)
+        # .all()
     )
 
-    all_user_list = db.session.query(User).filter(jimu_usr.OUTDAY == None).all()
+    team_user_list = base_user_list.filter(User.TEAM_CODE == jimu_usr.TEAM_CODE).all()
+
+    all_user_list = base_user_list.all()
 
     """
         2024/7/19
@@ -695,18 +698,16 @@ def jimu_users_list(STAFFID):
     filters194 = []
     # if STAFFID == 194:
     filters194.append(User.DEPARTMENT_CODE == jimu_usr.DEPARTMENT_CODE)
-    filters194.append(User.DEPARTMENT_CODE == 7 and User.OUTDAY == None)
-    reference_user_list: List[User] = (
-        db.session.query(User).filter(or_(*filters194)).all()
-    )
+    filters194.append(User.DEPARTMENT_CODE == 7)
+    reference_user_list = base_user_list.filter(or_(*filters194)).all()
     # print(f"Members: {reference_user_list}")
 
     return render_template(
         "attendance/jimu_users_list.html",
         jimu_usr=jimu_usr,
-        team_u_list=team_user_list,
+        team_u_lst=team_user_list,
         all_u=all_user_list,
-        ref_list=reference_user_list,
+        ref_lst=reference_user_list,
         stf_login=stf_login,
     )
 
