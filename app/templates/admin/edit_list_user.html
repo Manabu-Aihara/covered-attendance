@@ -39,26 +39,26 @@
                 info[5]: INDAY
                 #}
                 <tr>
-                    <form method="POST" action="{{ url_for('edit_data_user', STAFFID=info[6]['staff_id'], intFlg=1) }}">
+                    <form method="POST" action="{{ url_for('edit_data_user', STAFFID=info[5]['staff_id'], intFlg=1)}}">
                         <td><button type="submit" class="btn btn-warning">情報編集</button></td>
                     </form>
+                    <td>{{ info[5]["staff_id"] }}</td>
                     <td>{{ info[0] }}</td>
                     <td>{{ info[1] }}</td>
                     <td>{{ info[2] }}</td>
                     <td>{{ info[3] }}</td>
-                    <td>{{ info[4] }}</td>
 
-                    <td>{{ info[6]["department"] }}</td>
-                    <td>{{ info[6]["team"] }}</td>
+                    <td>{{ info[5]["department"] }}</td>
+                    <td>{{ info[5]["team"] }}</td>
                     <form method="POST"
-                        action="{{ url_for('edit_user_history', STAFFID=info[6]['staff_id'], ProcFlag=0) }}">
+                        action="{{ url_for('edit_user_history', STAFFID=info[5]['staff_id'], ProcFlag=0) }}">
                         <td><button type="submit" class="btn btn-warning">契約・有休編集</button></td>
                     </form>
-                    <td>{{ info[6]["contract"] }}</td>
-                    <td>{{ info[6]["job_type"] }}</td>
-                    <td>{{ info[6]["post"] }}</td>
+                    <td>{{ info[5]["contract"] }}</td>
+                    <td>{{ info[5]["job_type"] }}</td>
+                    <td>{{ info[5]["post"] }}</td>
 
-                    <td>{{ info[5] }}</td>
+                    <td>{{ info[4] }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

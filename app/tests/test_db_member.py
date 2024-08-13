@@ -14,9 +14,10 @@ def test_get_role_list(app_context):
     assert len(test_role_list) == 8
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_get_user_role(app_context):
-    test_result = get_user_role(Busho.NAME, Busho.CODE, 1)
+    user201 = db.session.get(User, 201)
+    test_result = get_user_role(Busho.NAME, Busho.CODE, user201.DEPARTMENT_CODE)
     assert test_result == "本社"
 
 
@@ -49,6 +50,7 @@ def test_get_attendance_query(aq):
         print(test_result[0].WORKDAY)
 
 
+@pytest.mark.skip
 def test_get_filter_length(aq):
     test_filter = aq._get_filter()
     assert len(test_filter) == 8

@@ -137,10 +137,11 @@ def edit_user_history(STAFFID, ProcFlag):
                 blankCheck(SDAY[num]),
                 blankCheck(EDAY[num]),
             )
+            print(AddHISTORY)
             db.session.add(AddHISTORY)
         db.session.commit()
 
-        dt_now = datetime.datetime.now()
+        dt_now = datetime.now()
         flash("保存しました。time[" + str(dt_now) + "]", "success")
 
     History = db.session.query(
@@ -247,35 +248,27 @@ def get_user_role(query_name: str, table_code: int, user_code: int = 0) -> str:
     @Return:
         list<dict<str, str>>
         """
-# common_fun.py内関数を使ってもOK
 
 
-def get_user_role_list() -> List[Dict[str, str]]:
-    user_role_list = []
-    all_user_list = db.session.query(User).all()
-    for user in all_user_list:
-        disp_department = get_user_role(Busho.NAME, Busho.CODE, user.DEPARTMENT_CODE)
-        dips_team = get_user_role(Team.SHORTNAME, Team.CODE, user.TEAM_CODE)
-        disp_contract = get_user_role(
-            KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, user.CONTRACT_CODE
-        )
-        disp_jobtype = get_user_role(
-            Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE, user.JOBTYPE_CODE
-        )
-        disp_post = get_user_role(Post.CODE, Post.CODE, user.POST_CODE)
+def get_role_context(db_obj) -> Dict[str, str]:
+    disp_department = get_user_role(Busho.NAME, Busho.CODE, db_obj.DEPARTMENT_CODE)
+    dips_team = get_user_role(Team.SHORTNAME, Team.CODE, db_obj.TEAM_CODE)
+    disp_contract = get_user_role(
+        KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, db_obj.CONTRACT_CODE
+    )
+    disp_jobtype = get_user_role(
+        Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE, db_obj.JOBTYPE_CODE
+    )
+    disp_post = get_user_role(Post.NAME, Post.CODE, db_obj.POST_CODE)
 
-        user_role_list.append(
-            {
-                "staff_id": user.STAFFID,
-                "department": disp_department,
-                "team": dips_team,
-                "contract": disp_contract,
-                "job_type": disp_jobtype,
-                "post": disp_post,
-            }
-        )
-
-    return user_role_list
+    return {
+        "staff_id": db_obj.STAFFID,
+        "department": disp_department,
+        "team": dips_team,
+        "contract": disp_contract,
+        "job_type": disp_jobtype,
+        "post": disp_post,
+    }
 
 
 # ***** ユーザ編集（リスト）ページ *****#
@@ -289,27 +282,24 @@ def edit_list_user():
         2024/07/23
         修正分
         """
-    user_infos: List[Tuple[int, str, str, str, str, datetime]] = (
-        db.session.query(
-            User.STAFFID, User.LNAME, User.FNAME, User.LKANA, User.FKANA, User.INDAY
-        )
-        .filter(User.OUTDAY == None)
-        .all()
-    )
-    role_list_context = get_user_role_list()
-
-    # user_infoの末尾にrole_contextを追加
-    # 惜しい…
-    # user_complete_list = user_infos + role_list_context
+    # user_infos: List[Tuple[int, str, str, str, str, datetime]] = (
+    #     db.session.query(
+    #         User.STAFFID, User.LNAME, User.FNAME, User.LKANA, User.FKANA, User.INDAY
+    #     )
+    user_infos: List[User] = db.session.query(User).filter(User.OUTDAY == None).all()
 
     user_complete_list = []
     for user_info in user_infos:
-        for role_context in role_list_context:
-            if user_info.STAFFID == role_context["staff_id"]:
-                # 🙅 list(user_info).append(role_context) はNoneを返す
-                list_info = list(user_info)
-                list_info.append(role_context)
-                user_complete_list.append(list_info)
+        user_necessary_info = [
+            user_info.LNAME,
+            user_info.FNAME,
+            user_info.LKANA,
+            user_info.FKANA,
+            user_info.INDAY,
+        ]
+        user_necessary_info.append(get_role_context(user_info))
+        user_complete_list.append(user_necessary_info)
+    # print(user_complete_list)
 
     """ ここまで """
 

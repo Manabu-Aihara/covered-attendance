@@ -1,12 +1,12 @@
 from enum import unique
-
-from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
-from itsdangerous.url_safe import URLSafeTimedSerializer as Serialize
-
 from app import login
 from app import db, app
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
+from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
+
 from app.models_aprv import NotificationList
+from app.dummy_model_todo import TodoOrm, EventORM
 
 
 class User(db.Model):
@@ -56,6 +56,15 @@ class User(db.Model):
     )
     M_SYSTEMINFOs = db.relationship("SystemInfo", backref="M_STAFFINFO", lazy="dynamic")
 
+    """ 2023/8/7 リレーション機能追加 """
+    notification_list = db.relationship("NotificationList")
+
+    """ 2023/9/19 リレーション機能追加 """
+    team = db.relationship("Team")
+
+    """ 2023/11/27 リレーション機能追加 """
+    # M_PAIDHOLIDAYs = db.relationship("PaidHolidayModel", backref="M_PAIDHOLIDAY")
+
     """ 2024/8/9 リレーション機能追加 """
     contract = db.relationship("KinmuTaisei")
 
@@ -77,6 +86,12 @@ class StaffLoggin(UserMixin, db.Model):
     ADMIN = db.Column(db.Boolean(), index=True, nullable=True)
     shinseis = db.relationship("Shinsei", backref="M_LOGGININFO", lazy="dynamic")
 
+    """ 2024/2/26 リレーション機能追加 """
+    # T_TODOs = db.relationship("TodoOrm", backref="M_LOGGININFO")
+
+    """ 24/3/14 リレーション機能追加 """
+    timeline_event = db.relationship("EventORM")
+
     def __init__(self, STAFFID, PASSWORD, ADMIN):
         self.STAFFID = STAFFID
         self.PASSWORD_HASH = generate_password_hash(PASSWORD)
@@ -97,15 +112,20 @@ class StaffLoggin(UserMixin, db.Model):
         s = Serializer(app.config["SECRET_KEY"])
         try:
             user_id = s.loads(token)["user_id"]
-        except:
-            return None
-        return StaffLoggin.query.filter_by(STAFFID=user_id)
+        except Exception as e:
+            # return None
+            print(e)
+        else:
+            return StaffLoggin.query.filter_by(STAFFID=user_id)
 
 
 class Todokede(db.Model):
     __tablename__ = "M_NOTIFICATION"
     CODE = db.Column(db.Integer, primary_key=True, index=True, nullable=False)
     NAME = db.Column(db.String(32), index=True, nullable=False)
+
+    """ 2023/8/7 リレーション機能追加 """
+    notification_list = db.relationship("NotificationList")
 
     def __init__(self, CODE, NAME):
         self.CODE = CODE
@@ -116,6 +136,9 @@ class Busho(db.Model):
     __tablename__ = "M_DEPARTMENT"
     CODE = db.Column(db.Integer, primary_key=True, index=True, nullable=False)
     NAME = db.Column(db.String(50), index=True, nullable=True)
+
+    """ 2023/12/18 リレーション機能追加 """
+    record_paid_holiday = db.relationship("RecordPaidHoliday")
 
     def __init__(self, CODE):
         self.CODE = CODE
@@ -160,8 +183,18 @@ class D_JOB_HISTORY(db.Model):
         index=True,
         nullable=False,
     )
-    JOBTYPE_CODE = db.Column(db.Integer, index=True, nullable=False)
-    CONTRACT_CODE = db.Column(db.Integer, index=True, nullable=False)
+    JOBTYPE_CODE = db.Column(
+        db.Integer,
+        db.ForeignKey("M_TIMECARD_TEMPLATE.JOBTYPE_CODE"),
+        index=True,
+        nullable=False,
+    )
+    CONTRACT_CODE = db.Column(
+        db.Integer,
+        db.ForeignKey("M_TIMECARD_TEMPLATE.CONTRACT_CODE"),
+        index=True,
+        nullable=False,
+    )
     PART_WORKTIME = db.Column(db.Integer, index=True, nullable=False)
     START_DAY = db.Column(db.Date(), primary_key=True, index=True, nullable=True)
     END_DAY = db.Column(db.Date(), index=True, nullable=True)
@@ -207,9 +240,20 @@ class Post(db.Model):
 
 class Team(db.Model):
     __tablename__ = "M_TEAM"
-    CODE = db.Column(db.Integer, primary_key=True, index=True, nullable=False)
+    CODE = db.Column(
+        db.Integer,
+        db.ForeignKey("M_STAFFINFO.TEAM_CODE"),
+        primary_key=True,
+        index=True,
+        nullable=False,
+    )
     NAME = db.Column(db.String(50), index=True, nullable=False)
     SHORTNAME = db.Column(db.String(50), index=True, nullable=False)
+
+    """ 2024/3/8 リレーション機能追加 """
+    # todo = db.relationship("TodoOrm")
+    """ 2024/3/14 リレーション機能追加 """
+    timeline_event = db.relationship("EventORM")
 
     def __init__(self, CODE):
         self.CODE = CODE
@@ -288,11 +332,14 @@ class RecordPaidHoliday(db.Model):  # 年休関連
         nullable=False,
     )
     # リレーションが好ましいと思う
-    DEPARTMENT_CODE = db.Column(db.Integer, index=True, nullable=True)  # Busho
-    LNAME = db.Column(db.String(50), index=True, nullable=True)  # User
-    FNAME = db.Column(db.String(50), index=True, nullable=True)  # User
-    LKANA = db.Column(db.String(50), index=True, nullable=True)  # User
-    FKANA = db.Column(db.String(50), index=True, nullable=True)  # User
+    DEPARTMENT_CODE = db.Column(
+        db.Integer, db.ForeignKey("M_DEPARTMENT.CODE"), index=True, nullable=True
+    )  # Busho
+    # DEPARTMENT_CODE = db.Column(db.Integer, index=True, nullable=True)  # Busho
+    # LNAME = db.Column(db.String(50), index=True, nullable=True)  # User
+    # FNAME = db.Column(db.String(50), index=True, nullable=True)  # User
+    # LKANA = db.Column(db.String(50), index=True, nullable=True)  # User
+    # FKANA = db.Column(db.String(50), index=True, nullable=True)  # User
     # 入社日
     INDAY = db.Column(db.DateTime(), index=True, nullable=True)  # User
 
@@ -314,6 +361,14 @@ class RecordPaidHoliday(db.Model):  # 年休関連
     BASETIMES_PAIDHOLIDAY = db.Column(
         db.Float, index=True, nullable=True
     )  # 規定の年休時間
+    """ 2023/12/5 追加カラム """
+    ACQUISITION_TYPE = db.Column(db.String(1))  # 年休付与タイプ
+
+    """ 2023/12/4 リレーション機能追加 """
+    paid_holiday_log = db.relationship("PaidHolidayLog", backref="M_RECORD_PAIDHOLIDAY")
+
+    def __init__(self, STAFFID):
+        self.STAFFID = STAFFID
 
 
 class CountAttendance(db.Model):  ##### 年休用設定での勤務日数ダンプ(ページ表示用)
