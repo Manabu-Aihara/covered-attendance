@@ -195,7 +195,20 @@ class D_JOB_HISTORY(db.Model):
         index=True,
         nullable=False,
     )
-    PART_WORKTIME = db.Column(db.Integer, index=True, nullable=False)
+    # JOBTYPE_CODE = db.Column(db.Integer, index=True, nullable=False)
+    # CONTRACT_CODE = db.Column(db.Integer, index=True, nullable=False)
+    """
+    2024/8/15 リレーション機能追加
+    SQLAlchemy multiple foreign keys in one mapped class to the same primary key
+    https://stackoverflow.com/questions/22355890/sqlalchemy-multiple-foreign-keys-in-one-mapped-class-to-the-same-primary-key
+    """
+    jobtype = db.relationship(
+        "M_TIMECARD_TEMPLATE", foreign_keys=[JOBTYPE_CODE], uselist=True
+    )
+    constract = db.relationship(
+        "M_TIMECARD_TEMPLATE", foreign_keys=[CONTRACT_CODE], uselist=True
+    )
+    PART_WORKTIME = db.Column(db.Float, index=True, nullable=False)
     START_DAY = db.Column(db.Date(), primary_key=True, index=True, nullable=True)
     END_DAY = db.Column(db.Date(), index=True, nullable=True)
 

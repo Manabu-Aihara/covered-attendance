@@ -137,7 +137,6 @@ def edit_user_history(STAFFID, ProcFlag):
                 blankCheck(SDAY[num]),
                 blankCheck(EDAY[num]),
             )
-            print(AddHISTORY)
             db.session.add(AddHISTORY)
         db.session.commit()
 
