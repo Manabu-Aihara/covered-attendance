@@ -24,20 +24,20 @@ class AttendanceQuery:
     #     self.staff_id = staff_id
     def _get_filter(self, *array_number: int):
         attendance_filters = []
-        attendance_filters.append(Shinsei.STAFFID == self.staff_id)
+        attendance_filters.append(Shinsei.STAFFID == self.staff_id)  # 0
         attendance_filters.append(
             Shinsei.WORKDAY.between(self.filter_from_day, self.filter_to_day)
-        )
-        attendance_filters.append(D_JOB_HISTORY.START_DAY <= Shinsei.WORKDAY)
-        attendance_filters.append(D_JOB_HISTORY.END_DAY >= Shinsei.WORKDAY)
-        attendance_filters.append(Shinsei.STAFFID == User.STAFFID)
-        attendance_filters.append(Shinsei.STAFFID == D_JOB_HISTORY.STAFFID)
+        )  # 1
+        attendance_filters.append(D_JOB_HISTORY.START_DAY <= Shinsei.WORKDAY)  # 2
+        attendance_filters.append(D_JOB_HISTORY.END_DAY >= Shinsei.WORKDAY)  # 3
+        attendance_filters.append(Shinsei.STAFFID == User.STAFFID)  # 4
+        attendance_filters.append(Shinsei.STAFFID == D_JOB_HISTORY.STAFFID)  # 5
         attendance_filters.append(
             D_JOB_HISTORY.JOBTYPE_CODE == M_TIMECARD_TEMPLATE.JOBTYPE_CODE
-        )
+        )  # 6
         attendance_filters.append(
             D_JOB_HISTORY.CONTRACT_CODE == M_TIMECARD_TEMPLATE.CONTRACT_CODE
-        )
+        )  # 7
 
         return (
             attendance_filters[array_number[0] : array_number[1]]
@@ -78,6 +78,7 @@ class AttendanceQuery:
                 User.LNAME,
                 D_JOB_HISTORY.JOBTYPE_CODE,
                 D_JOB_HISTORY.CONTRACT_CODE,
+                D_JOB_HISTORY.PART_WORKTIME,
                 M_TIMECARD_TEMPLATE.TEMPLATE_NO,
                 # getattr(self.sub_query.c, "HOLIDAY_TIME"),
                 sub_query.c.HOLIDAY_TIME,
@@ -90,5 +91,4 @@ class AttendanceQuery:
                     sub_query.c.WORKDAY == Shinsei.WORKDAY,
                 ),
             )
-            .order_by(Shinsei.STAFFID, Shinsei.WORKDAY)
         )

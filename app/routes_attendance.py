@@ -1,5 +1,6 @@
 import os, math
 from functools import wraps
+from typing import Optional
 from datetime import datetime, timedelta, date, time
 from decimal import Decimal, ROUND_HALF_UP
 import jpholiday
@@ -32,7 +33,7 @@ from app.models import (
     Shinsei,
     StaffLoggin,
     Todokede,
-    RecordPaidHoliday,
+    KinmuTaisei,
     D_HOLIDAY_HISTORY,
     CountAttendance,
     TimeAttendance,
@@ -44,9 +45,45 @@ from app.attendance_classes import AttendanceAnalysys
 from app.calender_classes import MakeCalender
 from app.calc_work_classes import DataForTable, CalcTimeClass, get_last_date
 from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
+from app.attendance_query_class import AttendanceQuery
+from app.new_calendar import NewCalendar
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
+
+
+##### カレンダーとM_NOTIFICATION土日出勤の紐づけ関数 #####
+
+
+def get_day_of_week_jp(form_date: datetime) -> str:
+    w_list = ["", "", "", "", "", "1", "1"]
+    return w_list[form_date.weekday()]
+
+
+def get_move_distance(form_distance: str) -> Optional[str]:
+    if form_distance is not None and form_distance != "":
+        ZEN = "".join(chr(0xFF01 + j) for j in range(94))
+        HAN = "".join(chr(0x21 + k) for k in range(94))
+        ZEN2HAN = str.maketrans(ZEN, HAN)
+        str_distance = form_distance.translate(ZEN2HAN)
+
+        def is_num(s) -> float:
+            try:
+                float(s)
+            except ValueError:
+                return flash("数字以外は入力できません。")
+            else:
+                return s
+
+        num_distance = is_num(str_distance)
+
+        result_distance = str(
+            Decimal(num_distance).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+        )
+        return result_distance
+    else:
+        result_distance = None
+        return result_distance
 
 
 """***** 打刻ページ *****"""
@@ -101,12 +138,6 @@ def indextime(STAFFID, intFlg):
         """
     team_name = db.session.query(Team.NAME).all()
 
-    ##### カレンダーとM_NOTIFICATION土日出勤の紐づけ関数 #####
-
-    def get_day_of_week_jp(dt):
-        w_list = ["", "", "", "", "", "1", "1"]
-        return w_list[dt.weekday()]
-
     ##### 社員職種・勤務形態によるページ振り分け #####
     if STAFFID == 10000:
         oc = "hidden"
@@ -122,22 +153,13 @@ def indextime(STAFFID, intFlg):
         sk = "hidden"
         bk = ""
         othr = ""
-
-    elif u.CONTRACT_CODE != 2 and (
-        u.JOBTYPE_CODE == 3
-        or u.JOBTYPE_CODE == 4
-        or u.JOBTYPE_CODE == 5
-        or u.JOBTYPE_CODE == 6
-        or u.JOBTYPE_CODE == 7
-        or u.JOBTYPE_CODE == 8
-    ):
+    elif u.CONTRACT_CODE != 2 and u.JOBTYPE_CODE > 2:
         oc = "hidden"
         oc_cnt = "hidden"
         eg = "hidden"
         sk = "hidden"
         othr = ""
         bk = ""
-
     else:
         oc = "hidden"
         oc_cnt = "hidden"
@@ -147,26 +169,12 @@ def indextime(STAFFID, intFlg):
         bk = ""
 
     ##### M_NOTIFICATIONとindexの紐づけ #####
-    td1 = Todokede.query.get(1)
-    td2 = Todokede.query.get(2)
-    td3 = Todokede.query.get(3)  # 年休（全日）はNotification2にはない
-    td4 = Todokede.query.get(4)
-    td5 = Todokede.query.get(5)  # 出張（全日）はNotification2にはない
-    td6 = Todokede.query.get(6)
-    td7 = Todokede.query.get(7)  # リフレッシュ休暇はNotification2にはない
-    td8 = Todokede.query.get(8)  # 欠勤はNotification2にはない
-    td9 = Todokede.query.get(9)
-    td10 = Todokede.query.get(10)
-    td11 = Todokede.query.get(11)
-    td12 = Todokede.query.get(12)
-    td13 = Todokede.query.get(13)
-    td14 = Todokede.query.get(14)
-    td15 = Todokede.query.get(15)
-    td16 = Todokede.query.get(16)
-    td17 = Todokede.query.get(17)
-    td18 = Todokede.query.get(18)
-    td19 = Todokede.query.get(19)
-    td20 = Todokede.query.get(20)
+    notification_items = [db.session.get(Todokede, i) for i in range(1, 21)]
+    # notification_items[15] = notification_items[9]
+    exclude_list = [3, 5, 7, 8, 17, 18, 19, 20]
+    notification_pm_list = [
+        n for i, n in enumerate(notification_items, 1) if i not in exclude_list
+    ]
 
     ##### 月選択の有無 #####
     # dsp_page = ""
@@ -176,6 +184,7 @@ def indextime(STAFFID, intFlg):
         # 参照モード
         dsp_page = "pointer-events: none;"
 
+    # これは結構使い道あり！👍
     if "y" in session:
         workday_data = session["workday_data"]
         y = session["y"]
@@ -203,22 +212,8 @@ def indextime(STAFFID, intFlg):
     ##### カレンダーの設定 #####
     cal = []
     hld = []
-
     mkc = MakeCalender(cal, hld, y, m)
     mkc.mkcal()
-
-    template1 = 0
-    template2 = 0
-
-    onc = []
-    onc_1 = []
-    onc_2 = []
-    onc_3 = []
-    onc_4 = []
-    onc_5 = []
-    onc_6 = []
-    onc_7 = []
-    onc_8 = []
 
     s_kyori = []  ################################################## 使用
     syukkin_times_0 = []  ################################################# 使用
@@ -230,11 +225,11 @@ def indextime(STAFFID, intFlg):
     team = u.TEAM_CODE  # この職員のチームコード
     jobtype = u.JOBTYPE_CODE  # この職員の職種
 
-    users = User.query.all()
-
-    d = get_last_date(y, m)
+    # これも結構使い道あり！👍
     FromDay = date(y, m, 1)
+    d = get_last_date(y, m)
     ToDay = date(y, m, d)
+
     shinseis = (
         db.session.query(Shinsei)
         .filter(
@@ -242,66 +237,33 @@ def indextime(STAFFID, intFlg):
         )
         .all()
     )
-    n = STAFFID
+    n = STAFFID  # ?
 
     # 出退勤テンプレートの取得(月途中で契約変更された場合の考慮)
-    template = (
-        db.session.query(M_TIMECARD_TEMPLATE.TEMPLATE_NO)
-        .filter(
-            and_(
-                D_JOB_HISTORY.STAFFID == STAFFID,
-                D_JOB_HISTORY.START_DAY <= FromDay,
-                D_JOB_HISTORY.END_DAY >= ToDay,
-                D_JOB_HISTORY.JOBTYPE_CODE == M_TIMECARD_TEMPLATE.JOBTYPE_CODE,
-                D_JOB_HISTORY.CONTRACT_CODE == M_TIMECARD_TEMPLATE.CONTRACT_CODE,
-            )
-        )
-        .group_by(M_TIMECARD_TEMPLATE.TEMPLATE_NO)
-    )
-    # 月の途中の契約変更1回までは対応
-    for templates in template:
-        if template1 == 0:
-            template1 = templates.TEMPLATE_NO
-        else:
-            template2 = templates.TEMPLATE_NO
+    template1 = 0
+    template2 = 0
 
-    shinseis = (
-        db.session.query(
-            Shinsei.STAFFID,
-            Shinsei.STARTTIME,
-            Shinsei.ENDTIME,
-            Shinsei.WORKDAY,
-            Shinsei.HOLIDAY,
-            Shinsei.OVERTIME,
-            Shinsei.NOTIFICATION,
-            Shinsei.NOTIFICATION2,
-            Shinsei.ONCALL,
-            Shinsei.ENGEL_COUNT,
-            Shinsei.MILEAGE,
-            Shinsei.ONCALL_COUNT,
-            Shinsei.ENGEL_COUNT,
-            Shinsei.ALCOHOL,
-            Shinsei.REMARK,
-            User.FNAME,
-            User.LNAME,
-            D_JOB_HISTORY.JOBTYPE_CODE,
-            D_JOB_HISTORY.CONTRACT_CODE,
-            M_TIMECARD_TEMPLATE.TEMPLATE_NO,
-        )
-        .filter(
-            and_(
-                Shinsei.STAFFID == STAFFID,
-                Shinsei.STAFFID == User.STAFFID,
-                Shinsei.WORKDAY.between(FromDay, ToDay),
-                Shinsei.STAFFID == D_JOB_HISTORY.STAFFID,
-                D_JOB_HISTORY.START_DAY <= Shinsei.WORKDAY,
-                D_JOB_HISTORY.END_DAY >= Shinsei.WORKDAY,
-                D_JOB_HISTORY.JOBTYPE_CODE == M_TIMECARD_TEMPLATE.JOBTYPE_CODE,
-                D_JOB_HISTORY.CONTRACT_CODE == M_TIMECARD_TEMPLATE.CONTRACT_CODE,
-            )
-        )
-        .order_by(Shinsei.WORKDAY)
+    attendace_qry_obj = AttendanceQuery(STAFFID, FromDay, ToDay)
+    templates = attendace_qry_obj.get_templates().group_by(
+        M_TIMECARD_TEMPLATE.TEMPLATE_NO
     )
+
+    # 月の途中の契約変更1回までは対応
+    for template in templates:
+        if template1 == 0:
+            template1 = template.TEMPLATE_NO
+        else:
+            template2 = template.TEMPLATE_NO
+
+    onc = []
+    onc_1 = []
+    onc_2 = []
+    onc_3 = []
+    onc_4 = []
+    onc_5 = []
+    onc_6 = []
+    onc_7 = []
+    onc_8 = []
 
     length_oncall = len(onc)
     length_oncall_1 = len(onc_1)
@@ -329,8 +291,15 @@ def indextime(STAFFID, intFlg):
 
         reload_y = request.form.get("reload_h")
         ##### データ取得 #####
+        # cal = []
+        calendar_obj = NewCalendar(y, m)
+        str_date_list = [
+            f"{y}-{m}-{date_tuple[0]}"
+            for date_tuple in calendar_obj.get_itermonthdays()
+        ]
         i = 0
         for c in cal:
+            # for str_date in str_date_list:
             data0 = request.form.get("dat" + str(i))  # フラッグID
             data1 = request.form.get("row" + str(i))  # 日付
             data2 = TimeCheck(request.form.get("stime" + str(i)))  # 開始時間
@@ -343,9 +312,10 @@ def indextime(STAFFID, intFlg):
             data9 = request.form.get("engel" + str(i))  # エンゼル回数
             data10 = request.form.get("bikou" + str(i))  # 備考
             data11 = request.form.get("todokede_pm" + str(i))  # 届出PM
-            data12 = request.form.get("alcohol" + str(i))  # 届出PM
+            data12 = request.form.get("alcohol" + str(i))  # アルコール
 
             ##### 勤怠条件分け #####
+            # c = datetime.strptime(str_date, "%Y-%m-%d")[0]
             InsertFlg = 0
             atd = AttendanceAnalysys(
                 c,
@@ -365,122 +335,96 @@ def indextime(STAFFID, intFlg):
                 STAFFID,
                 InsertFlg,
             )
+            # if not isinstance(atd, AttendanceAnalysys):
+            #     raise TypeError("None object")
             atd.analysys()
 
             ##### 走行距離小数第1位表示に変換 #####
-            if data_4 is not None and data_4 != "":
-                ZEN = "".join(chr(0xFF01 + j) for j in range(94))
-                HAN = "".join(chr(0x21 + k) for k in range(94))
-                ZEN2HAN = str.maketrans(ZEN, HAN)
-                data__4 = data_4.translate(ZEN2HAN)
+            data4 = get_move_distance(data_4)
 
-                def is_num(s):
-                    try:
-                        float(s)
-                    except ValueError:
-                        return flash("数字以外は入力できません。")
-                    else:
-                        return s
-
-                data___4 = is_num(data__4)
-
-                data4 = str(
-                    Decimal(data___4).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
-                )
-            else:
-                data4 = None
-
-            if data5 == "on":
-                oncall = 1
-            else:
-                oncall = 0
-
-            if data6 != "0":
-                oncall_cnt = data6
-            elif data6 == "" or data6 == "0":
-                oncall_cnt = "0"
-
-            todokede = data7
-
-            if data8 == "on":
-                zangyou = 1
-            else:
-                zangyou = 0
-
-            if data9 != "0":
-                engel = data9
-            elif data9 == "" or data9 == "0":
-                engel = "0"
+            todokede_AM = data7
+            zangyou = 1 if data8 == "on" else 0
+            todokede_PM = data11
 
             holiday = ""
             if jpholiday.is_holiday_name(datetime.strptime(data1, "%Y-%m-%d")):
+                # 要は祝日
                 holiday = "2"
             elif get_day_of_week_jp(datetime.strptime(data1, "%Y-%m-%d")) == "1":
+                # 要は土日
                 holiday = "1"
 
-            if data12 == "on":
-                alc = 1
-            else:
-                alc = 0
-
-            todokede_PM = data11
-
+            oncall: int = 0
+            oncall_cnt: str = "0"
+            engel: str = "0"
+            alc: int = 0
             # 登録するかの判定
             # 開始時間
-            if data2 != "00:00":
-                InsertFlg = 1
-            elif data3 != "00:00":
-                InsertFlg = 1
-            elif data4 is not None and data4 != "0.0" and data4 != "":
-                InsertFlg = 1
-            elif data5 == "on":
-                InsertFlg = 1
-            elif blankCheck(data7) is not None:
-                InsertFlg = 1
-            elif blankCheck(data11) is not None:
-                InsertFlg = 1
-            elif blankCheck(data12) is not None:
-                InsertFlg = 1
-            elif blankCheck(oncall_cnt) is not None:
-                InsertFlg = 1
-            elif blankCheck(data9) is not None:
-                InsertFlg = 1
-            elif data10 != "":
+            if (
+                data2 != "00:00"
+                or data3 != "00:00"
+                or (data4 is not None and data4 != "0.0" and data4 != "")
+                or blankCheck(data6) is not None
+                or blankCheck(todokede_AM) is not None
+                or blankCheck(todokede_PM) is not None
+                or blankCheck(data9) is not None
+                or data10 != ""
+                or blankCheck(data12) is not None
+            ):
+                if data5 == "on":
+                    oncall = 1
+                    print(f"5: {oncall}")
+                if data6 != "0":
+                    oncall_cnt = data6
+                if data9 != "0":
+                    engel = data9
+                    print(f"9: {engel}")
+                if data12 == "on":
+                    alc = 1
+                    print(f"12: {alc}")
+
                 InsertFlg = 1
 
             if InsertFlg == 1:
-
+                print("消滅しません")
                 AddATTENDANCE = Shinsei(
                     STAFFID,
                     data1,
                     holiday,
                     data2,
                     data3,
-                    data_4,
+                    data4,
                     oncall,
                     oncall_cnt,
                     engel,
-                    data7,
+                    todokede_AM,
                     todokede_PM,
                     zangyou,
                     alc,
                     data10,
                 )
-
                 db.session.add(AddATTENDANCE)
-
             i = i + 1
 
         db.session.commit()
 
+    """ ここから、押下後の表示 """
+    # d = get_last_date(y, m)
     # 配列に初期値入れてデータの存在するとこに入れる
     # オンコールカウント用　2次元配列
     AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
+    # AttendanceDada[日付][項目]
 
+    calendar_obj = NewCalendar(y, m)
+    str_date_list = [
+        f"{y}-{m}-{date_tuple[0]}" for date_tuple in calendar_obj.get_itermonthdays()
+    ]
     # 初期値
     i = 1
     for c in cal:
-        # print(f"*: {c}")
+        # for str_date in str_date_list:
+        #     c = datetime.strptime(str_date, "%Y-%m-%d")
+        # print(f"cal 一個: {c}")
         #
         # AttendanceDada[i][1] = datetime.strptime(str(y, m, i), "%Y-%m-%d")
         # 日付(YYYY-MM-DD)
@@ -506,75 +450,17 @@ def indextime(STAFFID, intFlg):
         AttendanceDada[i][14] = 0
         # 備考
         i = i + 1
-    # print(f"Maybe 31: {i}")
 
-    Parttime = (
-        db.session.query(
-            D_HOLIDAY_HISTORY.STAFFID, Shinsei.WORKDAY, D_HOLIDAY_HISTORY.HOLIDAY_TIME
-        )
-        .filter(
-            and_(
-                Shinsei.STAFFID == STAFFID,
-                Shinsei.STAFFID == D_HOLIDAY_HISTORY.STAFFID,
-                Shinsei.WORKDAY.between(FromDay, ToDay),
-                Shinsei.STAFFID == D_HOLIDAY_HISTORY.STAFFID,
-                D_HOLIDAY_HISTORY.START_DAY <= Shinsei.WORKDAY,
-                D_HOLIDAY_HISTORY.END_DAY >= Shinsei.WORKDAY,
-            )
-        )
-        .subquery()
+    # attendace_qry_obj = AttendanceQuery(STAFFID, FromDay, ToDay)
+    attendance_query_list = attendace_qry_obj.get_attendance_query().order_by(
+        Shinsei.STAFFID, Shinsei.WORKDAY
     )
+    # print(f"{attendance_query_list}")
 
-    shinseis = (
-        (
-            db.session.query(
-                Shinsei.STAFFID,
-                Shinsei.STARTTIME,
-                Shinsei.ENDTIME,
-                Shinsei.WORKDAY,
-                Shinsei.HOLIDAY,
-                Shinsei.OVERTIME,
-                Shinsei.NOTIFICATION,
-                Shinsei.NOTIFICATION2,
-                Shinsei.ONCALL,
-                Shinsei.ENGEL_COUNT,
-                Shinsei.MILEAGE,
-                Shinsei.ALCOHOL,
-                Shinsei.REMARK,
-                Shinsei.ONCALL_COUNT,
-                Shinsei.ENGEL_COUNT,
-                User.FNAME,
-                User.LNAME,
-                D_JOB_HISTORY.JOBTYPE_CODE,
-                D_JOB_HISTORY.CONTRACT_CODE,
-                Parttime.c.HOLIDAY_TIME,
-                M_TIMECARD_TEMPLATE.TEMPLATE_NO,
-            ).filter(
-                and_(
-                    Shinsei.STAFFID == STAFFID,
-                    Shinsei.STAFFID == User.STAFFID,
-                    Shinsei.WORKDAY.between(FromDay, ToDay),
-                    Shinsei.STAFFID == D_JOB_HISTORY.STAFFID,
-                    D_JOB_HISTORY.START_DAY <= Shinsei.WORKDAY,
-                    D_JOB_HISTORY.END_DAY >= Shinsei.WORKDAY,
-                    D_JOB_HISTORY.JOBTYPE_CODE == M_TIMECARD_TEMPLATE.JOBTYPE_CODE,
-                    D_JOB_HISTORY.CONTRACT_CODE == M_TIMECARD_TEMPLATE.CONTRACT_CODE,
-                )
-            )
-        )
-        .outerjoin(
-            Parttime,
-            and_(
-                Parttime.c.STAFFID == Shinsei.STAFFID,
-                Parttime.c.WORKDAY == Shinsei.WORKDAY,
-            ),
-        )
-        .order_by(Shinsei.STAFFID, Shinsei.WORKDAY)
-    )
-
-    sum_0 = 0
     workday_count = 0
-    for Shin in shinseis:
+    work_time_sum: float = 0.0
+    for attendace_query in attendance_query_list:
+        Shin = attendace_query[0]
         # 日付
         # 曜日
         # 勤務日
@@ -615,31 +501,48 @@ def indextime(STAFFID, intFlg):
             Shin.STARTTIME,
             Shin.ENDTIME,
             Shin.OVERTIME,
-            Shin.CONTRACT_CODE,
+            attendace_query.CONTRACT_CODE,
             AttendanceDada,
             over_time_0,
             real_time,
             real_time_sum,
             syukkin_holiday_times_0,
             Shin.HOLIDAY,
-            Shin.JOBTYPE_CODE,
+            attendace_query.JOBTYPE_CODE,
             STAFFID,
             Shin.WORKDAY,
-            Shin.HOLIDAY_TIME,
+            attendace_query.HOLIDAY_TIME,
         )
         settime.calc_time()
 
-        sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
-        if AttendanceDada[Shin.WORKDAY.day][14] > 0:
-            workday_count += 1
+        contract_work_time: float
+        if attendace_query.CONTRACT_CODE == 2:
+            contract_work_time = attendace_query.PART_WORKTIME
+        else:
+            work_time = (
+                db.session.query(KinmuTaisei.WORKTIME)
+                .filter(KinmuTaisei.CONTRACT_CODE == attendace_query.CONTRACT_CODE)
+                .first()
+            )
+            contract_work_time = work_time.WORKTIME
 
-        w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
-        """ 24/8/1 修正分 """
-        w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) / (60 * 60)
-        AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m
+        print(f"{Shin.WORKDAY.day} loop")
+        print(f"aDd 14: {AttendanceDada[Shin.WORKDAY.day][14]}")
+        # sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
+
+        # w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
+        # """ 24/8/1 修正分 """
+        # w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) / (60 * 60)
+        if (
+            AttendanceDada[Shin.WORKDAY.day][7] != "00:00"
+            and AttendanceDada[Shin.WORKDAY.day][8] is not None
+        ):
+            AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
+            # if AttendanceDada[Shin.WORKDAY.day][14] != 0:
+            workday_count += 1
+            work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
 
         s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
-        # print(f"{Shin}")
 
     ln_s_kyori = 0
     if s_kyori is not None:
@@ -647,12 +550,12 @@ def indextime(STAFFID, intFlg):
             ln_s_kyori += float(s)
         ln_s_kyori = math.floor(ln_s_kyori * 10) / 10
 
-    w_h = sum_0 // (60 * 60)
-    """ 24/8/1 修正分 """
-    w_m = (sum_0 - w_h * 60 * 60) / (60 * 60)
-    # 勤務時間合計
-    working_time = w_h + w_m
-    working_time_10 = sum_0 / (60 * 60)
+    # w_h = sum_0 // (60 * 60)
+    # """ 24/8/1 修正分 """
+    # w_m = (sum_0 - w_h * 60 * 60) / (60 * 60)
+    # # 勤務時間合計
+    # working_time = w_h + w_m
+    # working_time_10 = sum_0 / (60 * 60)
 
     sum_over_0 = 0
     for n in range(len(over_time_0)):
@@ -683,8 +586,10 @@ def indextime(STAFFID, intFlg):
         AttendanceDada[Shin.WORKDAY.day][13] += syukkin_times[n]
 
     return render_template(
-        "attendance/index.html",
+        "attendance/index_diff.html",
         title="ホーム",
+        notifi_lst=notification_items,
+        notifi_pm_lst=notification_pm_list,
         cal=cal,
         shinseis=shinseis,
         y=y,
@@ -704,29 +609,9 @@ def indextime(STAFFID, intFlg):
         ptn=ptn,
         specification=specification,
         wk=wk,
-        td1=td1,
-        td2=td2,
-        td3=td3,
-        td4=td4,
-        td5=td5,
-        td6=td6,
-        td7=td7,
-        td8=td8,
-        td9=td9,
-        td10=td10,
-        td11=td11,
-        td12=td12,
-        td13=td13,
-        td14=td14,
-        td15=td15,
-        td16=td16,
         workday_data=workday_data,
         cnt_attemdance=cnt_attemdance,
         reload_y=reload_y,
-        td17=td17,
-        td18=td18,
-        td19=td19,
-        td20=td20,
         stf_login=stf_login,
         length_oncall=length_oncall,
         team=team,
@@ -745,7 +630,7 @@ def indextime(STAFFID, intFlg):
         template1=template1,
         template2=template2,
         AttendanceDada=AttendanceDada,
-        working_time=working_time,
+        working_time=work_time_sum,
         ln_s_kyori=ln_s_kyori,
         workday_count=workday_count,
         holiday_work=holiday_work,

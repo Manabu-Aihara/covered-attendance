@@ -168,6 +168,10 @@ class M_TIMECARD_TEMPLATE(db.Model):
     CONTRACT_CODE = db.Column(db.Integer, primary_key=True, index=True, nullable=False)
     TEMPLATE_NO = db.Column(db.Integer, index=True, nullable=False)
 
+    # sqlalchemy.exc.AmbiguousForeignKeysError:
+    # ...there are multiple foreign key paths linking the tables.
+    # job_history = db.relationship("D_JOB_HISTORY")
+
     def __init__(self, JOBTYPE_CODE, CONTRACT_CODE, TEMPLATE_NO):
         self.JOBTYPE_CODE = JOBTYPE_CODE
         self.CONTRACT_CODE = CONTRACT_CODE

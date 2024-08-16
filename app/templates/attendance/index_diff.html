@@ -23,12 +23,12 @@
 
 <body>
   {{ display_top_belt(stf_login, current_user) }}
+  {% import "bootstrap/wtf.html" as wtf %}
   {% if STAFFID != 10000 %}
   <h3>
     <form method="POST" action="{{ url_for('index_select', STAFFID=STAFFID, intFlg=intFlg) }}">
       {{ form_month.csrf_token }}
       <input type="{{ typ[1] }}" id="select_month" class="h5" name="workday_name" value="{{ workday_data }}">　
-      {% import "bootstrap/wtf.html" as wtf %}
       {{ wtf.form_field(form_month.slct, class="btn btn-primary") }}
     </form>
   </h3>
@@ -54,7 +54,7 @@
             {% endif %}
           </li>
         </ul>
-      </div>
+      </div><!-- .posilock -->
       <div id="dl_pdf">
         <div class="text-center">
           <h3>{{ y }}年{{ m }}月分　　　出退勤</h3>
@@ -297,28 +297,23 @@
               <td class="text-center">
                 <div>
                   {% if AttendanceDada[i][13] == 1 %}
-
                   <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
                     <input type="{{ typ[3] }}" name="alcohol{{ ms.m }}" {{ specification[1] }} />
                   </div>
                   {% else %}
-
                   <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
                     <input type="{{ typ[3] }}" name="alcohol{{ ms.m }}" />
                   </div>
                   {% endif %}
                 </div>
               </td>
-
+              <!-- 勤務時間 -->
               <td>
                 <div class="text-center" {{ bk }}>
-
                   <span id="hlf" class="form-control form-control-sm">{{ AttendanceDada[i][14] }}</span>
-
                 </div>
               </td>
-
-
+              <!-- 備考 -->
               <td class="text-center">
                 <div>
                   <input class="form-control form-control-sm" type="{{ typ[1] }}" name="bikou{{ ms.m }}" size="44"
@@ -326,30 +321,21 @@
                 </div>
               </td>
               {% set ms.m = ms.m + 1 %}
-
             </tr>
             {% endfor %}
-
-
-
-
             <input type="text" name="reload_h" id="reload_h" hidden="true" />
           </tbody>
-
+        </table>
+      </div><!-- #dl_pdl -->
     </form>
-  </div>
-  </table>
 
-  <p>合計走行距離：{{ ln_s_kyori }}</p>
-  <p>月労働時間計：{{ working_time }}</p>
-  <p>出勤日数：{{ workday_count }}</p>
-  <p>祝日手当時間：{{ holiday_work }}</p>
+    <p>合計走行距離：{{ ln_s_kyori }}</p>
+    <p>月労働時間計：{{ working_time }}</p>
+    <p>出勤日数：{{ workday_count }}</p>
+    <p>祝日手当時間：{{ holiday_work }}</p>
 
-  </div>
-  <br />
-  <div class="h1">
-
-  </div>
+    <div class="h1"></div>
+  </div><!-- .idx-tbl -->
 
   {% block scripts %}
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
@@ -430,6 +416,5 @@
     setInterval(realTime, 1000);
   </script>
   {% endblock %}
-  </div>
-  </div>
-  {% endblock %}
+</body>
+{% endblock %}
