@@ -32,6 +32,7 @@ from app.models import (
     Shinsei,
     StaffLoggin,
     Todokede,
+    KinmuTaisei,
     RecordPaidHoliday,
     D_HOLIDAY_HISTORY,
     CountAttendance,
@@ -325,7 +326,7 @@ def indextime(STAFFID, intFlg):
             for row in delAttendance:
                 db.session.delete(row)
                 db.session.flush()  # <-保留状態
-                print(f"消滅します {row.id}")
+                # print(f"消滅します {row.id}")
 
         reload_y = request.form.get("reload_h")
         ##### データ取得 #####
@@ -506,7 +507,6 @@ def indextime(STAFFID, intFlg):
         AttendanceDada[i][14] = 0
         # 備考
         i = i + 1
-    # print(f"Maybe 31: {i}")
 
     Parttime = (
         db.session.query(
@@ -547,6 +547,7 @@ def indextime(STAFFID, intFlg):
                 User.LNAME,
                 D_JOB_HISTORY.JOBTYPE_CODE,
                 D_JOB_HISTORY.CONTRACT_CODE,
+                D_JOB_HISTORY.PART_WORKTIME,  # 24/8/16 追加クエリー
                 Parttime.c.HOLIDAY_TIME,
                 M_TIMECARD_TEMPLATE.TEMPLATE_NO,
             ).filter(
@@ -572,8 +573,10 @@ def indextime(STAFFID, intFlg):
         .order_by(Shinsei.STAFFID, Shinsei.WORKDAY)
     )
 
-    sum_0 = 0
+    # sum_0 = 0
     workday_count = 0
+    """ 24/8/16 追加変数 """
+    work_time_sum: float
     for Shin in shinseis:
         # 日付
         # 曜日
@@ -629,17 +632,36 @@ def indextime(STAFFID, intFlg):
         )
         settime.calc_time()
 
-        sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
-        if AttendanceDada[Shin.WORKDAY.day][14] > 0:
-            workday_count += 1
+        contract_work_time: float
+        if Shin.CONTRACT_CODE == 2:
+            contract_work_time = Shin.PART_WORKTIME
+        else:
+            work_time = (
+                db.session.query(KinmuTaisei.WORKTIME)
+                .filter(KinmuTaisei.CONTRACT_CODE == Shin.CONTRACT_CODE)
+                .first()
+            )
+            contract_work_time = work_time.WORKTIME
 
-        w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
-        """ 24/8/1 修正分 """
-        w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) / (60 * 60)
-        AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m
+        # sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
+        # if AttendanceDada[Shin.WORKDAY.day][14] > 0:
+        #     workday_count += 1
+
+        # w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
+        # """ 24/8/1 修正分 """
+        # w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) / (60 * 60)
+        # AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m
+        """ 24/8/16 追加(勤務時間合計、残業考慮なしver) """
+        if (
+            AttendanceDada[Shin.WORKDAY.day][7] != "00:00"
+            and AttendanceDada[Shin.WORKDAY.day][8] is not None
+        ):
+            AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
+            # if AttendanceDada[Shin.WORKDAY.day][14] != 0:
+            workday_count += 1
+            work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
 
         s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
-        # print(f"{Shin}")
 
     ln_s_kyori = 0
     if s_kyori is not None:
@@ -647,12 +669,12 @@ def indextime(STAFFID, intFlg):
             ln_s_kyori += float(s)
         ln_s_kyori = math.floor(ln_s_kyori * 10) / 10
 
-    w_h = sum_0 // (60 * 60)
-    """ 24/8/1 修正分 """
-    w_m = (sum_0 - w_h * 60 * 60) / (60 * 60)
-    # 勤務時間合計
-    working_time = w_h + w_m
-    working_time_10 = sum_0 / (60 * 60)
+    # w_h = sum_0 // (60 * 60)
+    # """ 24/8/1 修正分 """
+    # w_m = (sum_0 - w_h * 60 * 60) / (60 * 60)
+    # # 勤務時間合計
+    # working_time = w_h + w_m
+    # working_time_10 = sum_0 / (60 * 60)
 
     sum_over_0 = 0
     for n in range(len(over_time_0)):
@@ -745,7 +767,7 @@ def indextime(STAFFID, intFlg):
         template1=template1,
         template2=template2,
         AttendanceDada=AttendanceDada,
-        working_time=working_time,
+        working_time=work_time_sum,
         ln_s_kyori=ln_s_kyori,
         workday_count=workday_count,
         holiday_work=holiday_work,

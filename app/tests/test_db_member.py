@@ -40,16 +40,29 @@ def get_attendance_query_obj(app_context):
 
 # @pytest.mark.skip
 def test_get_attendance_query(aq):
-    querys = aq[1].get_attendance_query()
-    for i, test_result in enumerate(querys):
-        print(f"{i}query: {test_result[0]}")
+    querys = aq[0].get_attendance_query()
+    cnt: int = 0
+    for test_result in querys:
+        # print(f"{i}query: {test_result[0]}")
         # assert test_result is None
-        assert isinstance(test_result[0].STAFFID, int)
+        # assert isinstance(test_result[0].STAFFID, int)
+        cnt += 1
     # assert type(aq[0]) is type(aq[1])
+    assert cnt == 5
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_get_filter_length(aq):
-    test_filter = aq._get_filter()
-    assert len(test_filter) == 8
+    test_filter = aq[1]._get_filter(0, 6)
+    assert len(test_filter) == 6
     # assert test_filter is None
+
+
+# @pytest.mark.skip
+def test_get_clerical_attendance(aq):
+    clerical_attendance_list = aq[1].get_clerical_attendance()
+    cnt: int = 0
+    for test_c_attendace in clerical_attendance_list:
+        cnt += 1
+
+    assert cnt == 5

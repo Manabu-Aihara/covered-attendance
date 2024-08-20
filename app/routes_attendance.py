@@ -335,8 +335,6 @@ def indextime(STAFFID, intFlg):
                 STAFFID,
                 InsertFlg,
             )
-            # if not isinstance(atd, AttendanceAnalysys):
-            #     raise TypeError("None object")
             atd.analysys()
 
             ##### 走行距離小数第1位表示に変換 #####
@@ -457,8 +455,8 @@ def indextime(STAFFID, intFlg):
     )
     # print(f"{attendance_query_list}")
 
-    workday_count = 0
-    work_time_sum: float = 0.0
+    workday_count: int = 0
+    work_time_sum: float
     for attendace_query in attendance_query_list:
         Shin = attendace_query[0]
         # 日付

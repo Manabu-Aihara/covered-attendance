@@ -57,6 +57,7 @@
           <th><small>時間休</small></th>
           <th><small>中抜け</small></th>
           <th><small>時間休計</small></th>
+          <th><small>役職</small></th>
         </tr>
       </thead>
       <tbody>
@@ -69,94 +70,12 @@
           ((u.INDAY.year < y or (u.INDAY.year==y and u.INDAY.month <=m)) and (workday_count !=0 or workday_count is not
             none))) %} {% if u.STAFFID==cnt_for_tbl.STAFFID %} {% if u.TEAM_CODE==jimu_usr.TEAM_CODE or
             jimu_usr.TEAM_CODE==1 %} <tr>
-            <td>
-              <small>
-                {% if u.DEPARTMENT_CODE == 1 %}
-                {{ bumon[0] }}
-                {% elif u.DEPARTMENT_CODE == 2 %}
-                {{ bumon[1] }}
-                {% elif u.DEPARTMENT_CODE == 3 %}
-                {{ bumon[2] }}
-                {% elif u.DEPARTMENT_CODE == 4 %}
-                {{ bumon[3] }}
-                {% elif u.DEPARTMENT_CODE == 5 %}
-                {{ bumon[4] }}
-                {% elif u.DEPARTMENT_CODE == 6 %}
-                {{ bumon[5] }}
-                {% elif u.DEPARTMENT_CODE == 7 %}
-                {{ bumon[6] }}
-                {% elif u.DEPARTMENT_CODE == 8 %}
-                {{ bumon[7] }}
-                {% elif u.DEPARTMENT_CODE == 9 %}
-                {{ bumon[8] }}
-                {% endif %}
-              </small>
-            </td>
-            <td>
-              <small>
-                {% if u.TEAM_CODE == 1 %}
-                {{ syozoku[0] }}
-                {% elif u.TEAM_CODE == 2 %}
-                {{ syozoku[1] }}
-                {% elif u.TEAM_CODE == 3 %}
-                {{ syozoku[2] }}
-                {% elif u.TEAM_CODE == 4 %}
-                {{ syozoku[3] }}
-                {% elif u.TEAM_CODE == 5 %}
-                {{ syozoku[4] }}
-                {% elif u.TEAM_CODE == 6 %}
-                {{ syozoku[5] }}
-                {% elif u.TEAM_CODE == 7 %}
-                {{ syozoku[6] }}
-                {% elif u.TEAM_CODE == 8 %}
-                {{ syozoku[7] }}
-                {% endif %}
-              </small>
-            </td>
-            <td>
-              <small>
-                {% if u.JOBTYPE_CODE == 1 %}
-                {{ syokusyu[0] }}
-                {% elif u.JOBTYPE_CODE == 2 %}
-                {{ syokusyu[1] }}
-                {% elif u.JOBTYPE_CODE == 3 %}
-                {{ syokusyu[2] }}
-                {% elif u.JOBTYPE_CODE == 4 %}
-                {{ syokusyu[3] }}
-                {% elif u.JOBTYPE_CODE == 5 %}
-                {{ syokusyu[4] }}
-                {% elif u.JOBTYPE_CODE == 6 %}
-                {{ syokusyu[5] }}
-                {% elif u.JOBTYPE_CODE == 7 %}
-                {{ syokusyu[6] }}
-                {% elif u.JOBTYPE_CODE == 8 %}
-                {{ syokusyu[7] }}
-                {% elif u.JOBTYPE_CODE == 9 %}
-                {{ syokusyu[8] }}
-                {% elif u.JOBTYPE_CODE == 10 %}
-                {{ syokusyu[9] }}
-                {% elif u.JOBTYPE_CODE == 11 %}
-                {{ syokusyu[10] }}
-                {% endif %}
-              </small>
-            </td>
-            <td>
-              <small>
-                {% if u.CONTRACT_CODE == 1 %}
-                {{ keitai[0] }}
-                {% elif u.CONTRACT_CODE == 2 %}
-                {{ keitai[1] }}
-                {% elif u.CONTRACT_CODE == 3 %}
-                {{ keitai[2] }}
-                {% elif u.CONTRACT_CODE == 4 %}
-                {{ keitai[3] }}
-                {% elif u.CONTRACT_CODE == 5 %}
-                {{ keitai[4] }}
-                {% endif %}
-              </small>
-            </td>
+            <td><small>{{ bumon[u.DEPARTMENT_CODE][1] }}</small></td>
+            <td><small>{{ syozoku[u.TEAM_CODE][1] }}</small></td>
+            <td><small>{{ syokusyu[u.JOBTYPE_CODE][1] }}</small></td>
+            <td><small>{{ keitai[u.CONTRACT_CODE][1] }}</small></td>
             <td><small>{{ cnt_for_tbl.STAFFID }}</small></td>
-            <td><small>{{ u.LNAME }} {{ u.FNAME }}</small></td>
+            <td><small>{{ u.LNAME }}　{{ u.FNAME }}</small></td>
             <td><small>{{ cnt_for_tbl.ONCALL }}</small></td>
             <td><small>{{ cnt_for_tbl.ONCALL_HOLIDAY }}</small></td>
             <td><small>{{ cnt_for_tbl.ONCALL_COUNT }}</small></td>
@@ -181,6 +100,7 @@
             <td><small>{{ cnt_for_tbl.TIMEOFF }}</small></td>
             <td><small>{{ cnt_for_tbl.HALFWAY_THROUGH }}</small></td>
             <td><small>{{ cnt_for_tbl.TIMEOFF|int + cnt_for_tbl.HALFWAY_THROUGH|int }}</small></td>
+            <td><small>{{ POST[u.POST_CODE][1] }}</small></td>
             </tr>
             {% endif %}
 

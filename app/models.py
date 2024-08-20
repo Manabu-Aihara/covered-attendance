@@ -1,10 +1,10 @@
-from enum import unique
-from app import login
-from app import db, app
+from sqlalchemy import ForeignKeyConstraint
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 
+from app import login
+from app import db, app
 from app.models_aprv import NotificationList
 from app.dummy_model_todo import TodoOrm, EventORM
 
@@ -168,9 +168,20 @@ class M_TIMECARD_TEMPLATE(db.Model):
     CONTRACT_CODE = db.Column(db.Integer, primary_key=True, index=True, nullable=False)
     TEMPLATE_NO = db.Column(db.Integer, index=True, nullable=False)
 
-    # sqlalchemy.exc.AmbiguousForeignKeysError:
-    # ...there are multiple foreign key paths linking the tables.
+    """
+    sqlalchemy.exc.AmbiguousForeignKeysError:
+    Could not determine join condition between parent/child tables on relationship ...
+    - there are multiple foreign key paths linking the tables.
+    Specify the 'foreign_keys' argument, providing a list of those columns 
+    which should be counted as containing a foreign key reference to the parent table.
+    """
     # job_history = db.relationship("D_JOB_HISTORY")
+    # https://stackoverflow.com/questions/75756897/reference-a-relationship-with-multiple-foreign-keys-in-sqlalchemy
+    job_history = db.relationship(
+        "D_JOB_HISTORY",
+        # foreign_keys="[D_JOB_HISTORY.JOBTYPE_CODE, D_JOB_HISTORY.CONTRACT_CODE]",
+        back_populates="timecard_template",
+    )
 
     def __init__(self, JOBTYPE_CODE, CONTRACT_CODE, TEMPLATE_NO):
         self.JOBTYPE_CODE = JOBTYPE_CODE
@@ -180,6 +191,12 @@ class M_TIMECARD_TEMPLATE(db.Model):
 
 class D_JOB_HISTORY(db.Model):
     __tablename__ = "D_JOB_HISTORY"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["JOBTYPE_CODE", "CONTRACT_CODE"],
+            ["M_TIMECARD_TEMPLATE.JOBTYPE_CODE", "M_TIMECARD_TEMPLATE.CONTRACT_CODE"],
+        ),
+    )
     STAFFID = db.Column(
         db.Integer,
         db.ForeignKey("M_STAFFINFO.STAFFID"),
@@ -187,34 +204,42 @@ class D_JOB_HISTORY(db.Model):
         index=True,
         nullable=False,
     )
-    JOBTYPE_CODE = db.Column(
-        db.Integer,
-        db.ForeignKey("M_TIMECARD_TEMPLATE.JOBTYPE_CODE"),
-        index=True,
-        nullable=False,
-    )
-    CONTRACT_CODE = db.Column(
-        db.Integer,
-        db.ForeignKey("M_TIMECARD_TEMPLATE.CONTRACT_CODE"),
-        index=True,
-        nullable=False,
-    )
-    # JOBTYPE_CODE = db.Column(db.Integer, index=True, nullable=False)
-    # CONTRACT_CODE = db.Column(db.Integer, index=True, nullable=False)
+    # JOBTYPE_CODE = db.Column(
+    #     db.Integer,
+    #     db.ForeignKey("M_TIMECARD_TEMPLATE.JOBTYPE_CODE"),
+    #     index=True,
+    #     nullable=False,
+    # )
+    # CONTRACT_CODE = db.Column(
+    #     db.Integer,
+    #     db.ForeignKey("M_TIMECARD_TEMPLATE.CONTRACT_CODE"),
+    #     index=True,
+    #     nullable=False,
+    # )
+    JOBTYPE_CODE = db.Column(db.Integer, index=True, nullable=False)
+    CONTRACT_CODE = db.Column(db.Integer, index=True, nullable=False)
     """
     2024/8/15 リレーション機能追加
     SQLAlchemy multiple foreign keys in one mapped class to the same primary key
     https://stackoverflow.com/questions/22355890/sqlalchemy-multiple-foreign-keys-in-one-mapped-class-to-the-same-primary-key
     """
-    jobtype = db.relationship(
-        "M_TIMECARD_TEMPLATE", foreign_keys=[JOBTYPE_CODE], uselist=True
-    )
-    constract = db.relationship(
-        "M_TIMECARD_TEMPLATE", foreign_keys=[CONTRACT_CODE], uselist=True
-    )
+    # jobtype = db.relationship(
+    #     "M_TIMECARD_TEMPLATE", foreign_keys=[JOBTYPE_CODE], uselist=True
+    # )
+    # constract = db.relationship(
+    #     "M_TIMECARD_TEMPLATE", foreign_keys=[CONTRACT_CODE], uselist=True
+    # )
+
     PART_WORKTIME = db.Column(db.Float, index=True, nullable=False)
     START_DAY = db.Column(db.Date(), primary_key=True, index=True, nullable=True)
     END_DAY = db.Column(db.Date(), index=True, nullable=True)
+
+    timecard_template = db.relationship(
+        "M_TIMECARD_TEMPLATE",
+        # foreign_keys="[M_TIMECARD_TEMPLATE.JOBTYPE_CODE, M_TIMECARD_TEMPLATE.CONTRACT_CODE]",
+        back_populates="job_history",
+        uselist=True,
+    )
 
     def __init__(
         self, STAFFID, JOBTYPE_CODE, CONTRACT_CODE, PART_WORKTIME, START_DAY, END_DAY
