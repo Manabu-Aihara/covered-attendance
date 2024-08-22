@@ -39,6 +39,7 @@ class AttendanceQuery:
             D_JOB_HISTORY.CONTRACT_CODE == M_TIMECARD_TEMPLATE.CONTRACT_CODE
         )  # 7
 
+        # Max attendance_filters[0:8] index7まで取り出す
         return (
             attendance_filters[array_number[0] : array_number[1]]
             if array_number != ()

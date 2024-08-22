@@ -306,8 +306,8 @@ def jimu_summary_fulltime(startday):
     cfts = CounterForTable.query.all()
 
     jimu_usr = User.query.get(current_user.STAFFID)
-    sum_0 = 0
-    workday_count = 0
+    # sum_0 = 0
+    # workday_count = 0
     # 年月選択をしたかどうか
     if form_month.validate_on_submit():
         selected_workday = request.form.get("workday_name")  ##### 選択された日付
@@ -367,6 +367,8 @@ def jimu_summary_fulltime(startday):
                 User.LNAME,
                 D_JOB_HISTORY.JOBTYPE_CODE,
                 D_JOB_HISTORY.CONTRACT_CODE,
+                # 24/8/19 追加クエリー
+                D_JOB_HISTORY.PART_WORKTIME,
                 Parttime.c.HOLIDAY_TIME,
             ).filter(
                 and_(
@@ -416,7 +418,7 @@ def jimu_summary_fulltime(startday):
 
         db.session.commit()
 
-    for i, sh in enumerate(shinseis):
+    for sh in shinseis:
 
         # スタッフが変ったら
         if UserID != sh.STAFFID:
@@ -425,8 +427,11 @@ def jimu_summary_fulltime(startday):
             cnt_for_tbl = CounterForTable.query.get(sh.STAFFID)
             rp_holiday = RecordPaidHoliday.query.get(sh.STAFFID)
             AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
+            # 各スタッフのカウントになる
             workday_count = 0
-            sum_0 = 0
+            # sum_0 = 0
+            """ 24/8/22 納得いかないまでも（Unboundだから）、追加した変数 """
+            time_sum: float = 0.0
             # 各表示初期値
             oncall = []
             oncall_holiday = []
@@ -535,11 +540,35 @@ def jimu_summary_fulltime(startday):
         )
         settime.calc_time()
 
-        print(f"{sh.STAFFID}: {sh.WORKDAY.day} loop")
-        print(f"aDd: {AttendanceDada[sh.WORKDAY.day][14]} {i}")
-        sum_0 += AttendanceDada[sh.WORKDAY.day][14]
-        if AttendanceDada[sh.WORKDAY.day][14] > 0:
-            workday_count += 1
+        """ 24/8/22 変更分 """
+        time_sum += AttendanceDada[sh.WORKDAY.day][14]
+        w_h = time_sum // (60 * 60)
+        w_m = (time_sum - w_h * 60 * 60) / (60 * 60)
+
+        time_sum10 = w_h + w_m
+        sum10_rnd = Decimal(time_sum10).quantize(Decimal("0.01"), ROUND_HALF_UP)
+
+        w_m_60 = w_m * 60 / 100
+        time_sum60 = w_h + w_m_60
+        sum60_rnd = Decimal(time_sum60).quantize(Decimal("0.01"), ROUND_HALF_UP)
+
+        """ 24/8/19 変更分 """
+        # contract_work_time: float
+        # if sh.CONTRACT_CODE == 2:
+        #     contract_work_time = sh.PART_WORKTIME
+        # else:
+        #     work_time = (
+        #         db.session.query(KinmuTaisei.WORKTIME)
+        #         .filter(KinmuTaisei.CONTRACT_CODE == sh.CONTRACT_CODE)
+        #         .first()
+        #     )
+        #     contract_work_time = work_time.WORKTIME
+
+        # sum_0 += AttendanceDada[sh.WORKDAY.day][14]
+        # if AttendanceDada[sh.WORKDAY.day][14] != 0:
+        #     AttendanceDada[sh.WORKDAY.day][14] = contract_work_time
+        #     workday_count += 1
+        #     work_time_sum = AttendanceDada[sh.WORKDAY.day][14] * workday_count
 
         ##### データベース貯蔵 #####
         ln_oncall = len(oncall)
@@ -575,16 +604,20 @@ def jimu_summary_fulltime(startday):
         #    if is_integer_num(syukkin_times_0[n]):
         #        sum_0 += syukkin_times_0[n]
 
-        w_h = sum_0 // (60 * 60)
-        w_m = (sum_0 - w_h * 60 * 60) // 60
-        working_time = w_h + w_m / 100
-        working_time_10 = sum_0 / (60 * 60)
+        # w_h = sum_0 // (60 * 60)
+        # w_m = (sum_0 - w_h * 60 * 60) // 60
+        # working_time = w_h + w_m / 100
+        # working_time_10 = sum_0 / (60 * 60)
 
         for n in range(len(real_time_sum)):
             real_sum += real_time_sum[n]
         w_h = real_sum // (60 * 60)
         w_m = (real_sum - w_h * 60 * 60) // 60
         real_time = w_h + w_m / 100
+        """ 24/8/20 変更分 """
+        # w_m = (real_sum - w_h * 60 * 60) / (60 * 60) # 10進数
+        # real_time_lengthy = w_h + w_m
+        # real_time = Decimal(real_time_lengthy).quantize(Decimal("0.1"), ROUND_HALF_UP)
         real_time_10 = real_sum / (60 * 60)
 
         sum_over_0 = 0
@@ -634,12 +667,12 @@ def jimu_summary_fulltime(startday):
             cnt_for_tbl.SYUTTYOU_HALF = ln_syuttyou_half
             cnt_for_tbl.REFLESH = ln_reflesh
             cnt_for_tbl.MILEAGE = ln_s_kyori
-            cnt_for_tbl.SUM_WORKTIME = working_time
+            cnt_for_tbl.SUM_WORKTIME = sum60_rnd
             cnt_for_tbl.SUM_REAL_WORKTIME = real_time
             cnt_for_tbl.OVERTIME = over
             cnt_for_tbl.HOLIDAY_WORK = holiday_work
             cnt_for_tbl.WORKDAY_COUNT = workday_count
-            cnt_for_tbl.SUM_WORKTIME_10 = working_time_10
+            cnt_for_tbl.SUM_WORKTIME_10 = sum10_rnd
             cnt_for_tbl.OVERTIME_10 = over_10
             cnt_for_tbl.HOLIDAY_WORK_10 = holiday_work_10
             cnt_for_tbl.TIMEOFF = timeoff
@@ -650,7 +683,7 @@ def jimu_summary_fulltime(startday):
             ##### 退職者表示設定
 
     return render_template(
-        "attendance/jimu_summary_fulltime_diff.html",
+        "attendance/jimu_summary_fulltime.html",
         startday=startday,
         typ=typ,
         form_month=form_month,
