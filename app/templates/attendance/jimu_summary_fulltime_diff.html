@@ -63,7 +63,7 @@
       <tbody>
         {% for u in users %}
         {% for cnt_for_tbl in cfts %}
-        {% if u.STAFFID == cnt_for_tbl.STAFFID and (workday_count != 0 or workday_count is not none) %}
+        {% if u.STAFFID == cnt_for_tbl.STAFFID and cnt_for_tbl.WORKDAY_COUNT != 0 %}
         <tr>
           <td><small>{{ bumon[u.DEPARTMENT_CODE][1] }}</small></td>
           <td><small>{{ syozoku[u.TEAM_CODE][1] }}</small></td>

@@ -16,10 +16,12 @@
 <div class="text-center">
     <a href="{{url_for('jimu_select_page', STAFFID=current_user.STAFFID)}}" class="btn btn-success">　戻　る　</a>
 </div>
-<br/><br>
+<br /><br>
 <div id="adm-tbl" class="col-12 center-block">
     <div class="sort-table">
-        <a href="javascript:void(0)" onclick="onCSVDownload(this, document.querySelector('#fv-table'), '{{ y|tojson }}-{{ m|tojson }}常勤職員一覧画面（１日基準）download_({{ dwl_today.strftime('%Y-%m-%d') }}).csv');" type="button" class="btn btn-warning">CSVダウンロード</a>
+        <a href="javascript:void(0)"
+            onclick="onCSVDownload(this, document.querySelector('#fv-table'), '{{ y|tojson }}-{{ m|tojson }}常勤職員一覧画面（１日基準）download_({{ dwl_today.strftime('%Y-%m-%d') }}).csv');"
+            type="button" class="btn btn-warning">CSVダウンロード</a>
         <br><br><br>
         <table id="fv-table" class="table table-striped table-hover">
             <caption class="disp_csv">{{ y }}年 {{ m }}月</caption>
@@ -37,17 +39,17 @@
                     <th><small>エンゼルケア<br>対応件数</small></th>
                     <th><small>実働時間計</small></th>
                     <th><small>実働時間計（１０進法）</small></th>
-                    <th><small>リアル実働時間</small></th>                        
+                    <th><small>リアル実働時間</small></th>
                     <th><small>実働日数</small></th>
                     <th><small>年休（全日）</small></th>
                     <th><small>年休（半日）</small></th>
                     <th><small>時間外</small></th>
-                    <th><small>時間外（１０進法）</small></th>                    
+                    <th><small>時間外（１０進法）</small></th>
                     <th><small>遅刻</small></th>
                     <th><small>早退</small></th>
                     <th><small>欠勤</small></th>
                     <th><small>祝日手当時間</small></th>
-                    <th><small>祝日手当時間（１０進法）</small></th>                                        
+                    <th><small>祝日手当時間（１０進法）</small></th>
                     <th><small>出張（全日）</small></th>
                     <th><small>出張（半日）</small></th>
                     <th><small>リフレッシュ休暇</small></th>
@@ -60,77 +62,75 @@
             </thead>
             <tbody>
                 {% for u in users %}
-                    {% for cnt_for_tbl in cfts %}
-                    {% if u.INDAY %}
-                    {% if (u.OUTDAY is none and ((u.INDAY.year < y or
-                        (u.INDAY.year == y and u.INDAY.month <= m)) and (workday_count != 0 or workday_count is not none)))
-                        or u.OUTDAY and (((u.OUTDAY.year > y or 
-                        u.OUTDAY.year == y and u.OUTDAY.month >= m) and (workday_count != 0 or workday_count is not none)) and
-                        ((u.INDAY.year < y or
-                        (u.INDAY.year == y and u.INDAY.month <= m)) and (workday_count != 0 or workday_count is not none))) %}
-                        {% if u.STAFFID ==  cnt_for_tbl.STAFFID %}
-                        
-                        {% if u.TEAM_CODE == jimu_usr.TEAM_CODE or jimu_usr.TEAM_CODE == 1 %}
-                        <tr>
-                            <td>
-                                <small>
- 
-                                    {{ bumon[u.DEPARTMENT_CODE][1] }}
-                                </small>
-                            </td>
-                            <td>
-                                <small>
-                                   
-                                    {{ syozoku[u.TEAM_CODE][1] }}
-                                  
-                                </small>
-                            </td>
-                            <td>
-                                <small>
-                                    {{ syokusyu[u.JOBTYPE_CODE][1] }}    
-                                   
-                                </small>
-                            </td>
-                            <td>
-                                <small>
-                                    {{ keitai[u.CONTRACT_CODE][1] }}    
-                                </small>
-                            </td>                    
-                            <td><small>{{ cnt_for_tbl.STAFFID }}</small></td>
-                            <td><small>{{ u.LNAME }}　{{ u.FNAME }}</small></td>
-                            <td><small>{{ cnt_for_tbl.ONCALL }}</small></td>
-                            <td><small>{{ cnt_for_tbl.ONCALL_HOLIDAY }}</small></td>
-                            <td><small>{{ cnt_for_tbl.ONCALL_COUNT }}</small></td>
-                            <td><small>{{ cnt_for_tbl.ENGEL_COUNT }}</small></td>
-                            <td><small>{{ cnt_for_tbl.SUM_WORKTIME }}</small></td>
-                            <td><small>{{ cnt_for_tbl.SUM_WORKTIME_10 }}</small></td>
-                            <td><small>{{ cnt_for_tbl.SUM_REAL_WORKTIME }}</small></td>
-                            <td><small>{{ cnt_for_tbl.WORKDAY_COUNT }}</small></td>
-                            <td><small>{{ cnt_for_tbl.NENKYU }}</small></td>
-                            <td><small>{{ cnt_for_tbl.NENKYU_HALF }}</small></td>
-                            <td><small>{{ cnt_for_tbl.OVERTIME }}</small></td>
-                            <td><small>{{ cnt_for_tbl.OVERTIME_10 }}</small></td>
-                            <td><small>{{ cnt_for_tbl.TIKOKU }}</small></td>
-                            <td><small>{{ cnt_for_tbl.SOUTAI }}</small></td>
-                            <td><small>{{ cnt_for_tbl.KEKKIN }}</small></td>
-                            <td><small>{{ cnt_for_tbl.HOLIDAY_WORK }}</small></td>
-                            <td><small>{{ cnt_for_tbl.HOLIDAY_WORK_10 }}</small></td>
-                            <td><small>{{ cnt_for_tbl.SYUTTYOU }}</small></td>
-                            <td><small>{{ cnt_for_tbl.SYUTTYOU_HALF }}</small></td>
-                            <td><small>{{ cnt_for_tbl.REFLESH }}</small></td>
-                            <td><small>{{ cnt_for_tbl.MILEAGE }}</small></td>    
-                            <td><small>{{ cnt_for_tbl.TIMEOFF }}</small></td> 
-                            <td><small>{{ cnt_for_tbl.HALFWAY_THROUGH }}</small></td>
-                            <td><small>{{ cnt_for_tbl.TIMEOFF|int + cnt_for_tbl.HALFWAY_THROUGH|int }}</small></td>   
-                            <td><small>{{ POST[u.POST_CODE][1] }}</small></td>              
+                {% for cnt_for_tbl in cfts %}
+                {% if u.INDAY %}
+                {% if (u.OUTDAY is none and ((u.INDAY.year < y or (u.INDAY.year==y and u.INDAY.month <=m)) and
+                    (workday_count !=0 or workday_count is not none))) or u.OUTDAY and (((u.OUTDAY.year> y or
+                    u.OUTDAY.year == y and u.OUTDAY.month >= m) and (workday_count != 0 or workday_count is not none))
+                    and
+                    ((u.INDAY.year < y or (u.INDAY.year==y and u.INDAY.month <=m)) and (workday_count !=0 or
+                        workday_count is not none))) %} {% if u.STAFFID==cnt_for_tbl.STAFFID %} {% if
+                        u.TEAM_CODE==jimu_usr.TEAM_CODE or jimu_usr.TEAM_CODE==1 %} <tr>
+                        <span>{{ workday_count}}</span>
+                        <td>
+                            <small>
+
+                                {{ bumon[u.DEPARTMENT_CODE][1] }}
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+
+                                {{ syozoku[u.TEAM_CODE][1] }}
+
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                {{ syokusyu[u.JOBTYPE_CODE][1] }}
+
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                {{ keitai[u.CONTRACT_CODE][1] }}
+                            </small>
+                        </td>
+                        <td><small>{{ cnt_for_tbl.STAFFID }}</small></td>
+                        <td><small>{{ u.LNAME }}　{{ u.FNAME }}</small></td>
+                        <td><small>{{ cnt_for_tbl.ONCALL }}</small></td>
+                        <td><small>{{ cnt_for_tbl.ONCALL_HOLIDAY }}</small></td>
+                        <td><small>{{ cnt_for_tbl.ONCALL_COUNT }}</small></td>
+                        <td><small>{{ cnt_for_tbl.ENGEL_COUNT }}</small></td>
+                        <td><small>{{ cnt_for_tbl.SUM_WORKTIME }}</small></td>
+                        <td><small>{{ cnt_for_tbl.SUM_WORKTIME_10 }}</small></td>
+                        <td><small>{{ cnt_for_tbl.SUM_REAL_WORKTIME }}</small></td>
+                        <td><small>{{ cnt_for_tbl.WORKDAY_COUNT }}</small></td>
+                        <td><small>{{ cnt_for_tbl.NENKYU }}</small></td>
+                        <td><small>{{ cnt_for_tbl.NENKYU_HALF }}</small></td>
+                        <td><small>{{ cnt_for_tbl.OVERTIME }}</small></td>
+                        <td><small>{{ cnt_for_tbl.OVERTIME_10 }}</small></td>
+                        <td><small>{{ cnt_for_tbl.TIKOKU }}</small></td>
+                        <td><small>{{ cnt_for_tbl.SOUTAI }}</small></td>
+                        <td><small>{{ cnt_for_tbl.KEKKIN }}</small></td>
+                        <td><small>{{ cnt_for_tbl.HOLIDAY_WORK }}</small></td>
+                        <td><small>{{ cnt_for_tbl.HOLIDAY_WORK_10 }}</small></td>
+                        <td><small>{{ cnt_for_tbl.SYUTTYOU }}</small></td>
+                        <td><small>{{ cnt_for_tbl.SYUTTYOU_HALF }}</small></td>
+                        <td><small>{{ cnt_for_tbl.REFLESH }}</small></td>
+                        <td><small>{{ cnt_for_tbl.MILEAGE }}</small></td>
+                        <td><small>{{ cnt_for_tbl.TIMEOFF }}</small></td>
+                        <td><small>{{ cnt_for_tbl.HALFWAY_THROUGH }}</small></td>
+                        <td><small>{{ cnt_for_tbl.TIMEOFF|int + cnt_for_tbl.HALFWAY_THROUGH|int }}</small></td>
+                        <td><small>{{ POST[u.POST_CODE][1] }}</small></td>
                         </tr>
                         {% endif %}
-                        
+
                         {% endif %}
                         {% endif %}
                         {% endif %}
-                    {% endfor %}
-                {% endfor %}
+                        {% endfor %}
+                        {% endfor %}
             </tbody>
         </table>
     </div>
@@ -138,8 +138,8 @@
     <div class="h1">
         <br><br><br><br><br>
         <br><br><br><br><br>
-    </div>       
+    </div>
 
-<div>
+    <div>
 
-{% endblock %}
+        {% endblock %}

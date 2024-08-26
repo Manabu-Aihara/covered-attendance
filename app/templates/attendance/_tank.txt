@@ -1,7 +1,9 @@
-        {% if (u.OUTDAY is none and ((u.INDAY.year < y or (u.INDAY.year==y and u.INDAY.month <=m)) and (workday_count
-          !=0 or workday_count is not none))) or u.OUTDAY and (((u.OUTDAY.year> y or
-          u.OUTDAY.year == y and u.OUTDAY.month >= m) and (workday_count != 0 or workday_count is not none)) and
-          ((u.INDAY.year < y or (u.INDAY.year==y and u.INDAY.month <=m)) and (workday_count !=0 or workday_count is not
-            none))) %}
-
-
+{% if (u.OUTDAY is none and ((u.INDAY.year < y or
+    (u.INDAY.year == y and u.INDAY.month <= m)) and (workday_count != 0 or workday_count is not none)))
+    or u.OUTDAY and (((u.OUTDAY.year > y or 
+    u.OUTDAY.year == y and u.OUTDAY.month >= m) and (workday_count != 0 or workday_count is not none)) and
+    ((u.INDAY.year < y or
+    (u.INDAY.year == y and u.INDAY.month <= m)) and (workday_count != 0 or workday_count is not none))) %}
+    {% if u.STAFFID ==  cnt_for_tbl.STAFFID %}
+    
+    {% if u.TEAM_CODE == jimu_usr.TEAM_CODE or jimu_usr.TEAM_CODE == 1 %}

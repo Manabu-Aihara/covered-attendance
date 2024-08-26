@@ -2,7 +2,7 @@ import os, math
 from datetime import date, datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
-from typing import List
+from typing import List, TypeVar
 import jpholiday
 
 from dateutil.relativedelta import relativedelta
@@ -275,6 +275,41 @@ def jimu_oncall_count_26(STAFFID):
     )
 
 
+T = TypeVar("T")
+
+
+def get_more_condition_users(query_instances: List[T], *date_columun: str):
+    today = datetime.today()
+    result_users = []
+    for query_instance in query_instances:
+        try:
+            date_c_name0: datetime = getattr(query_instance, date_columun[0])
+            date_c_name1: datetime = getattr(query_instance, date_columun[1])
+            # if date_c_name0 is None:
+            #     raise TypeError("入職日の入力がありません")
+            # if User.INDAY <= datetime.today()
+            # Today 2024/8/23 if 2024/8/24 は入らない
+            # if User.OUTDAY >= datetime.today()
+            # Today 2024/8/23 if 2024/8/22 は入らない
+            if date_c_name0 <= today:
+                if (
+                    date_c_name1 is None
+                    or date_c_name1 > today
+                    or date_c_name1.year == today.year
+                    and date_c_name1.month >= today.month
+                ):
+                    result_users.append(query_instance)
+        except TypeError:
+            (
+                print(f"{query_instance.STAFFID}: 入職日の入力がありません")
+                if query_instance.STAFFID
+                else print("入職日の入力がありません")
+            )
+            result_users.append(query_instance)
+
+    return result_users
+
+
 ##### 常勤1日基準 ######
 @app.route("/jimu_summary_fulltime/<startday>", methods=["GET", "POST"])
 @login_required
@@ -302,7 +337,8 @@ def jimu_summary_fulltime(startday):
 
     dwl_today = datetime.today()
 
-    users = User.query.all()
+    # users = User.query.all()
+    # 後述
     cfts = CounterForTable.query.all()
 
     jimu_usr = User.query.get(current_user.STAFFID)
@@ -431,7 +467,7 @@ def jimu_summary_fulltime(startday):
             workday_count = 0
             # sum_0 = 0
             """ 24/8/22 納得いかないまでも（Unboundだから）、追加した変数 """
-            time_sum: float = 0.0
+            time_sum: int = 0
             # 各表示初期値
             oncall = []
             oncall_holiday = []
@@ -542,13 +578,15 @@ def jimu_summary_fulltime(startday):
 
         """ 24/8/22 変更分 """
         time_sum += AttendanceDada[sh.WORKDAY.day][14]
+        workday_count += 1 if time_sum != 0 else workday_count
         w_h = time_sum // (60 * 60)
         w_m = (time_sum - w_h * 60 * 60) / (60 * 60)
-
+        # 実働時間計（１０進法）：10進数
         time_sum10 = w_h + w_m
         sum10_rnd = Decimal(time_sum10).quantize(Decimal("0.01"), ROUND_HALF_UP)
 
         w_m_60 = w_m * 60 / 100
+        # 実労働時間計：60進数
         time_sum60 = w_h + w_m_60
         sum60_rnd = Decimal(time_sum60).quantize(Decimal("0.01"), ROUND_HALF_UP)
 
@@ -682,6 +720,18 @@ def jimu_summary_fulltime(startday):
 
             ##### 退職者表示設定
 
+    clerk_totlling_filters = []
+    if jimu_usr.TEAM_CODE != 1:
+        clerk_totlling_filters.append(User.TEAM_CODE == jimu_usr.TEAM_CODE)
+
+    users_without_condition = (
+        db.session.query(User).filter(and_(*clerk_totlling_filters)).all()
+    )
+    # try:
+    users = get_more_condition_users(users_without_condition, "INDAY", "OUTDAY")
+    # except TypeError as e:
+    #     print(f"{e}")
+
     return render_template(
         "attendance/jimu_summary_fulltime.html",
         startday=startday,
@@ -701,7 +751,7 @@ def jimu_summary_fulltime(startday):
         POST=POST,
         jimu_usr=jimu_usr,
         stf_login=stf_login,
-        workday_count=workday_count,
+        # workday_count=workday_count,
         timeoff=timeoff,
         halfway_rough=halfway_through,
         FromDay=FromDay,

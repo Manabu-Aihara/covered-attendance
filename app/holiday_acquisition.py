@@ -179,16 +179,18 @@ class HolidayAcquire:
         : OrderedDict<date, int> 入職日と支給日数
         """
 
-    # ddm = monthmod(inday, datetime.today())[0].months
     def acquire_inday_holidays(self) -> OrderedDict[date, int]:
         base_day = self.convert_base_day(self.in_day)
+        # monthmod(inday, datetime.today())[0].months < 2, = 0
         # 入職日から基準日まで1ヶ月以内
         # replace(day=1)しない？
         if monthmod(self.in_day.replace(day=1), base_day)[0].months < 2:
             acquisition_days = 0
+        # monthmod(inday, datetime.today())[0].months < 4, < 3
         # 入職日から基準日まで2ヶ月と3ヶ月
         elif monthmod(self.in_day.replace(day=1), base_day)[0].months <= 3:
             acquisition_days = 1
+        # monthmod(inday, datetime.today())[0].months < 6, < 5
         # 入職日から基準日まで4ヶ月以上
         elif monthmod(self.in_day.replace(day=1), base_day)[0].months > 3:
             acquisition_days = 2
