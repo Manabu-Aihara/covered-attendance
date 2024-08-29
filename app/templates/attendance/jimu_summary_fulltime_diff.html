@@ -17,6 +17,9 @@
   <a href="{{url_for('jimu_select_page', STAFFID=current_user.STAFFID)}}" class="btn btn-success">　戻　る　</a>
 </div>
 <br /><br>
+<div><button id="outday-switch">退職者 表示</button>
+  <p id="shadow-today">{{ today }}</p>
+</div>
 <div id="adm-tbl" class="col-12 center-block">
   <div class="sort-table">
     <a href="javascript:void(0)"
@@ -63,7 +66,7 @@
       <tbody>
         {% for u in users %}
         {% for cnt_for_tbl in cfts %}
-        {% if u.STAFFID == cnt_for_tbl.STAFFID and cnt_for_tbl.WORKDAY_COUNT != 0 %}
+        {% if u.STAFFID == cnt_for_tbl.STAFFID %}
         <tr>
           <td><small>{{ bumon[u.DEPARTMENT_CODE][1] }}</small></td>
           <td><small>{{ syozoku[u.TEAM_CODE][1] }}</small></td>

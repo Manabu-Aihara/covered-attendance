@@ -211,3 +211,11 @@ form.form-bottom button.judgement {
   text-decoration: none;
   cursor: pointer;
 }
+
+p#shadow-today {
+  display: none;
+}
+
+td.shadow-item {
+  display: none;
+}

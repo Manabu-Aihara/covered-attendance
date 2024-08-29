@@ -1,7 +1,7 @@
 from datetime import datetime
 import calendar
 import jpholiday
-from typing import List
+from typing import List, Tuple
 from dataclasses import dataclass
 
 from app.calc_work_classes import get_last_date
@@ -48,7 +48,7 @@ class NewCalendar:
         offset = (first_dow - self.firstweekday) % 7
         return (day + offset - 1) // 7 + 1
 
-    def make_calendar_table(self):
+    def make_calendar_table(self) -> Tuple[list, list]:
         rows = []
         holidays = []
         the_last_of_month: int = get_last_date(self.year, self.month)

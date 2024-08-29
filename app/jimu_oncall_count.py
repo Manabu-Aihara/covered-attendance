@@ -677,20 +677,23 @@ def jimu_summary_fulltime(startday):
             ##### 退職者表示設定
 
     # print(f"Date type: {type(User.INDAY)}")
-    # print(f"Inner count: {workday_count}")
-    # print(f"Outer count: {outer_workday_count}")
     clerk_totlling_filters = []
     if jimu_usr.TEAM_CODE != 1:
         clerk_totlling_filters.append(User.TEAM_CODE == jimu_usr.TEAM_CODE)
-    # raise TypeError("Boolean value of this clause is not defined")
-    # https://stackoverflow.com/questions/42681231/sqlalchemy-unexpected-results-when-using-and-and-or
-    # filters.append(
-    #     or_(User.OUTDAY == None, User.OUTDAY > datetime.today())
-    # )
-    users_without_condition = (
-        db.session.query(User).filter(and_(*clerk_totlling_filters)).all()
-    )
-    users = get_more_condition_users(users_without_condition, "INDAY", "OUTDAY")
+        # raise TypeError("Boolean value of this clause is not defined")
+        # https://stackoverflow.com/questions/42681231/sqlalchemy-unexpected-results-when-using-and-and-or
+        # filters.append(
+        #     or_(User.OUTDAY == None, User.OUTDAY > datetime.today())
+        # )
+        # users_without_condition = (
+        #     db.session.query(User).filter(and_(*clerk_totlling_filters)).all()
+        # )
+        # users = get_more_condition_users(users_without_condition, "INDAY", "OUTDAY")
+        users = db.session.query(User).filter(and_(*clerk_totlling_filters)).all()
+    else:
+        users = db.session.query(User).all()
+
+    today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
     return render_template(
         "attendance/jimu_summary_fulltime_diff.html",
@@ -716,6 +719,7 @@ def jimu_summary_fulltime(startday):
         halfway_rough=halfway_through,
         FromDay=FromDay,
         ToDay=ToDay,
+        today=today,
     )
 
 

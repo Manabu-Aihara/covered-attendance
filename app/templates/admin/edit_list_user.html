@@ -8,6 +8,9 @@
     <a href="{{ url_for('users_nenkyu') }}" class="btn btn-success">ユーザ年休検索画面に戻る</a>
 </div>
 <hr>
+<div><button id="outday-switch">退職者 表示</button>
+    <p id="shadow-today">{{ today }}</p>
+</div>
 <div id="adm-tbl" class="col-10 center-block">
     <div class="sort-table">
         <table id="fv-table" class="table table-striped table-hover">
@@ -30,35 +33,28 @@
             </thead>
             <tbody class="users-info">
                 {% for info in info_list %}
-                {#
-                info[0]: STAFFID
-                info[1]: LNAME
-                info[2]: FNAME
-                info[3]: LKANA
-                info[4]: FKANA
-                info[5]: INDAY
-                #}
-                <tr>
-                    <form method="POST" action="{{ url_for('edit_data_user', STAFFID=info[5]['staff_id'], intFlg=1)}}">
+                <tr class="user-info-row">
+                    <form method="POST" action="{{ url_for('edit_data_user', STAFFID=info['staff_id'], intFlg=1)}}">
                         <td><button type="submit" class="btn btn-warning">情報編集</button></td>
                     </form>
-                    <td>{{ info[5]["staff_id"] }}</td>
-                    <td>{{ info[0] }}</td>
-                    <td>{{ info[1] }}</td>
-                    <td>{{ info[2] }}</td>
-                    <td>{{ info[3] }}</td>
+                    <td>{{ info["staff_id"] }}</td>
+                    <td>{{ info["family_name"] }}</td>
+                    <td>{{ info["first_name"] }}</td>
+                    <td>{{ info["family_kana"] }}</td>
+                    <td>{{ info["first_kana"] }}</td>
 
-                    <td>{{ info[5]["department"] }}</td>
-                    <td>{{ info[5]["team"] }}</td>
+                    <td>{{ info["department"] }}</td>
+                    <td>{{ info["team"] }}</td>
                     <form method="POST"
-                        action="{{ url_for('edit_user_history', STAFFID=info[5]['staff_id'], ProcFlag=0) }}">
+                        action="{{ url_for('edit_user_history', STAFFID=info['staff_id'], ProcFlag=0) }}">
                         <td><button type="submit" class="btn btn-warning">契約・有休編集</button></td>
                     </form>
-                    <td>{{ info[5]["contract"] }}</td>
-                    <td>{{ info[5]["job_type"] }}</td>
-                    <td>{{ info[5]["post"] }}</td>
+                    <td>{{ info["contract"] }}</td>
+                    <td>{{ info["job_type"] }}</td>
+                    <td>{{ info["post"] }}</td>
 
-                    <td>{{ info[4] }}</td>
+                    <td>{{ info["inday"] }}</td>
+                    <td class="shadow-item">{{ info["outday"] }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -67,4 +63,5 @@
 </div>
 
 <br><br><br><br>
+<script src="/static/js/OutdayToggle.js"></script>
 {% endblock %}

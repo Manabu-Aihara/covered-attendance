@@ -285,20 +285,31 @@ def edit_list_user():
     #     db.session.query(
     #         User.STAFFID, User.LNAME, User.FNAME, User.LKANA, User.FKANA, User.INDAY
     #     )
-    user_infos: List[User] = db.session.query(User).filter(User.OUTDAY == None).all()
+    # outday_filter = []
+    # outday_flag: bool = False
+    # if outday_flag is False:
+    #     outday_filter.append(User.OUTDAY > datetime.today())
+    # elif outday_flag is True:
+    #     outday_filter.append(User.OUTDAY <= datetime.today())
+
+    user_infos: List[User] = db.session.query(User).all()
+    # .filter(*outday_filter).all()
 
     user_complete_list = []
     for user_info in user_infos:
-        user_necessary_info = [
-            user_info.LNAME,
-            user_info.FNAME,
-            user_info.LKANA,
-            user_info.FKANA,
-            user_info.INDAY,
-        ]
-        user_necessary_info.append(get_role_context(user_info))
+        user_necessary_dict = {
+            "family_name": user_info.LNAME,
+            "first_name": user_info.FNAME,
+            "family_kana": user_info.LKANA,
+            "first_kana": user_info.FKANA,
+            "inday": user_info.INDAY,
+            "outday": user_info.OUTDAY,
+        }
+        user_necessary_info = dict(**user_necessary_dict, **get_role_context(user_info))
         user_complete_list.append(user_necessary_info)
     # print(user_complete_list)
+
+    today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
     """ ここまで """
 
@@ -308,8 +319,9 @@ def edit_list_user():
     return render_template(
         "admin/edit_list_user.html",
         info_list=user_complete_list,
+        today=today,
         stf_login=stf_login,
-        intFlg=1,
+        # intFlg=1,
     )
 
 
