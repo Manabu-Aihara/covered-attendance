@@ -120,6 +120,7 @@ def convert_strToDate(str_date: str):
 def append_event_item(auth_user, extension):
     event_item = EventORM()
     event_item.staff_id = request.json["staff_id"]
+    # extensionがrequest.json["group"]に被る？
     event_item.group_id = request.json["group"]
     event_item.start_time = convert_strToDate(request.json["start_time"])
     event_item.end_time = convert_strToDate(request.json["end_time"])

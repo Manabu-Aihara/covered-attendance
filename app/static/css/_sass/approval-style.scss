@@ -268,10 +268,32 @@ form.form-bottom {
   }
 }
 
-p#shadow-today {
-  display: none;
+.outday-area {
+  p {
+    display: none;
+  }
+
+  p#outday-on {
+    color: chartreuse;
+  }
 }
 
 td.shadow-item {
   display: none;
+}
+
+.back-caution {
+  background-color: tomato;
+  margin: 0 5% 0 5%;
+
+  .the-caution {
+    font-size: larger;
+    color: khaki;
+    text-align: center;
+  }
+
+  .caution-message {
+    color: cyan;
+    text-align: center;
+  }
 }

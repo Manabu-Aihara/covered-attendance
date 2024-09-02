@@ -59,6 +59,7 @@ from app.attendance_admin_classes import AttendanceAdminAnalysys
 from app.calender_classes import MakeCalender
 from app.calc_work_classes import DataForTable, CalcTimeClass
 from app.common_func import GetPullDownList, intCheck, blankCheck
+from app.db_check_util import compare_db_item
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -281,6 +282,7 @@ def edit_list_user():
         2024/07/23
         修正分
         """
+    # print(f"Decorator: {args}")
     # user_infos: List[Tuple[int, str, str, str, str, datetime]] = (
     #     db.session.query(
     #         User.STAFFID, User.LNAME, User.FNAME, User.LKANA, User.FKANA, User.INDAY
@@ -291,12 +293,14 @@ def edit_list_user():
     #     outday_filter.append(User.OUTDAY > datetime.today())
     # elif outday_flag is True:
     #     outday_filter.append(User.OUTDAY <= datetime.today())
-
     user_infos: List[User] = db.session.query(User).all()
     # .filter(*outday_filter).all()
 
     user_complete_list = []
+    caution_id_list = []
+    exception_message = "テーブル間で、契約形態及び職種が合致していません"
     for user_info in user_infos:
+        # compare_db_item(user_info.STAFFID)
         user_necessary_dict = {
             "family_name": user_info.LNAME,
             "first_name": user_info.FNAME,
@@ -307,7 +311,11 @@ def edit_list_user():
         }
         user_necessary_info = dict(**user_necessary_dict, **get_role_context(user_info))
         user_complete_list.append(user_necessary_info)
-    # print(user_complete_list)
+        # print(user_complete_list)
+
+        unknown_value = compare_db_item(user_info.STAFFID)
+        if isinstance(unknown_value, int):
+            caution_id_list.append(unknown_value)
 
     today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -320,6 +328,8 @@ def edit_list_user():
         "admin/edit_list_user.html",
         info_list=user_complete_list,
         today=today,
+        cause_users=caution_id_list,
+        exception=exception_message,
         stf_login=stf_login,
         # intFlg=1,
     )

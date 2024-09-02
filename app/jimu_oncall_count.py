@@ -57,6 +57,7 @@ from app.models import (
 from app.common_func import GetPullDownList, ZeroCheck, GetData, GetDataS
 from app.attendance_query_class import AttendanceQuery
 from app.attendance_util import get_month_workday
+from app.db_check_util import compare_db_item
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -296,8 +297,10 @@ def get_more_condition_users(query_instances: List[T], *date_columun: str):
                 if (
                     date_c_name1 is None
                     or date_c_name1 > today
-                    or date_c_name1.year == today.year
-                    and date_c_name1.month >= today.month
+                    or (
+                        date_c_name1.year == today.year
+                        and date_c_name1.month >= today.month
+                    )
                 ):
                     result_users.append(query_instance)
         except TypeError:
@@ -731,9 +734,10 @@ def jimu_users_list(STAFFID):
     jimu_usr = User.query.get(STAFFID)
 
     base_user_list = (
-        db.session.query(User.STAFFID, User.LNAME, User.FNAME, KinmuTaisei.NAME)
-        .join(KinmuTaisei, User.CONTRACT_CODE == KinmuTaisei.CONTRACT_CODE)
-        .filter(User.OUTDAY == None)
+        db.session.query(
+            User.STAFFID, User.LNAME, User.FNAME, User.OUTDAY, KinmuTaisei.NAME
+        ).join(KinmuTaisei, User.CONTRACT_CODE == KinmuTaisei.CONTRACT_CODE)
+        # .filter(User.OUTDAY == None)
         # .all()
     )
 
@@ -741,10 +745,15 @@ def jimu_users_list(STAFFID):
 
     all_user_list = base_user_list.all()
 
-    """
-        2024/7/19
-        追加機能分
-        """
+    """ 2024/9/2 追加分 """
+    caution_id_list = []
+    exception_message = "テーブル間で、契約形態が合致していません"
+    for user in all_user_list:
+        unknown_value = compare_db_item(user.STAFFID)
+        if isinstance(unknown_value, int):
+            caution_id_list.append(unknown_value)
+
+    """ 2024/7/19 追加機能分 """
     filters194 = []
     # if STAFFID == 194:
     filters194.append(User.DEPARTMENT_CODE == jimu_usr.DEPARTMENT_CODE)
@@ -752,12 +761,17 @@ def jimu_users_list(STAFFID):
     reference_user_list = base_user_list.filter(or_(*filters194)).all()
     # print(f"Members: {reference_user_list}")
 
+    today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+
     return render_template(
         "attendance/jimu_users_list.html",
         jimu_usr=jimu_usr,
         team_u_lst=team_user_list,
         all_u=all_user_list,
         ref_lst=reference_user_list,
+        today=today,
+        cause_users=caution_id_list,
+        exception=exception_message,
         stf_login=stf_login,
     )
 

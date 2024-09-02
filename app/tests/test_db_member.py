@@ -4,11 +4,12 @@ from datetime import date, datetime
 from sqlalchemy import or_, and_
 
 from app import db
-from app.models import User, Busho, Post, Shinsei
+from app.models import User, Busho, Post, Shinsei, D_JOB_HISTORY
 from app.forms import AddDataUserForm
 from app.jimu_oncall_count import get_more_condition_users
 from app.routes_admin import get_user_role
 from app.attendance_query_class import AttendanceQuery
+from app.db_check_util import compare_db_item
 
 
 @pytest.mark.skip
@@ -32,6 +33,26 @@ def test_show_attendance(app_context):
         print(attendance)
 
 
+def test_join_data_count(app_context):
+    join_info_objects = (
+        db.session.query(User, D_JOB_HISTORY.JOBTYPE_CODE, D_JOB_HISTORY.CONTRACT_CODE)
+        .outerjoin(D_JOB_HISTORY, D_JOB_HISTORY.STAFFID == User.STAFFID)
+        .all()
+    )
+    # assert len(join_info_objects) == 8
+    print(join_info_objects)
+
+
+def test_compare_db_item(app_context):
+    all_member = db.session.query(User).all()
+    result_list = []
+    for member in all_member:
+        result = compare_db_item(member.STAFFID)
+        result_list.append(result)
+
+    print(result_list)
+
+
 @pytest.fixture
 def condition_users(app_context):
     sample_users = (
@@ -43,7 +64,7 @@ def condition_users(app_context):
     return sample_users
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_get_more_condition_users(condition_users):
     # assert isinstance(condition_users, list)
     test_users = get_more_condition_users(condition_users, "INDAY", "OUTDAY")

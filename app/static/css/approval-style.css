@@ -212,10 +212,27 @@ form.form-bottom button.judgement {
   cursor: pointer;
 }
 
-p#shadow-today {
+.outday-area p {
   display: none;
+}
+.outday-area p#outday-on {
+  color: chartreuse;
 }
 
 td.shadow-item {
   display: none;
+}
+
+.back-caution {
+  background-color: tomato;
+  margin: 0 5% 0 5%;
+}
+.back-caution .the-caution {
+  font-size: larger;
+  color: khaki;
+  text-align: center;
+}
+.back-caution .caution-message {
+  color: cyan;
+  text-align: center;
 }

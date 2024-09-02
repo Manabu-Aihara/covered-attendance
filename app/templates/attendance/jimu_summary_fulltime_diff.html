@@ -17,8 +17,10 @@
   <a href="{{url_for('jimu_select_page', STAFFID=current_user.STAFFID)}}" class="btn btn-success">　戻　る　</a>
 </div>
 <br /><br>
-<div><button id="outday-switch">退職者 表示</button>
+<div class="outday-area">
+  <button id="outday-switch">退職者</button>
   <p id="shadow-today">{{ today }}</p>
+  <p id="outday-on">退職された方 表示中</p>
 </div>
 <div id="adm-tbl" class="col-12 center-block">
   <div class="sort-table">
@@ -61,13 +63,14 @@
           <th><small>中抜け</small></th>
           <th><small>時間休計</small></th>
           <th><small>役職</small></th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
         {% for u in users %}
         {% for cnt_for_tbl in cfts %}
         {% if u.STAFFID == cnt_for_tbl.STAFFID %}
-        <tr>
+        <tr class="user-info-row">
           <td><small>{{ bumon[u.DEPARTMENT_CODE][1] }}</small></td>
           <td><small>{{ syozoku[u.TEAM_CODE][1] }}</small></td>
           <td><small>{{ syokusyu[u.JOBTYPE_CODE][1] }}</small></td>
@@ -99,6 +102,7 @@
           <td><small>{{ cnt_for_tbl.HALFWAY_THROUGH }}</small></td>
           <td><small>{{ cnt_for_tbl.TIMEOFF|int + cnt_for_tbl.HALFWAY_THROUGH|int }}</small></td>
           <td><small>{{ POST[u.POST_CODE][1] }}</small></td>
+          <td>{{ u.OUTDAY }}</td>
         </tr>
         {% endif %}
         {% endfor %}

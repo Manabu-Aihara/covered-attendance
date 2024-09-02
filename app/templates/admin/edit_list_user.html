@@ -8,8 +8,14 @@
     <a href="{{ url_for('users_nenkyu') }}" class="btn btn-success">ユーザ年休検索画面に戻る</a>
 </div>
 <hr>
-<div><button id="outday-switch">退職者 表示</button>
+<div class="outday-area">
+    <button id="outday-switch">退職者</button>
     <p id="shadow-today">{{ today }}</p>
+    <p id="outday-on">退職された方 表示中</p>
+</div>
+<div class="back-caution">
+    <p class="the-caution">CAUTION!</p>ID{{ cause_users }}
+    <p class="caution-message">{{ exception }}</p>
 </div>
 <div id="adm-tbl" class="col-10 center-block">
     <div class="sort-table">
@@ -29,6 +35,7 @@
                     <th>職種<br>コード</th>
                     <th>役職<br>コード</th>
                     <th>入職日</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody class="users-info">

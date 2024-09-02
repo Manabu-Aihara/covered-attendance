@@ -133,7 +133,7 @@ class Busho(db.Model):
     NAME = db.Column(db.String(50), index=True, nullable=True)
 
     """ 2023/12/18 リレーション機能追加 """
-    # record_paid_holiday = db.relationship("RecordPaidHoliday")
+    record_paid_holiday = db.relationship("RecordPaidHoliday")
 
     def __init__(self, CODE):
         self.CODE = CODE
@@ -271,14 +271,6 @@ class Post(db.Model):
 class Team(db.Model):
     __tablename__ = "M_TEAM"
     CODE = db.Column(db.Integer, primary_key=True, index=True, nullable=False)
-    # タイムラインで、そのうち使うかも
-    # CODE = db.Column(
-    #     db.Integer,
-    #     db.ForeignKey("M_STAFFINFO.TEAM_CODE"),
-    #     primary_key=True,
-    #     index=True,
-    #     nullable=False,
-    # )
     NAME = db.Column(db.String(50), index=True, nullable=False)
     SHORTNAME = db.Column(db.String(50), index=True, nullable=False)
 
@@ -366,16 +358,16 @@ class RecordPaidHoliday(db.Model):  # 年休関連
     # リレーションが好ましいと思う
     DEPARTMENT_CODE = db.Column(
         db.Integer,
-        db.ForeignKey("M_STAFFINFO.DEPARTMENT_CODE"),
+        db.ForeignKey("M_DEPARTMENT.CODE"),
         index=True,
         nullable=True,
     )  # Busho
     # sqlalchemy.exc.ArgumentError:
-    # relationship '' expects a class or a mapper argument
+    # relationship '〇〇' expects a class or a mapper argument
     # (received: <class 'sqlalchemy.sql.schema.Table'>)
     # https://stackoverflow.com/questions/25002620/argumenterror-relationship-expects-a-class-or-mapper-argument
-    staff = db.relationship("User", foreign_keys=[STAFFID])
-    department = db.relationship("User", foreign_keys=[DEPARTMENT_CODE])
+    # staff = db.relationship("User", foreign_keys=[STAFFID])
+    # department = db.relationship("User", foreign_keys=[DEPARTMENT_CODE])
     # DEPARTMENT_CODE = db.Column(db.Integer, index=True, nullable=True)  # Busho
     # LNAME = db.Column(db.String(50), index=True, nullable=True)  # User
     # FNAME = db.Column(db.String(50), index=True, nullable=True)  # User

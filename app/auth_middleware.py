@@ -24,12 +24,14 @@ def get_user_group_id() -> Tuple[int, int]:
 
 
 def get_user_group(group_code: int) -> Team:
-    return (
-        db.session.query(Team)
-        .filter(EventORM.staff_id == current_user.STAFFID)
-        .join(Team, Team.CODE == group_code)
-        .first()
-    )
+    # return (
+    #     db.session.query(Team)
+    #     .filter(EventORM.staff_id == current_user.STAFFID)
+    #     .join(Team, Team.CODE == group_code)
+    #     .first()
+    # )
+    # こっちで良くない？
+    return db.session.get(Team, group_code)
 
 
 def token_required(f):
@@ -72,7 +74,9 @@ def token_required(f):
                 .filter(StaffLoggin.STAFFID == data["user_id"])
                 .first()
             )
-            extension: int = data["group_id"]
+            # extension: int = data["group_id"]
+            user_group_obj = get_user_group(data["group_id"])
+            extension: str = user_group_obj.NAME
             if auth_user is None:
                 return {
                     "message": "Invalid Authentication token!",
