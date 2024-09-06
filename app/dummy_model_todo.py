@@ -8,7 +8,7 @@ from flask_login import LoginManager
 from app import db
 
 if TYPE_CHECKING:
-    from app.models import StaffLoggin
+    from app.models import StaffLoggin, Team
 
 login_manager = LoginManager()
 # login_manager.init_app(app)
@@ -38,6 +38,10 @@ class TodoOrm(db.Model):
         }
 
 
+def get_user_group(group_code: int) -> Team:
+    return db.session.get(Team, group_code)
+
+
 class EventORM(db.Model):
     __tablename__ = "T_TIMELINE_EVENT"
 
@@ -63,10 +67,11 @@ class EventORM(db.Model):
         # re_start = re.sub(r"$", ".000Z", rp_start)
         # re_end = re.sub(r"$", ".000Z", rp_end)
         f = "%Y-%m-%dT%H:%M:%S.000Z"
+        group = get_user_group(self.group_id)
         return {
             "id": self.id,
             "staff_id": self.staff_id,
-            "group": self.group_id,
+            "group": group.NAME,
             "start": datetime.strftime(self.start_time, f),
             "end": datetime.strftime(self.end_time, f),
             # "start_time": self.start_time,

@@ -23,17 +23,6 @@ def get_user_group_id() -> Tuple[int, int]:
     )
 
 
-def get_user_group(group_code: int) -> Team:
-    # return (
-    #     db.session.query(Team)
-    #     .filter(EventORM.staff_id == current_user.STAFFID)
-    #     .join(Team, Team.CODE == group_code)
-    #     .first()
-    # )
-    # こっちで良くない？
-    return db.session.get(Team, group_code)
-
-
 def token_required(f):
 
     @wraps(f)
@@ -69,14 +58,8 @@ def token_required(f):
                 'PASSWORD' and 'ADMIN'"
                 """
             # group_idがない
-            auth_user: StaffLoggin = (
-                db.session.query(StaffLoggin)
-                .filter(StaffLoggin.STAFFID == data["user_id"])
-                .first()
-            )
-            # extension: int = data["group_id"]
-            user_group_obj = get_user_group(data["group_id"])
-            extension: str = user_group_obj.NAME
+            auth_user: StaffLoggin = db.session.get(StaffLoggin, data["user_id"])
+            extension: int = data["group"]
             if auth_user is None:
                 return {
                     "message": "Invalid Authentication token!",
@@ -96,7 +79,7 @@ def token_required(f):
             #     "error": str(e),
             # }
         except TypeError as e:
-            print(f"staff id: {type(auth_user.STAFFID)}")
+            print(f"Staff id: {type(auth_user.STAFFID)}")
             return {
                 "message": "Something went wrong",
                 "data": isinstance(auth_user, StaffLoggin),
@@ -112,8 +95,8 @@ def token_required(f):
 
 def issue_token(user_id: int, group_id: int) -> Dict[str, Any]:
     if current_user:
-        payload = {"user_id": user_id, "group_id": group_id}
-        # add token expiration time (5 seconds):
+        payload = {"user_id": user_id, "group": group_id}
+        # add token expiration time (1 hour):
         payload["exp"] = datetime.now() + timedelta(hours=1)
         try:
             # token should expire after 24 hrs

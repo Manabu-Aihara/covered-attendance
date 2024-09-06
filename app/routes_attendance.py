@@ -456,7 +456,7 @@ def indextime(STAFFID, intFlg):
     # print(f"{attendance_query_list}")
 
     workday_count: int = 0
-    work_time_sum: float
+    work_time_sum: float = 0.0
     for attendace_query in attendance_query_list:
         Shin = attendace_query[0]
         # 日付
@@ -513,6 +513,7 @@ def indextime(STAFFID, intFlg):
         )
         settime.calc_time()
 
+        """ 24/8/1 変更分 """
         contract_work_time: float
         if attendace_query.CONTRACT_CODE == 2:
             contract_work_time = attendace_query.PART_WORKTIME
@@ -559,18 +560,16 @@ def indextime(STAFFID, intFlg):
     for n in range(len(over_time_0)):
         sum_over_0 += over_time_0[n]
     o_h = sum_over_0 // (60 * 60)
-    """ 24/8/1 修正分 """
-    o_m = (sum_over_0 - o_h * 60 * 60) / (60 * 60)
-    over = o_h + o_m
+    o_m = (sum_over_0 - o_h * 60 * 60) // 60
+    over = o_h + o_m / 100
     over_10 = sum_over_0 / (60 * 60)
 
     sum_hol_0 = 0
     for n in range(len(syukkin_holiday_times_0)):
         sum_hol_0 += syukkin_holiday_times_0[n]
     h_h = sum_hol_0 // (60 * 60)
-    """ 24/8/1 修正分 """
-    h_m = (sum_hol_0 - h_h * 60 * 60) / (60 * 60)
-    holiday_work = h_h + h_m
+    h_m = (sum_hol_0 - h_h * 60 * 60) // 60
+    holiday_work = h_h + h_m / 100
     holiday_work_10 = sum_hol_0 / (60 * 60)
 
     # 配列に入った出勤時間(秒単位)を時間と分に変換

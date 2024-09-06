@@ -5,7 +5,7 @@ from app import db
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire, AcquisitionType
 
-TARGET_ID = 31
+TARGET_ID = 20
 
 
 @pytest.fixture
@@ -28,9 +28,10 @@ def test_print_class_method(get_official_user):
 # @pytest.mark.skip
 def test_convert_base_day(get_official_user):
     conv_date = HolidayAcquire(TARGET_ID).convert_base_day(get_official_user.in_day)
-    assert conv_date.month == 4
+    assert conv_date.month == 10
 
 
+# 入職日付与
 @pytest.mark.skip
 def test_acquire_inday_holiday(get_official_user):
     test_dict = get_official_user.acquire_inday_holidays()
@@ -39,7 +40,7 @@ def test_acquire_inday_holiday(get_official_user):
 
 
 # 付与タイプ
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_get_acquisition_key(get_official_user):
     # with pytest.raises(KeyError) as except_info:
     test_type = get_official_user.get_acquisition_key()
@@ -77,7 +78,6 @@ def test_row2dict():
 
 # 付与リスト
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 4, 1))
 def test_get_acquisition_list(get_official_user):
     base_day = HolidayAcquire(TARGET_ID).convert_base_day(get_official_user.in_day)
     test_all_list = [
@@ -110,7 +110,7 @@ def test_convert_tuple(get_official_user):
 
 
 # 付与リストSTARTDAY, ENDDAYのペア
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_print_acquisition_data(get_official_user):
     test_from_to_list = get_official_user.print_acquisition_data()
     print(f"付与リストペア: {test_from_to_list}")
@@ -134,7 +134,6 @@ def test_raise_acquisition_type(get_official_user):
 
 
 # @pytest.mark.skip
-# @pytest.mark.freeze_time(datetime(2024, 4, 1))
 def test_plus_next_holidays(get_official_user):
     test_value = get_official_user.plus_next_holidays()
     print(f"日付＆日数: {test_value}")

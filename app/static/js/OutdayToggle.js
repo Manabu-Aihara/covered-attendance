@@ -12,10 +12,10 @@ const toggleSwitch = (outdayFlag) => {
       console.log(outday[i].textContent);
       // true いない人
       if (outday[i].textContent > date_today.textContent || outday[i].textContent == 'None') {
-        console.log(`${i}: unvisible`);
+        // console.log(`${i}: unvisible`);
         userInfoTrs[i].style.display = "none";
       } else {
-        console.log(`${i}: visible`);
+        // console.log(`${i}: visible`);
         userInfoTrs[i].style.display = "table-row";
       }
     }
@@ -25,10 +25,10 @@ const toggleSwitch = (outdayFlag) => {
       console.log(outday[i].textContent);
       // false まだいる人
       if (outday[i].textContent > date_today.textContent || outday[i].textContent == 'None') {
-        console.log(`${i}: visible`);
+        // console.log(`${i}: visible`);
         userInfoTrs[i].style.display = "table-row";
       } else {
-        console.log(`${i}: unvisible`);
+        // console.log(`${i}: unvisible`);
         userInfoTrs[i].style.display = "none";
       }
     }
@@ -37,7 +37,7 @@ const toggleSwitch = (outdayFlag) => {
 
 let displayFlag = true;
 toggleButton.addEventListener('click', () => {
-  console.log('On click!');
+  // console.log('On click!');
   if (displayFlag == false) {
     toggleSwitch(displayFlag);
     switchOn.style.display = 'none';

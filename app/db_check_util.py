@@ -1,8 +1,18 @@
+from typing import Optional
+
 from app import db
-from app.models import User, D_JOB_HISTORY
+from app.models import User, D_JOB_HISTORY, RecordPaidHoliday, KinmuTaisei
+
+"""
+    User, D_JOB_HISTORY間の値の違いを指摘
+    @Param
+        target_id: int 目的のスタッフID
+    @Return
+        target_id: int | None 該当のスタッフID
+    """
 
 
-def check_different_value(target_id: int):
+def check_contract_value(target_id: int) -> Optional[int]:
     target_staff_info = (
         db.session.query(User.CONTRACT_CODE, User.JOBTYPE_CODE)
         .filter(User.STAFFID == target_id)
@@ -14,7 +24,7 @@ def check_different_value(target_id: int):
         .first()
     )
     if target_contract_info is None:
-        raise TypeError("スルーします")
+        raise TypeError("There is not in D_JOB_HISTORY")
     else:
         if (
             target_staff_info.CONTRACT_CODE != target_contract_info.CONTRACT_CODE
@@ -26,11 +36,14 @@ def check_different_value(target_id: int):
             return None
 
 
+""" 以下そのうち使えるかなデコレーター """
+
+
 def _check_error_handler(func):
     def wrapper(staff_id: int, *args, **kwargs):
         try:
             print(args)
-            value = check_different_value(staff_id)
+            value = check_contract_value(staff_id)
         except TypeError as e:
             print(e)
         # except ValueError as e:
@@ -55,10 +68,47 @@ def check_error_handler(func):
     return wrapper
 
 
+""" ここまで """
+
+"""
+    RecordPaidHoliday, D_JOB_HISTORY間の値の違いを指摘
+    以下check_contract_valueと変わらず
+    """
+
+
+def check_basetime_value(target_id: int) -> Optional[int]:
+    target_paid_holiday_basetime: float = (
+        db.session.query(RecordPaidHoliday.BASETIMES_PAIDHOLIDAY)
+        .filter(RecordPaidHoliday.STAFFID == target_id)
+        .first()
+    )
+    # あえてUserではなく、契約情報からにした
+    target_contract_user = db.session.get(D_JOB_HISTORY, target_id)
+    contract_worktime: float = (
+        db.session.query(KinmuTaisei.WORKTIME)
+        .filter(KinmuTaisei.CONTRACT_CODE == target_contract_user.CONTRACT_CODE)
+        .first()
+    )
+    contract_part_worktime: float = target_contract_user.PART_WORKTIME
+    if target_contract_user is None:
+        raise TypeError("There is not in D_JOB_HISTORY")
+    elif contract_part_worktime == 0.0:
+        if target_paid_holiday_basetime != contract_worktime:
+            return target_id
+        else:
+            return None
+    else:
+        if target_paid_holiday_basetime != contract_part_worktime:
+            return target_id
+        else:
+            return None
+
+
+# 時期に、関数をチョイスできるよう引数を増やす予定
 def compare_db_item(staff_id: int):
     try:
-        caution_id = check_different_value(staff_id)
+        caution_id = check_contract_value(staff_id)
     except TypeError as e:
-        print(e)
+        print(f"{e}: {staff_id}")
     else:
         return caution_id

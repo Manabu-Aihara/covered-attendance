@@ -10,13 +10,8 @@ from flask_login.utils import login_required
 from flask_cors import CORS, cross_origin
 
 from app import app, db
-from app.auth_middleware import (
-    token_required,
-    issue_token,
-    get_user_group_id,
-    get_user_group,
-)
-from app.dummy_model_todo import TodoOrm, EventORM
+from app.auth_middleware import token_required, issue_token, get_user_group_id
+from app.dummy_model_todo import TodoOrm, EventORM, get_user_group
 from app.models import RecordPaidHoliday
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
@@ -99,7 +94,7 @@ def print_user_inquiry(auth_user, extension):
 @token_required
 def get_all_event(auth_user, extension):
     event_dict_list = []
-    event_list: list = db.session.query(EventORM).all()
+    event_list = db.session.query(EventORM).all()
     for event_item in event_list:
         event_dict_list.append(event_item.to_dict())
 
@@ -121,6 +116,7 @@ def append_event_item(auth_user, extension):
     event_item = EventORM()
     event_item.staff_id = request.json["staff_id"]
     # extensionがrequest.json["group"]に被る？
+    print(f"{extension} {request.json['group']}")
     event_item.group_id = request.json["group"]
     event_item.start_time = convert_strToDate(request.json["start_time"])
     event_item.end_time = convert_strToDate(request.json["end_time"])

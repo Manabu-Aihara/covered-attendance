@@ -133,7 +133,7 @@ class Busho(db.Model):
     NAME = db.Column(db.String(50), index=True, nullable=True)
 
     """ 2023/12/18 リレーション機能追加 """
-    record_paid_holiday = db.relationship("RecordPaidHoliday")
+    # record_paid_holiday = db.relationship("RecordPaidHoliday")
 
     def __init__(self, CODE):
         self.CODE = CODE
@@ -356,12 +356,6 @@ class RecordPaidHoliday(db.Model):  # 年休関連
         nullable=False,
     )
     # リレーションが好ましいと思う
-    DEPARTMENT_CODE = db.Column(
-        db.Integer,
-        db.ForeignKey("M_DEPARTMENT.CODE"),
-        index=True,
-        nullable=True,
-    )  # Busho
     # sqlalchemy.exc.ArgumentError:
     # relationship '〇〇' expects a class or a mapper argument
     # (received: <class 'sqlalchemy.sql.schema.Table'>)
@@ -374,7 +368,7 @@ class RecordPaidHoliday(db.Model):  # 年休関連
     # LKANA = db.Column(db.String(50), index=True, nullable=True)  # User
     # FKANA = db.Column(db.String(50), index=True, nullable=True)  # User
     # 入社日
-    INDAY = db.Column(db.DateTime(), index=True, nullable=True)  # User
+    # INDAY = db.Column(db.DateTime(), index=True, nullable=True)  # User
 
     LAST_DATEGRANT = db.Column(
         db.DateTime(), index=True, nullable=True

@@ -225,7 +225,7 @@ def user_create_admin():
 
 """
     @Params:
-        query_name: str 実質返すクエリー
+        query_name: str 実質返すクエリーのカラム名
         table_code: int DBテーブルコード
         user_code: int User内コード
     @Return:
@@ -253,20 +253,20 @@ def get_user_role(query_name: str, table_code: int, user_code: int = 0) -> str:
 def get_role_context(db_obj) -> Dict[str, str]:
     disp_department = get_user_role(Busho.NAME, Busho.CODE, db_obj.DEPARTMENT_CODE)
     dips_team = get_user_role(Team.SHORTNAME, Team.CODE, db_obj.TEAM_CODE)
-    disp_contract = get_user_role(
-        KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, db_obj.CONTRACT_CODE
-    )
-    disp_jobtype = get_user_role(
-        Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE, db_obj.JOBTYPE_CODE
-    )
+    # disp_contract = get_user_role(
+    #     KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, db_obj.CONTRACT_CODE
+    # )
+    # disp_jobtype = get_user_role(
+    #     Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE, db_obj.JOBTYPE_CODE
+    # )
     disp_post = get_user_role(Post.NAME, Post.CODE, db_obj.POST_CODE)
 
     return {
         "staff_id": db_obj.STAFFID,
         "department": disp_department,
         "team": dips_team,
-        "contract": disp_contract,
-        "job_type": disp_jobtype,
+        # "contract": disp_contract,
+        # "job_type": disp_jobtype,
         "post": disp_post,
     }
 
@@ -278,34 +278,33 @@ def get_role_context(db_obj) -> Dict[str, str]:
 def edit_list_user():
     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
 
-    """
-        2024/07/23
-        修正分
-        """
+    """ 2024/7/23 修正分 """
     # print(f"Decorator: {args}")
-    # user_infos: List[Tuple[int, str, str, str, str, datetime]] = (
-    #     db.session.query(
-    #         User.STAFFID, User.LNAME, User.FNAME, User.LKANA, User.FKANA, User.INDAY
-    #     )
-    # outday_filter = []
-    # outday_flag: bool = False
-    # if outday_flag is False:
-    #     outday_filter.append(User.OUTDAY > datetime.today())
-    # elif outday_flag is True:
-    #     outday_filter.append(User.OUTDAY <= datetime.today())
-    user_infos: List[User] = db.session.query(User).all()
-    # .filter(*outday_filter).all()
+    # user_infos: List[User] = db.session.query(User).all()
+    user_infos = (
+        db.session.query(User, D_JOB_HISTORY.JOBTYPE_CODE, D_JOB_HISTORY.CONTRACT_CODE)
+        .outerjoin(D_JOB_HISTORY, D_JOB_HISTORY.STAFFID == User.STAFFID)
+        .all()
+    )
 
     user_complete_list = []
-    caution_id_list = []
+    """ 24/9/2 追加機能 """
+    caution_id_list: List[int] = []
     exception_message = "テーブル間で、契約形態及び職種が合致していません"
-    for user_info in user_infos:
+    for user_info, jobtype_code, contract_code in user_infos:
         # compare_db_item(user_info.STAFFID)
         user_necessary_dict = {
             "family_name": user_info.LNAME,
             "first_name": user_info.FNAME,
             "family_kana": user_info.LKANA,
             "first_kana": user_info.FKANA,
+            # 24/9/3 それに伴う変更
+            "job_type": get_user_role(
+                Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE, jobtype_code
+            ),
+            "contract": get_user_role(
+                KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, contract_code
+            ),
             "inday": user_info.INDAY,
             "outday": user_info.OUTDAY,
         }

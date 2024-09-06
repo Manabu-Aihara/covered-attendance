@@ -103,7 +103,7 @@ def subject():
 
 # 該当ID
 @pytest.fixture(name="panda_id")
-@pytest.mark.freeze_time(datetime(2024, 4, 1))
+@pytest.mark.freeze_time(datetime(2024, 10, 1, 7, 0, 0))
 def concerned_id_from_panda_indirect(app_context):
     # print(f"len: {len(concern_id_from_panda())}\n")
     return concern_id_from_panda()
@@ -111,31 +111,31 @@ def concerned_id_from_panda_indirect(app_context):
 
 # 勤務日数
 @pytest.fixture(name="panda_count")
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
 def count_workday_from_panda_indirect(app_context):
-    return [x for x in work_count_to_mock()[0]]
+    # return [x for x in work_count_to_mock()[0]]
     # 下記、例えば付与日一ヶ月前だと12/11倍で仮定する
-    # return [round(x * 12 / 11) for x in work_count_to_mock()[0]]
+    return [round(x * 12 / 11) for x in work_count_to_mock()[0]]
 
 
 # 勤務日数（半年未満メンバー）
 @pytest.fixture(name="panda_half_count")
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
 def count_half_workday_from_panda_indirect(app_context):
-    return [x for x in work_count_to_mock()[1]]
-    # return [round(x * 12 / 11) for x in work_count_to_mock()[1]]
+    # return [x for x in work_count_to_mock()[1]]
+    return [round(x * 12 / 11) for x in work_count_to_mock()[1]]
 
 
 # 付与時間
 @pytest.fixture(name="panda_plus")
-@pytest.mark.freeze_time(datetime(2024, 4, 1))
+@pytest.mark.freeze_time(datetime(2024, 10, 1, 7, 0, 0))
 def plus_holidays_indirect(app_context):
     return plus_holidays_to_mock()
 
 
 # ID、勤務日数、勤務（半年未満）
 @pytest.fixture
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
 def get_work_param(panda_id, panda_count, panda_half_count):
     # print(f"{panda_id}")
     # print(f"調整後{panda_count}")
@@ -145,16 +145,18 @@ def get_work_param(panda_id, panda_count, panda_half_count):
 
 # ID、付与時間
 @pytest.fixture
-@pytest.mark.freeze_time(datetime(2024, 4, 1))
+@pytest.mark.freeze_time(datetime(2024, 10, 1, 7, 0, 0))
 def get_acquire_param(panda_id, panda_plus):
     # print(f"{panda_id}")
     return {"ID": panda_id, "Holiday": panda_plus}
 
 
-# ここからテスト
+""" ここからテスト """
+
+
 # とりあえず、フィクスチャが動作するか（勤務日数）
-@pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+# @pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
 def test_print_fixture_count(get_work_param):
     print("expensive")
     print(f"{get_work_param.get('ID')}: {get_work_param.get('Work')}日")
@@ -165,7 +167,7 @@ def test_print_fixture_count(get_work_param):
 
 # とりあえず、フィクスチャが動作するか（付与時間）
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 4, 1))
+@pytest.mark.freeze_time(datetime(2024, 10, 1, 7, 0, 0))
 def test_print_fixture_plus(get_acquire_param):
     print("expensive")
     print(f"{get_acquire_param.get('ID')}: {get_acquire_param.get('Holiday')}")
@@ -178,7 +180,7 @@ date_now = datetime.now()
 
 # 勤務日数から、付与タイプをDMLで出力
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
 def test_merge_observer(app_context, subject, get_work_param, mocker):
     observer = ObserverCheckType()
     subject.attach(observer)
@@ -226,7 +228,7 @@ def test_merge_observer(app_context, subject, get_work_param, mocker):
 
 # 繰り越し日数をDMLで出力するダミー
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 9, 30))
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
 def test_carry_observer(app_context, subject, mocker):
     observer = ObserverCarry()
     subject.attach(observer)
@@ -259,7 +261,7 @@ def test_carry_observer(app_context, subject, mocker):
 
 # 年休付与のダミー
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 4, 1))
+@pytest.mark.freeze_time(datetime(2024, 10, 1, 7, 0, 0))
 def test_acquire_holidays(app_context, subject, get_acquire_param, mocker):
     observer = ObserverRegist()
     subject.attach(observer)

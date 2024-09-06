@@ -680,6 +680,7 @@ def jimu_summary_fulltime(startday):
             ##### 退職者表示設定
 
     # print(f"Date type: {type(User.INDAY)}")
+    """ 24/8/27 変更 """
     clerk_totlling_filters = []
     if jimu_usr.TEAM_CODE != 1:
         clerk_totlling_filters.append(User.TEAM_CODE == jimu_usr.TEAM_CODE)

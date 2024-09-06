@@ -576,7 +576,7 @@ def indextime(STAFFID, intFlg):
     # sum_0 = 0
     workday_count = 0
     """ 24/8/16 追加変数 """
-    work_time_sum: float
+    work_time_sum: float = 0.0
     for Shin in shinseis:
         # 日付
         # 曜日
