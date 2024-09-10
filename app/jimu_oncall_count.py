@@ -57,7 +57,7 @@ from app.models import (
 from app.common_func import GetPullDownList, ZeroCheck, GetData, GetDataS
 from app.attendance_query_class import AttendanceQuery
 from app.attendance_util import get_month_workday
-from app.db_check_util import compare_db_item
+from app.db_check_util import compare_db_item, check_contract_value
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -750,7 +750,7 @@ def jimu_users_list(STAFFID):
     caution_id_list = []
     exception_message = "テーブル間で、契約形態が合致していません"
     for user in all_user_list:
-        unknown_value = compare_db_item(user.STAFFID)
+        unknown_value = compare_db_item(user.STAFFID, check_contract_value)
         if isinstance(unknown_value, int):
             caution_id_list.append(unknown_value)
 
@@ -847,7 +847,7 @@ def jimu_nenkyu_detail(STAFFID):
     next_datagrant = rp_holiday.NEXT_DATEGRANT - timedelta(days=1)
 
     ##### 今回付与日数 #####
-    inday = rp_holiday.INDAY
+    inday = user.INDAY
 
     def nenkyu_days(a, h, s):
 

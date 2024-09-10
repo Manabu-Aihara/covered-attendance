@@ -1,11 +1,15 @@
 import pytest
 from datetime import datetime
 
+from sqlalchemy import and_, or_
+
 from app import db
+from app.models import RecordPaidHoliday, Shinsei
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire, AcquisitionType
+from app.holiday_detail import AttendaceNotice
 
-TARGET_ID = 20
+TARGET_ID = 176
 
 
 @pytest.fixture
@@ -77,7 +81,7 @@ def test_row2dict():
 
 
 # 付与リスト
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_get_acquisition_list(get_official_user):
     base_day = HolidayAcquire(TARGET_ID).convert_base_day(get_official_user.in_day)
     test_all_list = [
@@ -110,7 +114,7 @@ def test_convert_tuple(get_official_user):
 
 
 # 付与リストSTARTDAY, ENDDAYのペア
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_print_acquisition_data(get_official_user):
     test_from_to_list = get_official_user.print_acquisition_data()
     print(f"付与リストペア: {test_from_to_list}")
@@ -126,14 +130,14 @@ def test_raise_print_remains(get_official_user):
 
 # 日付＆付与日数
 # ACQUISITION_TYPEない例外
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_raise_acquisition_type(get_official_user):
     with pytest.raises(KeyError) as except_info:
         get_official_user.plus_next_holidays()
     print(except_info.value)
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_plus_next_holidays(get_official_user):
     test_value = get_official_user.plus_next_holidays()
     print(f"日付＆日数: {test_value}")
@@ -141,7 +145,6 @@ def test_plus_next_holidays(get_official_user):
 
 # DBからとりあえず申請合計時間（時間休のみ）カウントできるか
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 3, 31))
 def test_sum_notify_times(get_official_user):
     time_rest_sum = get_official_user.sum_notify_times(True)
     print(time_rest_sum)
@@ -162,7 +165,40 @@ def test_count_workday_half(get_official_user):
 
 
 # 入職月と基準月との差
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_diff_month(get_official_user):
     test_diff = get_official_user.get_diff_month()
     print(test_diff)
+
+
+# @pytest.mark.skip
+def test_make_filter(get_official_user):
+    base_day = HolidayAcquire(TARGET_ID).convert_base_day(get_official_user.in_day)
+    test_filters = []
+    test_filters.append(Shinsei.STAFFID == TARGET_ID)
+    test_filters.append(or_(Shinsei.NOTIFICATION != None, Shinsei.NOTIFICATION != ""))
+    test_filters.append(
+        Shinsei.WORKDAY >= get_official_user.get_acquisition_list(base_day)[-2]
+    )
+    test_id_attendance_all = (
+        # filter内andは当てにならん
+        db.session.query(Shinsei)
+        .filter(and_(*test_filters))
+        .all()
+    )
+    print(len(test_id_attendance_all))
+    # for test_id_attendance in test_id_attendance_all:
+    #     if test_id_attendance.NOTIFICATION == "3":
+    #         print(f"One day holiday: {test_id_attendance.WORKDAY}日")
+    print("End")
+
+
+@pytest.mark.skip
+def test_count_attend_notificatin(app_context):
+    attenntion_nofice_obj = AttendaceNotice(TARGET_ID)
+    rp_holiday = db.session.get(RecordPaidHoliday, TARGET_ID)
+    count = attenntion_nofice_obj.count_attend_notification()
+    print(
+        f"ID{TARGET_ID}: {rp_holiday.REMAIN_PAIDHOLIDAY} {rp_holiday.USED_PAIDHOLIDAY}"
+    )
+    print(f"使った日数: {count}")

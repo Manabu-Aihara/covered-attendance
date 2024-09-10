@@ -1,11 +1,13 @@
-from datetime import datetime
+import math
+from typing import List
 from dataclasses import dataclass
 
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 
-from app import app, db
+from app import db
 from app.models import User, Shinsei, RecordPaidHoliday
 from app.holiday_acquisition import HolidayAcquire
+from app.holiday_subject import error_handler
 
 
 @dataclass
@@ -30,34 +32,85 @@ class AttendaceNotice:
 
         return flag
 
-    def make_attendace_filter(self, notification_number: int = 3):
-        date_type_workday = datetime.strptime(Shinsei.WORKDAY, "%Y-%m-%d")
+    def make_attendace_filter(self, notification: str):
+        # InstrumentedAttribute!
+        # date_type_workday = datetime.strptime(Shinsei.WORKDAY, "%Y-%m-%d")
         attendance_filters = []
         attendance_filters.append(Shinsei.STAFFID == self.id)
-        attendance_filters.append(Shinsei.NOTIFICATION == notification_number)
+        attendance_filters.append(
+            or_(
+                Shinsei.NOTIFICATION == notification,
+                Shinsei.NOTIFICATION2 == notification,
+            )
+        )
+        # attendance_filters.append(Shinsei.NOTIFICATION2 == notification)
         if self.search_flesh_flag() is True:
-            attendance_filters.append(date_type_workday > User.INDAY)
+            attendance_filters.append(Shinsei.WORKDAY > User.INDAY)
         else:
             attendance_filters.append(
-                date_type_workday
+                Shinsei.WORKDAY
                 >= self.holiday_acquire_obj.get_acquisition_list(self.base_day)[-2]
             )
         attendance_filters.append(
-            date_type_workday
-            < self.holiday_aquire_obj.get_acquisition_list(self.base_day)[-1]
+            Shinsei.WORKDAY
+            < self.holiday_acquire_obj.get_acquisition_list(self.base_day)[-1]
         )
 
         return attendance_filters
 
-    def count_attend_notification(self):
-        filters = self.make_attendace_filter()
+    def count_attend_notification(self) -> float:
+        filters = self.make_attendace_filter("3")
         notification_all_day = db.session.query(Shinsei).filter(and_(*filters)).all()
-        filters_half = self.make_attendace_filter(4)
+        filters_half = self.make_attendace_filter("4")
         notification_half_day = (
             db.session.query(Shinsei).filter(and_(*filters_half)).all()
         )
 
-        return len(notification_all_day + notification_half_day / 2)
+        return len(notification_all_day) + len(notification_half_day) / 2
+
+    @error_handler
+    def acquire_holidays(self) -> int:
+        holiday_acquire_obj = HolidayAcquire(self.id)
+        dict_data = holiday_acquire_obj.plus_next_holidays()
+        dict_value = dict_data.values()
+        # dict_valuesのリスト化
+        acquisition_days: int = list(dict_value)[-1]
+        return acquisition_days
+
+    """
+    有休申請に対する、時間休の合計
+    @Param
+        notification: str 申請コード range(10, 16)
+    @Return
+        : float
+        """
+
+    def sum_notify_times(self, notification: str) -> float:
+        rp_holiday = db.session.get(RecordPaidHoliday, self.id)
+        # 年休対象項目ID（M_NOTIFICATION）
+        n1_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
+        filters = self.make_attendace_filter(notification.in_(n1_code_list))
+        notification_time_list = db.session.query(Shinsei).filter(and_(*filters)).all()
+        sum_time_rest: int = 0
+        for notification_time in notification_time_list:
+            sum_time_rest = (
+                len(
+                    notification_time.NOTIFICATION == "10"
+                    or notification_time.NOTIFICATION2 == "13"
+                )
+                + len(
+                    notification_time.NOTIFICATION == "11"
+                    or notification_time.NOTIFICATION2 == "14"
+                )
+                * 2
+                + len(
+                    notification_time.NOTIFICATION == "12"
+                    or notification_time.NOTIFICATION2 == "15"
+                )
+                * 3
+            )
+
+        return math.ceil(sum_time_rest / rp_holiday.BASETIMES_PAIDHLIDAY)
 
 
 """

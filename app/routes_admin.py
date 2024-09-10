@@ -59,7 +59,7 @@ from app.attendance_admin_classes import AttendanceAdminAnalysys
 from app.calender_classes import MakeCalender
 from app.calc_work_classes import DataForTable, CalcTimeClass
 from app.common_func import GetPullDownList, intCheck, blankCheck
-from app.db_check_util import compare_db_item
+from app.db_check_util import compare_db_item, check_contract_value
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -312,7 +312,7 @@ def edit_list_user():
         user_complete_list.append(user_necessary_info)
         # print(user_complete_list)
 
-        unknown_value = compare_db_item(user_info.STAFFID)
+        unknown_value = compare_db_item(user_info.STAFFID, check_contract_value)
         if isinstance(unknown_value, int):
             caution_id_list.append(unknown_value)
 

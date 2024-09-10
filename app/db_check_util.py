@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Callable
 
 from app import db
 from app.models import User, D_JOB_HISTORY, RecordPaidHoliday, KinmuTaisei
@@ -105,9 +105,9 @@ def check_basetime_value(target_id: int) -> Optional[int]:
 
 
 # 時期に、関数をチョイスできるよう引数を増やす予定
-def compare_db_item(staff_id: int):
+def compare_db_item(staff_id: int, func: Callable[..., int]) -> int:
     try:
-        caution_id = check_contract_value(staff_id)
+        caution_id = func(staff_id)
     except TypeError as e:
         print(f"{e}: {staff_id}")
     else:

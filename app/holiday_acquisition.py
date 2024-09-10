@@ -387,9 +387,7 @@ class HolidayAcquire:
         from_list, to_list = self.print_acquisition_data()
         filters = []
         filters.append(NotificationList.STAFFID == self.id)
-        filters.append(
-            NotificationList.NOTICE_DAYTIME.between(from_list[-2], to_list[-2])
-        )
+        filters.append(NotificationList.START_DAY.between(from_list[-2], to_list[-2]))
         if time_flag is True:
             filters.append(PaidHolidayLog.TIME_REST_FLAG == 1)
 
