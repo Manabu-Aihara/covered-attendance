@@ -36,6 +36,7 @@ from app.forms import (
     EditForm,
     AddDataUserForm,
     SelectMonthForm,
+    DisplayForm,
 )
 from app.models import (
     User,
@@ -306,7 +307,8 @@ def edit_list_user():
                 KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, contract_code
             ),
             "inday": user_info.INDAY,
-            "outday": user_info.OUTDAY,
+            # "outday": user_info.OUTDAY,
+            "display": user_info.DISPLAY,
         }
         user_necessary_info = dict(**user_necessary_dict, **get_role_context(user_info))
         user_complete_list.append(user_necessary_info)
@@ -348,6 +350,7 @@ def edit_data_user(STAFFID, intFlg):
     tm_attendance = TimeAttendance.query.get(STAFFID)
     cnt_for_tbl = CounterForTable.query.get(STAFFID)
     sys_info = SystemInfo.query.get(STAFFID)
+    display_form = DisplayForm()
 
     if form.validate_on_submit():
         if form.department.data == 0:
@@ -462,6 +465,9 @@ def edit_data_user(STAFFID, intFlg):
         u.HOUSE = HOUSE
         u.DISTANCE = DISTANCE
         u.REMARK = REMARK
+        """ 24/9/12 追加 """
+        print(f"Check: {display_form.display.data}")
+        u.DISPLAY = display_form.display.data
         db.session.commit()
 
         rp_holiday.DEPARTMENT_CODE = DEPARTMENT_CODE
@@ -560,6 +566,8 @@ def edit_data_user(STAFFID, intFlg):
             form.house.data = u.HOUSE
 
         form.distance.data = u.DISTANCE
+        """ 24/9/12 追加 """
+        display_form.display.data = u.DISPLAY
 
     if form.errors:
         flash(form.errors, "danger")
@@ -567,6 +575,7 @@ def edit_data_user(STAFFID, intFlg):
     return render_template(
         "admin/edit_data_user.html",
         form=form,
+        appearance=display_form,
         STAFFID=STAFFID,
         u=u,
         stf_login=stf_login,

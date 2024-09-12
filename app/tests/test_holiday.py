@@ -1,13 +1,9 @@
 import pytest
 from datetime import datetime
 
-from sqlalchemy import and_, or_
-
 from app import db
-from app.models import RecordPaidHoliday, Shinsei
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire, AcquisitionType
-from app.holiday_detail import AttendaceNotice
 
 TARGET_ID = 176
 
@@ -169,36 +165,3 @@ def test_count_workday_half(get_official_user):
 def test_diff_month(get_official_user):
     test_diff = get_official_user.get_diff_month()
     print(test_diff)
-
-
-# @pytest.mark.skip
-def test_make_filter(get_official_user):
-    base_day = HolidayAcquire(TARGET_ID).convert_base_day(get_official_user.in_day)
-    test_filters = []
-    test_filters.append(Shinsei.STAFFID == TARGET_ID)
-    test_filters.append(or_(Shinsei.NOTIFICATION != None, Shinsei.NOTIFICATION != ""))
-    test_filters.append(
-        Shinsei.WORKDAY >= get_official_user.get_acquisition_list(base_day)[-2]
-    )
-    test_id_attendance_all = (
-        # filter内andは当てにならん
-        db.session.query(Shinsei)
-        .filter(and_(*test_filters))
-        .all()
-    )
-    print(len(test_id_attendance_all))
-    # for test_id_attendance in test_id_attendance_all:
-    #     if test_id_attendance.NOTIFICATION == "3":
-    #         print(f"One day holiday: {test_id_attendance.WORKDAY}日")
-    print("End")
-
-
-@pytest.mark.skip
-def test_count_attend_notificatin(app_context):
-    attenntion_nofice_obj = AttendaceNotice(TARGET_ID)
-    rp_holiday = db.session.get(RecordPaidHoliday, TARGET_ID)
-    count = attenntion_nofice_obj.count_attend_notification()
-    print(
-        f"ID{TARGET_ID}: {rp_holiday.REMAIN_PAIDHOLIDAY} {rp_holiday.USED_PAIDHOLIDAY}"
-    )
-    print(f"使った日数: {count}")

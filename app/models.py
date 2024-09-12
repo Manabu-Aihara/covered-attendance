@@ -39,6 +39,8 @@ class User(db.Model):
     HOUSE = db.Column(db.Integer, index=True, nullable=True)
     DISTANCE = db.Column(db.Float, index=True, nullable=True)
     REMARK = db.Column(db.String(100), index=True, nullable=True)
+    DISPLAY = db.Column(db.Boolean(), index=True, nullable=False)
+
     M_LOGGININFOs = db.relationship(
         "StaffLoggin", backref="M_STAFFINFO", lazy="dynamic"
     )

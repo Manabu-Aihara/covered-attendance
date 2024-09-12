@@ -148,26 +148,12 @@ def indextime(STAFFID, intFlg):
         bk = ""
 
     ##### M_NOTIFICATIONとindexの紐づけ #####
-    td1 = Todokede.query.get(1)
-    td2 = Todokede.query.get(2)
-    td3 = Todokede.query.get(3)  # 年休（全日）はNotification2にはない
-    td4 = Todokede.query.get(4)
-    td5 = Todokede.query.get(5)  # 出張（全日）はNotification2にはない
-    td6 = Todokede.query.get(6)
-    td7 = Todokede.query.get(7)  # リフレッシュ休暇はNotification2にはない
-    td8 = Todokede.query.get(8)  # 欠勤はNotification2にはない
-    td9 = Todokede.query.get(9)
-    td10 = Todokede.query.get(10)
-    td11 = Todokede.query.get(11)
-    td12 = Todokede.query.get(12)
-    td13 = Todokede.query.get(13)
-    td14 = Todokede.query.get(14)
-    td15 = Todokede.query.get(15)
-    td16 = Todokede.query.get(16)
-    td17 = Todokede.query.get(17)
-    td18 = Todokede.query.get(18)
-    td19 = Todokede.query.get(19)
-    td20 = Todokede.query.get(20)
+    notification_items = [db.session.get(Todokede, i) for i in range(1, 21)]
+    # notification_items[15] = notification_items[9]
+    exclude_list = [3, 5, 7, 8, 17, 18, 19, 20]
+    notification_pm_list = [
+        n for i, n in enumerate(notification_items, 1) if i not in exclude_list
+    ]
 
     ##### 月選択の有無 #####
     # dsp_page = ""
@@ -654,7 +640,7 @@ def indextime(STAFFID, intFlg):
         """ 24/8/16 追加(勤務時間合計、残業考慮なしver) """
         if (
             AttendanceDada[Shin.WORKDAY.day][7] != "00:00"
-            and AttendanceDada[Shin.WORKDAY.day][8] is not None
+            and AttendanceDada[Shin.WORKDAY.day][8] != "00:00"
         ):
             AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
             # if AttendanceDada[Shin.WORKDAY.day][14] != 0:
@@ -705,8 +691,10 @@ def indextime(STAFFID, intFlg):
         AttendanceDada[Shin.WORKDAY.day][13] += syukkin_times[n]
 
     return render_template(
-        "attendance/index.html",
+        "attendance/index_diff.html",
         title="ホーム",
+        notifi_lst=notification_items,
+        notifi_pm_lst=notification_pm_list,
         cal=cal,
         shinseis=shinseis,
         y=y,
@@ -726,29 +714,9 @@ def indextime(STAFFID, intFlg):
         ptn=ptn,
         specification=specification,
         wk=wk,
-        td1=td1,
-        td2=td2,
-        td3=td3,
-        td4=td4,
-        td5=td5,
-        td6=td6,
-        td7=td7,
-        td8=td8,
-        td9=td9,
-        td10=td10,
-        td11=td11,
-        td12=td12,
-        td13=td13,
-        td14=td14,
-        td15=td15,
-        td16=td16,
         workday_data=workday_data,
         cnt_attemdance=cnt_attemdance,
         reload_y=reload_y,
-        td17=td17,
-        td18=td18,
-        td19=td19,
-        td20=td20,
         stf_login=stf_login,
         length_oncall=length_oncall,
         team=team,

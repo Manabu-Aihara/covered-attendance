@@ -534,7 +534,7 @@ def indextime(STAFFID, intFlg):
         # w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) / (60 * 60)
         if (
             AttendanceDada[Shin.WORKDAY.day][7] != "00:00"
-            and AttendanceDada[Shin.WORKDAY.day][8] is not None
+            and AttendanceDada[Shin.WORKDAY.day][8] != "00:00"
         ):
             AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
             # if AttendanceDada[Shin.WORKDAY.day][14] != 0:

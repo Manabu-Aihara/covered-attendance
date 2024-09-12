@@ -32,15 +32,15 @@ class AttendaceNotice:
 
         return flag
 
-    def make_attendace_filter(self, notification: str):
+    def make_attendace_filter(self, *notification: str):
         # InstrumentedAttribute!
         # date_type_workday = datetime.strptime(Shinsei.WORKDAY, "%Y-%m-%d")
         attendance_filters = []
         attendance_filters.append(Shinsei.STAFFID == self.id)
         attendance_filters.append(
             or_(
-                Shinsei.NOTIFICATION == notification,
-                Shinsei.NOTIFICATION2 == notification,
+                Shinsei.NOTIFICATION.in_(notification),
+                Shinsei.NOTIFICATION2.in_(notification),
             )
         )
         # attendance_filters.append(Shinsei.NOTIFICATION2 == notification)
@@ -85,32 +85,19 @@ class AttendaceNotice:
         : float
         """
 
-    def sum_notify_times(self, notification: str) -> float:
+    def sum_attend_time_rest(self) -> float:
         rp_holiday = db.session.get(RecordPaidHoliday, self.id)
         # 年休対象項目ID（M_NOTIFICATION）
-        n1_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
-        filters = self.make_attendace_filter(notification.in_(n1_code_list))
-        notification_time_list = db.session.query(Shinsei).filter(and_(*filters)).all()
-        sum_time_rest: int = 0
-        for notification_time in notification_time_list:
-            sum_time_rest = (
-                len(
-                    notification_time.NOTIFICATION == "10"
-                    or notification_time.NOTIFICATION2 == "13"
-                )
-                + len(
-                    notification_time.NOTIFICATION == "11"
-                    or notification_time.NOTIFICATION2 == "14"
-                )
-                * 2
-                + len(
-                    notification_time.NOTIFICATION == "12"
-                    or notification_time.NOTIFICATION2 == "15"
-                )
-                * 3
-            )
+        n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
+        print(f"Not test code: {n_code_list[0]}")
+        filter_1 = self.make_attendace_filter(n_code_list[0])
+        # filter_2 = self.make_attendace_filter(*n_code_list[1, 4])
+        # filter_3 = self.make_attendace_filter(*n_code_list[2, 5])
+        notification_time = db.session.query(Shinsei).filter(and_(*filter_1)).all()
+        # sum_time_rest: int = 0
 
-        return math.ceil(sum_time_rest / rp_holiday.BASETIMES_PAIDHLIDAY)
+        return len(notification_time)
+        # return math.ceil(sum_time_rest / rp_holiday.BASETIMES_PAIDHLIDAY)
 
 
 """

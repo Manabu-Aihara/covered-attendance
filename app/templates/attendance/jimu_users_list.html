@@ -8,11 +8,11 @@
 </div>
 
 <br><br><br>
-<div class="outday-area">
+<!-- <div class="outday-area">
   <button id="outday-switch">退職者</button>
   <p id="shadow-today">{{ today }}</p>
   <p id="outday-on">退職された方 表示中</p>
-</div>
+</div> -->
 <div id="adm-tbl" class="col-10 center-block">
   <div class="sort-table">
     <br><br><br>
@@ -32,7 +32,7 @@
       <tbody>
         {% if jimu_usr.TEAM_CODE != 1 and jimu_usr.STAFFID != 194 %}
         {{ generate_jimu_row(team_u_lst) }}
-        <p>出口1</p>
+        <!-- <p>出口1</p> -->
         {% endif %}
 
         {% if jimu_usr.TEAM_CODE == 1 and jimu_usr.CONTRACT_CODE != 2 and jimu_usr.STAFFID != 10000 %}
@@ -41,12 +41,12 @@
           <p class="caution-message">{{ exception }}</p>
         </div>
         {{ generate_jimu_row(all_u) }}
-        <p>出口2</p>
+        <!-- <p>出口2</p> -->
         {% endif %}
 
         {% if jimu_usr.STAFFID == 194 %}
         {{ generate_jimu_row(ref_lst) }}
-        <p>出口3</p>
+        <!-- <p>出口3</p> -->
         {% endif %}
       </tbody>
     </table>

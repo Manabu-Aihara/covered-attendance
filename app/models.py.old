@@ -39,6 +39,7 @@ class User(db.Model):
     HOUSE = db.Column(db.Integer, index=True, nullable=True)
     DISTANCE = db.Column(db.Float, index=True, nullable=True)
     REMARK = db.Column(db.String(100), index=True, nullable=True)
+    DISPLAY = db.Column(db.Boolean(), index=True, nullable=False)
     M_LOGGININFOs = db.relationship(
         "StaffLoggin", backref="M_STAFFINFO", lazy="dynamic"
     )
@@ -57,7 +58,7 @@ class User(db.Model):
     M_SYSTEMINFOs = db.relationship("SystemInfo", backref="M_STAFFINFO", lazy="dynamic")
 
     """ 2024/8/9 リレーション機能追加 """
-    contract = db.relationship("KinmuTaisei")
+    # contract = db.relationship("KinmuTaisei")
 
     def __init__(self, STAFFID):
         self.STAFFID = STAFFID
@@ -123,14 +124,14 @@ class Busho(db.Model):
 
 class KinmuTaisei(db.Model):
     __tablename__ = "M_CONTRACT"
-    # CONTRACT_CODE = db.Column(db.Integer, primary_key=True, index=True, nullable=False)
-    CONTRACT_CODE = db.Column(
-        db.Integer,
-        db.ForeignKey("M_STAFFINFO.CONTRACT_CODE"),
-        primary_key=True,
-        index=True,
-        nullable=False,
-    )
+    CONTRACT_CODE = db.Column(db.Integer, primary_key=True, index=True, nullable=False)
+    # CONTRACT_CODE = db.Column(
+    #     db.Integer,
+    #     db.ForeignKey("M_STAFFINFO.CONTRACT_CODE"),
+    #     primary_key=True,
+    #     index=True,
+    #     nullable=False,
+    # )
     NAME = db.Column(db.String(50), index=True, nullable=True)
     SHORTNAME = db.Column(db.String(50), index=True, nullable=False)
     WORKTIME = db.Column(db.Float, nullable=True)

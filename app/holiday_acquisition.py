@@ -242,7 +242,7 @@ class HolidayAcquire:
         )
         # 条件2番目に引っかからなかった場合
         if notify_datetimes is None:
-            # 諸事上により、例外やめる
+            # 諸事情により、例外やめる
             # raise TypeError("年休に関わりのない項目です。")
             return "年休に関わりのない項目です。"
 
