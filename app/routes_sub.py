@@ -11,8 +11,8 @@ from flask_cors import CORS, cross_origin
 
 from app import app, db
 from app.auth_middleware import token_required, issue_token, get_user_group_id
-from app.dummy_model_todo import TodoOrm, EventORM, get_user_group
-from app.models import RecordPaidHoliday
+from app.dummy_model_todo import TodoOrm, EventORM
+from app.models import RecordPaidHoliday, Team
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
 
@@ -76,18 +76,23 @@ def refresh_token(auth_user, extension):
     return new_token["data"]
 
 
-@app.route("/group-name", methods=["GET", "POST"])
-@token_required
-def get_team_name(auth_user, extension) -> str:
-    belong_team = get_user_group(extension)
-    return belong_team.SHORTNAME
+# @app.route("/group-name", methods=["GET", "POST"])
+# @token_required
+# def get_team_name(auth_user, extension) -> str:
+#     belong_team = get_user_group(extension)
+#     return belong_team.SHORTNAME
 
 
 @app.route("/timetable/inquiry", methods=["GET", "POST"])
 # @login_required
 @token_required
 def print_user_inquiry(auth_user, extension):
-    return {"staff_id": str(auth_user.STAFFID), "group_id": str(extension)}
+    group = db.session.get(Team, extension)
+    return {
+        "staff_id": str(auth_user.STAFFID),
+        "group_id": extension,
+        "group_name": group.SHORTNAME,
+    }
 
 
 @app.route("/event/all", methods=["GET"])
@@ -96,7 +101,11 @@ def get_all_event(auth_user, extension):
     event_dict_list = []
     event_list = db.session.query(EventORM).all()
     for event_item in event_list:
-        event_dict_list.append(event_item.to_dict())
+        # なぜこっちでインスタンスができない!?
+        # group = Team(event_item.group_id)
+        group = db.session.get(Team, event_item.group_id)
+        # print(f"Team name: {group.NAME}")
+        event_dict_list.append(event_item.to_dict(group.SHORTNAME))
 
     return event_dict_list
 

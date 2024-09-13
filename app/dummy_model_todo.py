@@ -7,8 +7,16 @@ from flask_login import LoginManager
 
 from app import db
 
-if TYPE_CHECKING:
-    from app.models import StaffLoggin, Team
+# ImportError: cannot import name 'Team' from partially initialized module
+# 'app.models' (most likely due to a circular import)
+# (/home/nabu_dvl/wade2area/covered_kintai/app/models.py)
+# from app.models import Team
+
+# from app.auth_middleware import get_user_group
+
+# NameError: name 'Team' is not defined
+# if TYPE_CHECKING:
+#     from app.models import StaffLoggin
 
 login_manager = LoginManager()
 # login_manager.init_app(app)
@@ -38,10 +46,6 @@ class TodoOrm(db.Model):
         }
 
 
-def get_user_group(group_code: int) -> Team:
-    return db.session.get(Team, group_code)
-
-
 class EventORM(db.Model):
     __tablename__ = "T_TIMELINE_EVENT"
 
@@ -56,22 +60,24 @@ class EventORM(db.Model):
     summary = db.Column(db.String(50), nullable=True)
     progress = db.Column(db.String(25), index=True, nullable=True)
 
-    # def __init__(self, id):
-    #     self.id = id
+    # def __init__(self, team: Team):
+    #     self.team = team
 
     # SQLAlchemyでクラスオブジェクトを辞書型(dictionary)に変換する方法
     # https://qiita.com/hayashi-ay/items/4dc431003e7866d2aff8
-    def to_dict(self):
+    def to_dict(self, group_name: str):
         # rp_start = str(self.start_time).replace(" ", "T")
         # rp_end = str(self.end_time).replace(" ", "T")
         # re_start = re.sub(r"$", ".000Z", rp_start)
         # re_end = re.sub(r"$", ".000Z", rp_end)
         f = "%Y-%m-%dT%H:%M:%S.000Z"
-        group = get_user_group(self.group_id)
+        # group = get_user_group(self.staff_id)
+        # group = Team(self.group_id)
         return {
             "id": self.id,
             "staff_id": self.staff_id,
-            "group": group.NAME,
+            # "group": self.group_id,
+            "group": group_name,
             "start": datetime.strftime(self.start_time, f),
             "end": datetime.strftime(self.end_time, f),
             # "start_time": self.start_time,

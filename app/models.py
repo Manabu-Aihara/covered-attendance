@@ -279,7 +279,7 @@ class Team(db.Model):
     """ 2024/3/8 リレーション機能追加 """
     # todo = db.relationship("TodoOrm")
     """ 2024/3/14 リレーション機能追加 """
-    timeline_event = db.relationship("EventORM")
+    timeline_event = db.relationship("EventORM", backref="team")
 
     def __init__(self, CODE):
         self.CODE = CODE
