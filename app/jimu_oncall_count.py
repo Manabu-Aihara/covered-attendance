@@ -737,8 +737,9 @@ def jimu_users_list(STAFFID):
     base_user_list = (
         db.session.query(
             User.STAFFID, User.LNAME, User.FNAME, User.OUTDAY, KinmuTaisei.NAME
-        ).join(KinmuTaisei, User.CONTRACT_CODE == KinmuTaisei.CONTRACT_CODE)
-        # .filter(User.OUTDAY == None)
+        )
+        .join(KinmuTaisei, User.CONTRACT_CODE == KinmuTaisei.CONTRACT_CODE)
+        .filter(or_(User.OUTDAY == None, User.OUTDAY > datetime.today()))
         # .all()
     )
 

@@ -20,7 +20,7 @@ from flask.helpers import url_for
 from flask_login.utils import login_required
 from flask_login import current_user, login_user, logout_user
 from flask import abort
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from werkzeug.urls import url_parse
 from werkzeug.security import generate_password_hash
 
@@ -285,6 +285,7 @@ def edit_list_user():
     user_infos = (
         db.session.query(User, D_JOB_HISTORY.JOBTYPE_CODE, D_JOB_HISTORY.CONTRACT_CODE)
         .outerjoin(D_JOB_HISTORY, D_JOB_HISTORY.STAFFID == User.STAFFID)
+        .filter(or_(User.OUTDAY == None, User.OUTDAY > datetime.today()))
         .all()
     )
 
@@ -307,17 +308,17 @@ def edit_list_user():
                 KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, contract_code
             ),
             "inday": user_info.INDAY,
-            # "outday": user_info.OUTDAY,
-            "display": user_info.DISPLAY,
+            "outday": user_info.OUTDAY,
+            # "display": user_info.DISPLAY,
         }
         user_necessary_info = dict(**user_necessary_dict, **get_role_context(user_info))
         user_complete_list.append(user_necessary_info)
-        # print(user_complete_list)
 
         unknown_value = compare_db_item(user_info.STAFFID, check_contract_value)
         if isinstance(unknown_value, int):
             caution_id_list.append(unknown_value)
 
+    # print(user_complete_list)
     today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
     """ ここまで """

@@ -1,3 +1,5 @@
+// const paginationArea = document.querySelector('.dataTables_paginate');
+// console.log(paginationArea);
 // 要素を取得
 const toTopElm = document.getElementById("page-top-wrap");
 // 初期状態で要素を透明にする

@@ -65,7 +65,8 @@ class EventORM(db.Model):
 
     # SQLAlchemyでクラスオブジェクトを辞書型(dictionary)に変換する方法
     # https://qiita.com/hayashi-ay/items/4dc431003e7866d2aff8
-    def to_dict(self, group_name: str):
+    def to_dict(self):
+        # def to_dict(self, group_name: str):
         # rp_start = str(self.start_time).replace(" ", "T")
         # rp_end = str(self.end_time).replace(" ", "T")
         # re_start = re.sub(r"$", ".000Z", rp_start)
@@ -76,8 +77,8 @@ class EventORM(db.Model):
         return {
             "id": self.id,
             "staff_id": self.staff_id,
-            # "group": self.group_id,
-            "group": group_name,
+            "group": self.group_id,
+            # "group": group_name,
             "start": datetime.strftime(self.start_time, f),
             "end": datetime.strftime(self.end_time, f),
             # "start_time": self.start_time,
