@@ -254,20 +254,20 @@ def get_user_role(query_name: str, table_code: int, user_code: int = 0) -> str:
 def get_role_context(db_obj) -> Dict[str, str]:
     disp_department = get_user_role(Busho.NAME, Busho.CODE, db_obj.DEPARTMENT_CODE)
     dips_team = get_user_role(Team.SHORTNAME, Team.CODE, db_obj.TEAM_CODE)
-    # disp_contract = get_user_role(
-    #     KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, db_obj.CONTRACT_CODE
-    # )
-    # disp_jobtype = get_user_role(
-    #     Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE, db_obj.JOBTYPE_CODE
-    # )
+    disp_contract = get_user_role(
+        KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, db_obj.CONTRACT_CODE
+    )
+    disp_jobtype = get_user_role(
+        Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE, db_obj.JOBTYPE_CODE
+    )
     disp_post = get_user_role(Post.NAME, Post.CODE, db_obj.POST_CODE)
 
     return {
         "staff_id": db_obj.STAFFID,
         "department": disp_department,
         "team": dips_team,
-        # "contract": disp_contract,
-        # "job_type": disp_jobtype,
+        "contract": disp_contract,
+        "job_type": disp_jobtype,
         "post": disp_post,
     }
 
@@ -281,19 +281,24 @@ def edit_list_user():
 
     """ 2024/7/23 修正分 """
     # print(f"Decorator: {args}")
-    # user_infos: List[User] = db.session.query(User).all()
     user_infos = (
-        db.session.query(User, D_JOB_HISTORY.JOBTYPE_CODE, D_JOB_HISTORY.CONTRACT_CODE)
-        .outerjoin(D_JOB_HISTORY, D_JOB_HISTORY.STAFFID == User.STAFFID)
-        .filter(or_(User.OUTDAY == None, User.OUTDAY > datetime.today()))
+        db.session.query(User)
+        # .filter(or_(User.OUTDAY == None, User.OUTDAY > datetime.today()))
         .all()
     )
+    # user_infos = (
+    #     db.session.query(User, D_JOB_HISTORY.JOBTYPE_CODE, D_JOB_HISTORY.CONTRACT_CODE)
+    #     .outerjoin(D_JOB_HISTORY, D_JOB_HISTORY.STAFFID == User.STAFFID)
+    #     .filter(or_(User.OUTDAY == None, User.OUTDAY > datetime.today()))
+    #     .all()
+    # )
 
     user_complete_list = []
     """ 24/9/2 追加機能 """
     caution_id_list: List[int] = []
     exception_message = "テーブル間で、契約形態及び職種が合致していません"
-    for user_info, jobtype_code, contract_code in user_infos:
+    # for user_info, jobtype_code, contract_code in user_infos:
+    for user_info in user_infos:
         # compare_db_item(user_info.STAFFID)
         user_necessary_dict = {
             "family_name": user_info.LNAME,
@@ -301,15 +306,15 @@ def edit_list_user():
             "family_kana": user_info.LKANA,
             "first_kana": user_info.FKANA,
             # 24/9/3 それに伴う変更
-            "job_type": get_user_role(
-                Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE, jobtype_code
-            ),
-            "contract": get_user_role(
-                KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, contract_code
-            ),
+            # "job_type": get_user_role(
+            #     Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE, jobtype_code
+            # ),
+            # "contract": get_user_role(
+            #     KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, contract_code
+            # ),
             "inday": user_info.INDAY,
             "outday": user_info.OUTDAY,
-            # "display": user_info.DISPLAY,
+            "display": user_info.DISPLAY,
         }
         user_necessary_info = dict(**user_necessary_dict, **get_role_context(user_info))
         user_complete_list.append(user_necessary_info)
@@ -574,7 +579,7 @@ def edit_data_user(STAFFID, intFlg):
         flash(form.errors, "danger")
 
     return render_template(
-        "admin/edit_data_user.html",
+        "admin/edit_data_user_diff.html",
         form=form,
         appearance=display_form,
         STAFFID=STAFFID,

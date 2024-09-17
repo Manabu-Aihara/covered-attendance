@@ -17,13 +17,13 @@ from app.dummy_model_todo import EventORM
 def get_user_group_id() -> Tuple[int, int]:
     print(f"Result current user: {current_user}")
     return (
-        db.session.query(User.STAFFID, Team.CODE)
+        db.session.query(User.STAFFID, User.DEPARTMENT_CODE)
         .filter(User.STAFFID == current_user.STAFFID)
-        .join(Team, Team.CODE == User.TEAM_CODE)
         .first()
     )
 
 
+# 特にいらない
 def get_user_group(group_code: int) -> Team:
     return (
         db.session.query(Team)
@@ -73,11 +73,12 @@ def token_required(f):
                 .filter(StaffLoggin.STAFFID == data["user_id"])
                 .first()
             )
+            print(f"Auth user: {auth_user}")
             extension: int = data["group_id"]
             if auth_user is None:
                 return {
                     "message": "Invalid Authentication token!",
-                    "data": None,
+                    "data": auth_user.STAFFID,
                     "error": "Unauthorized",
                 }, 401
             # これ入れると object is not subscriptable!?

@@ -4,9 +4,9 @@
 <h2>スタッフ情報編集</h2>
 <br>
 <div class="text-center">
-    <a href="{{url_for('edit_list_user')}}" class="btn btn-success">編集リスト画面に戻る</a>　　　 
-    <a href="{{url_for('home_admin')}}" class="btn btn-success">管理者ホームに戻る</a>　　　
-    <a href="{{ url_for('users_nenkyu') }}" class="btn btn-success">ユーザ年休検索画面に戻る</a>
+  <a href="{{url_for('edit_list_user')}}" class="btn btn-success">編集リスト画面に戻る</a>　　　
+  <a href="{{url_for('home_admin')}}" class="btn btn-success">管理者ホームに戻る</a>　　　
+  <a href="{{ url_for('users_nenkyu') }}" class="btn btn-success">ユーザ年休検索画面に戻る</a>
 </div>
 <hr />
 <div class="disp">
@@ -27,15 +27,15 @@
         <br>
         {{ wtf.form_field(form.fname) }}
         <br>
-        {{ wtf.form_field(form.department) }}                
+        {{ wtf.form_field(form.department) }}
         <br>
         {{ wtf.form_field(form.team) }}
         <br>
-        {{ wtf.form_field(form.contract) }}               
+        {{ wtf.form_field(form.contract) }}
         <br>
-        {{ wtf.form_field(form.jobtype) }}               
+        {{ wtf.form_field(form.jobtype) }}
         <br>
-        {{ wtf.form_field(form.post_code) }}              
+        {{ wtf.form_field(form.post_code) }}
         <br>
         {{ wtf.form_field(form.lkana) }}
         <br>
@@ -58,26 +58,26 @@
         {{ wtf.form_field(form.outday) }}
         <br>
         {{ wtf.form_field(form.standday) }}
-        <br>        
-        {{ wtf.form_field(form.worker_time) }}        
+        <br>
+        {{ wtf.form_field(form.worker_time) }}
         <br>
         {{ wtf.form_field(form.basetime_paidholiday) }}
         <br>
         {{ wtf.form_field(form.social) }}
         <br>
-        {{ wtf.form_field(form.employee) }}        
+        {{ wtf.form_field(form.employee) }}
         <br>
-        {{ wtf.form_field(form.experi) }}        
+        {{ wtf.form_field(form.experi) }}
         <br>
-        {{ wtf.form_field(form.tablet) }}        
+        {{ wtf.form_field(form.tablet) }}
         <br>
-        {{ wtf.form_field(form.single) }}        
+        {{ wtf.form_field(form.single) }}
         <br>
-        {{ wtf.form_field(form.support) }}        
+        {{ wtf.form_field(form.support) }}
         <br>
-        {{ wtf.form_field(form.house) }}        
+        {{ wtf.form_field(form.house) }}
         <br>
-        {{ wtf.form_field(form.distance) }}        
+        {{ wtf.form_field(form.distance) }}
         <br>
         {{ wtf.form_field(form.m_a) }}
         <br>
@@ -91,10 +91,12 @@
         <br>
         {{ wtf.form_field(form.z_p) }}
         <br>
-        {{ wtf.form_field(form.remark) }}        
+        {{ wtf.form_field(form.remark) }}
         <br>
+
+        <div>{{ wtf.form_field(appearance.display) }}</div>
         <button type="submit" class="btn btn-warning">　　保　　存　　</button>
-      </form>   
+      </form>
       <br><br><br><br><br>
     </div>
   </div>

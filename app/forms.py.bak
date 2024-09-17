@@ -94,8 +94,6 @@ class ResetPasswordForm(FlaskForm):
 
 class DisplayForm(FlaskForm):
     sub = SubmitField("表　示")
-    """ 24/9/12 追加 """
-    display = BooleanField("非表示")
 
 
 class TimeForm(FlaskForm):

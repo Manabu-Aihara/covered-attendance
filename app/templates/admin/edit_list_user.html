@@ -13,10 +13,10 @@
   <p id="shadow-today">{{ today }}</p>
   <p id="outday-on">退職された方 表示中</p>
 </div> -->
-<!-- <select id="display-toggle">
-  <option value="">表示</option>
-  <option value="">非表示</option>
-</select> -->
+<select id="display-toggle">
+  <option value="False">全表示</option>
+  <option value="True">非表示を除く</option>
+</select>
 <!-- <div class="back-caution">
     <p class="the-caution">CAUTION!</p>ID{{ cause_users }}
     <p class="caution-message">{{ exception }}</p>
@@ -39,7 +39,8 @@
           <th>職種<br>コード</th>
           <th>役職<br>コード</th>
           <th>入職日</th>
-          <th></th>
+          <th>outday</th>
+          <th>非表示</th>
         </tr>
       </thead>
       <tbody class="users-info">
@@ -64,8 +65,8 @@
           <td>{{ info["post"] }}</td>
 
           <td>{{ info["inday"] }}</td>
-          <!-- <td class="shadow-item">{{ info["display"] }}</td> -->
-          <td class="shadow-item">{{ info["outday"] }}</td>
+          <td class="shadow-column1">{{ info["outday"] }}</td>
+          <td class="shadow-column2">{{ info["display"] }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -75,4 +76,5 @@
 
 <br><br><br><br>
 <script src="/static/js/OutdayToggle.js"></script>
+<script src="/static/js/CheckUserDisplay.js"></script>
 {% endblock %}

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask_wtf import FlaskForm
 from wtforms import (
     StringField,
@@ -11,7 +13,8 @@ from wtforms import (
 )
 from wtforms.fields import DateField
 from wtforms.validators import DataRequired, EqualTo, Optional
-from datetime import datetime
+
+from app import app, db
 from app.common_func import GetPullDownList, GetData
 from app.models import (
     CountAttendance,
@@ -30,40 +33,6 @@ from app.models import (
     D_JOB_HISTORY,
     is_integer_num,
 )
-from app import app, db
-
-
-from app import routes_attendance_option
-from flask import render_template, flash, redirect, request, session
-from werkzeug.urls import url_parse
-from flask.helpers import url_for
-from flask_login.utils import login_required
-from flask_login import current_user, login_user
-from app.models import (
-    User,
-    Shinsei,
-    StaffLoggin,
-    Todokede,
-    RecordPaidHoliday,
-    CountAttendance,
-    TimeAttendance,
-    CounterForTable,
-    D_JOB_HISTORY,
-    M_TIMECARD_TEMPLATE,
-    D_HOLIDAY_HISTORY,
-)
-from flask import abort
-from functools import wraps
-from werkzeug.security import generate_password_hash
-from datetime import datetime, timedelta, date, time
-from decimal import Decimal, ROUND_HALF_UP
-import jpholiday
-import os
-from dateutil.relativedelta import relativedelta
-from monthdelta import monthmod
-
-import math
-from sqlalchemy import and_
 
 
 class LoginForm(FlaskForm):

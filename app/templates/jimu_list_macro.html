@@ -10,7 +10,8 @@
   <td><a href="{{ url_for('jimu_every_dl', STAFFID=_.STAFFID, startday=26) }}" class="btn btn-info">出退勤参照（26日～25日）</a>
   </td>
   <td><a href="{{ url_for('jimu_nenkyu_detail', STAFFID=_.STAFFID) }}" class="btn btn-primary">有休情報</a></td>
-  <td class="shadow-item">{{ _.OUTDAY }}</td>
+  <td class="shadow-column1">{{ _.OUTDAY }}</td>
+  <td class="shadow-column2">{{ _.DISPLAY }}</td>
 </tr>
 {% endfor %}
 

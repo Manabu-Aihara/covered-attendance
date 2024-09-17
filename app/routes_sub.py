@@ -62,7 +62,7 @@ def print_all_todo(auth_user) -> List[TodoOrm]:
 @login_required
 def post_access_token():
     user_group_id = get_user_group_id()
-    token_dict = issue_token(user_group_id.STAFFID, user_group_id.CODE)
+    token_dict = issue_token(user_group_id.STAFFID, user_group_id.DEPARTMENT_CODE)
     # resp = make_response(jsonify(token_data))
     return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
     # github_page = os.getenv("GIT_PROVIDE")
@@ -93,10 +93,11 @@ def get_team_name(auth_user, extension) -> str:
 @token_required
 def print_user_inquiry(auth_user, extension):
     group = db.session.get(Team, extension)
+    print(f"Group name: {group.NAME}")
     return {
         "staff_id": str(auth_user.STAFFID),
         "group_id": str(extension),
-        # "group_name": group.SHORTNAME,
+        "group_name": group.SHORTNAME,
     }
 
 

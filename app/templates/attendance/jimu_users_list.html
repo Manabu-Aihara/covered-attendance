@@ -13,6 +13,10 @@
   <p id="shadow-today">{{ today }}</p>
   <p id="outday-on">退職された方 表示中</p>
 </div> -->
+<select id="display-toggle">
+  <option value="False">全表示</option>
+  <option value="True">非表示を除く</option>
+</select>
 <div id="adm-tbl" class="col-10 center-block">
   <div class="sort-table">
     <br><br><br>
@@ -27,6 +31,7 @@
           <th></th>
           <th></th>
           <th></th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -36,10 +41,10 @@
         {% endif %}
 
         {% if jimu_usr.TEAM_CODE == 1 and jimu_usr.CONTRACT_CODE != 2 and jimu_usr.STAFFID != 10000 %}
-        <!-- <div class="back-caution">
+        <div class="back-caution">
           <p class="the-caution">CAUTION!</p>ID{{ cause_users }}
           <p class="caution-message">{{ exception }}</p>
-        </div> -->
+        </div>
         {{ generate_jimu_row(all_u) }}
         <!-- <p>出口2</p> -->
         {% endif %}
@@ -59,4 +64,5 @@
 
 </div>
 <script src="/static/js/OutdayToggle.js"></script>
+<script src="/static/js/CheckUserDisplay.js"></script>
 {% endblock %}

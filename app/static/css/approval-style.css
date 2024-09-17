@@ -219,7 +219,8 @@ form.form-bottom button.judgement {
   color: chartreuse;
 }
 
-td.shadow-item {
+td.shadow-column1,
+td.shadow-column2 {
   display: none;
 }
 
