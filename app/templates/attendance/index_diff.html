@@ -239,13 +239,10 @@
               <td class="text-center">
                 <select class="form-control form-control-sm" name="todokede{{ ms.m }}">
                   <option value=""></option>
-                  {#
-                  {% if AttendanceDada[i][10] == "1" %}
-                  <!-- <option value="{{ td1.CODE }}" {{ specification[2] }}>{{ td1.NAME }}</option> -->
-                  {% else %}
-                  ... #}
                   {% for notifi_opt in notifi_lst %}
-                  {% if AttendanceDada[i][10] == notifi_opt.CODE %}
+                  {# Jinja2で数値(int)に変換エラー：UndefinedError: 'int' is undefined #}
+                  {# https://yuki.world/jinja2-int-cast/ #}
+                  {% if AttendanceDada[i][10]|int == notifi_opt.CODE %}
                   <option value="{{ notifi_opt.CODE }}" {{ specification[2] }}>{{ notifi_opt.NAME }}</option>
                   {% else %}
                   <option value="{{ notifi_opt.CODE }}">{{ notifi_opt.NAME }}</option>

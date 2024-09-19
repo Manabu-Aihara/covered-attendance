@@ -287,7 +287,7 @@ def indextime(STAFFID, intFlg):
             for row in delAttendance:
                 db.session.delete(row)
                 db.session.flush()  # <-保留状態
-                print(f"消滅します {row.id}")
+                print(f"消滅します {row.WORKDAY}")
 
         reload_y = request.form.get("reload_h")
         ##### データ取得 #####
@@ -369,6 +369,7 @@ def indextime(STAFFID, intFlg):
                 or data10 != ""
                 or blankCheck(data12) is not None
             ):
+                print(f"Insert: {InsertFlg}")
                 if data5 == "on":
                     oncall = 1
                     print(f"5: {oncall}")
@@ -382,9 +383,11 @@ def indextime(STAFFID, intFlg):
                     print(f"12: {alc}")
 
                 InsertFlg = 1
+            else:
+                print(f"Flag false!!: {c}")
 
             if InsertFlg == 1:
-                print("消滅しません")
+                print(f"消滅しません: {c}")
                 AddATTENDANCE = Shinsei(
                     STAFFID,
                     data1,
@@ -459,6 +462,7 @@ def indextime(STAFFID, intFlg):
     work_time_sum: float = 0.0
     for attendace_query in attendance_query_list:
         Shin = attendace_query[0]
+        print(f"Notice AM: {Shin.NOTIFICATION}")
         # 日付
         # 曜日
         # 勤務日
@@ -526,7 +530,7 @@ def indextime(STAFFID, intFlg):
             contract_work_time = work_time.WORKTIME
 
         print(f"{Shin.WORKDAY.day} loop")
-        print(f"aDd 14: {AttendanceDada[Shin.WORKDAY.day][14]}")
+        print(f"aDd 10: {AttendanceDada[Shin.WORKDAY.day][10]}")
         # sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
 
         # w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)

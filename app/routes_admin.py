@@ -581,7 +581,7 @@ def edit_data_user(STAFFID, intFlg):
     return render_template(
         "admin/edit_data_user_diff.html",
         form=form,
-        appearance=display_form,
+        disp_form=display_form,
         STAFFID=STAFFID,
         u=u,
         stf_login=stf_login,
