@@ -71,10 +71,10 @@
         {% for cnt_for_tbl in cfts %}
         {% if u.STAFFID == cnt_for_tbl.STAFFID %}
         <tr class="user-info-row">
-          <td><small>{{ bumon[u.DEPARTMENT_CODE][1] }}</small></td>
-          <td><small>{{ syozoku[u.TEAM_CODE][1] }}</small></td>
-          <td><small>{{ syokusyu[u.JOBTYPE_CODE][1] }}</small></td>
-          <td><small>{{ keitai[u.CONTRACT_CODE][1] }}</small></td>
+          <td><small>{{ u.department }}</small></td>
+          <td><small>{{ u.team }}</small></td>
+          <td><small>{{ u.job_type }}</small></td>
+          <td><small>{{ u.contract }}</small></td>
           <td><small>{{ cnt_for_tbl.STAFFID }}</small></td>
           <td><small>{{ u.LNAME }}　{{ u.FNAME }}</small></td>
           <td><small>{{ cnt_for_tbl.ONCALL }}</small></td>
@@ -101,8 +101,8 @@
           <td><small>{{ cnt_for_tbl.TIMEOFF }}</small></td>
           <td><small>{{ cnt_for_tbl.HALFWAY_THROUGH }}</small></td>
           <td><small>{{ cnt_for_tbl.TIMEOFF|int + cnt_for_tbl.HALFWAY_THROUGH|int }}</small></td>
-          <td><small>{{ POST[u.POST_CODE][1] }}</small></td>
-          <td>{{ u.OUTDAY }}</td>
+          <td><small>{{ u.post }}</small></td>
+          <td class="shadow-item">{{ u.OUTDAY }}</td>
         </tr>
         {% endif %}
         {% endfor %}

@@ -262,8 +262,8 @@
                     <option value=""></option>
                     {% endif %}
                     {% for notifi_opt in notifi_pm_lst %}
-                    {% if AttendanceDada[i][11] == notifi_opt.CODE %}
-                    <option value="{{ notifi_opt.CODE }}" {{ specification[2] }}>{{ td1.NAME }}</option>
+                    {% if AttendanceDada[i][11]|int == notifi_opt.CODE %}
+                    <option value="{{ notifi_opt.CODE }}" {{ specification[2] }}>{{ notifi_opt.NAME }}</option>
                     {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10]
                     == "7" or AttendanceDada[i][10] == "8" %}
                     <option value="{{ notifi_opt.CODE }}" {{ specification[4] }}></option>
@@ -304,7 +304,7 @@
                   {% endif %}
                 </div>
               </td>
-              <!-- 勤務時間 -->
+              <!-- 実労時間 -->
               <td>
                 <div class="text-center" {{ bk }}>
                   <span id="hlf" class="form-control form-control-sm">{{ AttendanceDada[i][14] }}</span>

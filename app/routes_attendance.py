@@ -518,7 +518,7 @@ def indextime(STAFFID, intFlg):
         settime.calc_time()
 
         """ 24/8/1 変更分 """
-        contract_work_time: float
+        contract_work_time: float = 0.0
         if attendace_query.CONTRACT_CODE == 2:
             contract_work_time = attendace_query.PART_WORKTIME
         else:
@@ -529,21 +529,42 @@ def indextime(STAFFID, intFlg):
             )
             contract_work_time = work_time.WORKTIME
 
-        print(f"{Shin.WORKDAY.day} loop")
-        print(f"aDd 10: {AttendanceDada[Shin.WORKDAY.day][10]}")
+        print(f"{Shin.WORKDAY.day} 日")
+        print(f"aDd 14: {AttendanceDada[Shin.WORKDAY.day][14]}")
         # sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
 
         # w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
         # """ 24/8/1 修正分 """
         # w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) / (60 * 60)
+        """ 24/9/20 変更 """
+        # 出勤してたら
         if (
             AttendanceDada[Shin.WORKDAY.day][7] != "00:00"
             and AttendanceDada[Shin.WORKDAY.day][8] != "00:00"
         ):
-            AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
-            # if AttendanceDada[Shin.WORKDAY.day][14] != 0:
-            workday_count += 1
-            work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
+            if (
+                AttendanceDada[Shin.WORKDAY.day][10] == "4"
+                or AttendanceDada[Shin.WORKDAY.day][10] == "6"
+            ) or (
+                AttendanceDada[Shin.WORKDAY.day][11] == "4"
+                or AttendanceDada[Shin.WORKDAY.day][11] == "6"
+            ):
+                AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time / 2
+                workday_count += 1
+                work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
+            else:
+                AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
+                workday_count += 1
+                work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
+        # 1日有休 or 1日出張
+        else:
+            if (
+                AttendanceDada[Shin.WORKDAY.day][10] == "3"
+                or AttendanceDada[Shin.WORKDAY.day][10] == "5"
+            ):
+                AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
+                workday_count += 1
+                work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
 
         s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
 

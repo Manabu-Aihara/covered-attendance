@@ -61,6 +61,7 @@ from app.calender_classes import MakeCalender
 from app.calc_work_classes import DataForTable, CalcTimeClass
 from app.common_func import GetPullDownList, intCheck, blankCheck
 from app.db_check_util import compare_db_item, check_contract_value
+from app.attendance_util import convert_null_role
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -225,26 +226,6 @@ def user_create_admin():
 
 
 """
-    @Params:
-        query_name: str 実質返すクエリーのカラム名
-        table_code: int DBテーブルコード
-        user_code: int User内コード
-    @Return:
-        result_query: str DBテーブルコードから返す名称
-        """
-
-
-def get_user_role(query_name: str, table_code: int, user_code: int = 0) -> str:
-    result_query = db.session.query(query_name).filter(table_code == user_code).first()
-    if result_query is None:
-        # リスト対応させるため、空の場合は空文字を返す
-        result_query = ""
-        return result_query
-    else:
-        return result_query[0]
-
-
-"""
     DBから役職など5項目、dictのlistで返す
     @Return:
         list<dict<str, str>>
@@ -252,23 +233,15 @@ def get_user_role(query_name: str, table_code: int, user_code: int = 0) -> str:
 
 
 def get_role_context(db_obj) -> Dict[str, str]:
-    disp_department = get_user_role(Busho.NAME, Busho.CODE, db_obj.DEPARTMENT_CODE)
-    dips_team = get_user_role(Team.SHORTNAME, Team.CODE, db_obj.TEAM_CODE)
-    disp_contract = get_user_role(
-        KinmuTaisei.NAME, KinmuTaisei.CONTRACT_CODE, db_obj.CONTRACT_CODE
-    )
-    disp_jobtype = get_user_role(
-        Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE, db_obj.JOBTYPE_CODE
-    )
-    disp_post = get_user_role(Post.NAME, Post.CODE, db_obj.POST_CODE)
+    conv_db_obj = convert_null_role(db_obj)
 
     return {
         "staff_id": db_obj.STAFFID,
-        "department": disp_department,
-        "team": dips_team,
-        "contract": disp_contract,
-        "job_type": disp_jobtype,
-        "post": disp_post,
+        "department": conv_db_obj.department,
+        "team": conv_db_obj.team,
+        "contract": conv_db_obj.contract,
+        "job_type": conv_db_obj.job_type,
+        "post": conv_db_obj.post,
     }
 
 

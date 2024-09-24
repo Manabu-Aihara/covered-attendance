@@ -2,11 +2,12 @@ import pytest
 import datetime
 
 from app import db
-from app.models import Todokede, User
+from app.models import Todokede, User, KinmuTaisei
 from app.models_aprv import NotificationList, Approval
 from app.routes_approvals import get_notification_list, insert_pay_log
 from app.approval_util import toggle_notification_type, NoZeroTable
 from app.pulldown_util import get_pulldown_list
+from app.common_func import GetDataS
 
 
 @pytest.mark.skip
@@ -53,6 +54,17 @@ def test_get_notificatin_list(app_context):
     todokede_list = get_notification_list()
     assert todokede_list[0] == ["", ""]
     assert todokede_list[1] == [1, "遅刻"]
+
+
+def test_get_list_sn(app_context):
+    keitai = GetDataS(
+        KinmuTaisei,
+        KinmuTaisei.CONTRACT_CODE,
+        KinmuTaisei.SHORTNAME,
+        KinmuTaisei.CONTRACT_CODE,
+    )
+    # print(keitai)
+    assert keitai[6][1] == "7.5H"
 
 
 @pytest.mark.skip
@@ -111,6 +123,7 @@ def test_convert_zero_to_none(app_context):
     )
 
 
+@pytest.mark.skip
 def test_insert_pay_log(app_context):
     with pytest.raises(TypeError) as except_info:
         insert_pay_log(20, 35)

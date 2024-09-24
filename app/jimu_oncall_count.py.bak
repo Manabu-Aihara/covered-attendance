@@ -649,14 +649,14 @@ def jimu_summary_fulltime(startday):
 
         for n in range(len(real_time_sum)):
             real_sum += real_time_sum[n]
-        w_h = real_sum // (60 * 60)
-        w_m = (real_sum - w_h * 60 * 60) // 60
-        real_time = w_h + w_m / 100
+        # w_h = real_sum // (60 * 60)
+        # w_m = (real_sum - w_h * 60 * 60) // 60
+        # real_time = w_h + w_m / 100
         """ 24/8/20 変更分 """
-        # w_m = (real_sum - w_h * 60 * 60) / (60 * 60) # 10進数
-        # real_time_lengthy = w_h + w_m
-        # real_time = Decimal(real_time_lengthy).quantize(Decimal("0.1"), ROUND_HALF_UP)
-        real_time_10 = real_sum / (60 * 60)
+        w_m = (real_sum - w_h * 60 * 60) / (60 * 60)  # 10進数
+        real_time_lengthy = w_h + w_m
+        real_time = Decimal(real_time_lengthy).quantize(Decimal("0.01"), ROUND_HALF_UP)
+        # real_time_10 = real_sum / (60 * 60)
 
         sum_over_0 = 0
         for n in range(len(over_time_0)):
@@ -733,7 +733,7 @@ def jimu_summary_fulltime(startday):
     #     print(f"{e}")
 
     return render_template(
-        "attendance/jimu_summary_fulltime.html",
+        "attendance/jimu_summary_fulltime_diff.html",
         startday=startday,
         typ=typ,
         form_month=form_month,
@@ -769,7 +769,7 @@ def jimu_users_list(STAFFID):
     base_user_list = (
         db.session.query(User.STAFFID, User.LNAME, User.FNAME, KinmuTaisei.NAME)
         .join(KinmuTaisei, User.CONTRACT_CODE == KinmuTaisei.CONTRACT_CODE)
-        .filter(User.OUTDAY == None)
+        .filter(or_(User.OUTDAY == None, User.OUTDAY > datetime.today()))
         # .all()
     )
 

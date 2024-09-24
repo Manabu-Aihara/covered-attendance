@@ -1,0 +1,407 @@
+@app.route("/jimu_summary_fulltime/<startday>", methods=["GET", "POST"])
+@login_required
+def jimu_summary_fulltime(startday):
+    stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
+    typ = ["submit", "text", "time", "checkbox", "number", "date"]
+    form_month = SelectMonthForm()
+    str_workday = "月選択をしてください。"
+    bumon = GetData(Busho, Busho.CODE, Busho.NAME, Busho.CODE)
+    syozoku = GetDataS(Team, Team.CODE, Team.SHORTNAME, Team.CODE)
+    syokusyu = GetDataS(
+        Jobtype, Jobtype.JOBTYPE_CODE, Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE
+    )
+    keitai = GetDataS(
+        KinmuTaisei,
+        KinmuTaisei.CONTRACT_CODE,
+        KinmuTaisei.SHORTNAME,
+        KinmuTaisei.CONTRACT_CODE,
+    )
+    POST = GetData(Post, Post.CODE, Post.NAME, Post.CODE)
+    outer_display = 0
+    jimu_usr = User.query.get(current_user.STAFFID)
+
+    # users = User.query.all()
+    # 後述
+
+    cfts = CounterForTable.query.all()
+
+    # sum_0 = 0
+    # 全体のカウント、使えない
+    # outer_workday_count = 0
+
+    # 年月選択をしたかどうか
+    selected_workday: str = ""
+    # global y, m, workday_data
+    if form_month.validate_on_submit():
+        selected_workday = request.form.get("workday_name")  # 選択された日付
+
+    print(f"Select month: {selected_workday}")
+    y, m, workday_data = get_month_workday(selected_workday)
+    # print(f"Select value: {workday_data}")
+
+    d = get_last_date(y, m)
+    if int(startday) != 1:
+        # 1日開始以外の場合
+        FromDay = date(y, m, int(startday)) - relativedelta(months=1)
+        ToDay = date(y, m, 25)
+    else:
+        # 1日開始の場合
+        FromDay = date(y, m, int(startday))
+        ToDay = date(y, m, d)
+
+    UserID = ""
+
+    timeoff = 0
+    halfway_through = 0
+
+    counter_id_list = db.session.query(CounterForTable.STAFFID).all()
+    for counter_id in counter_id_list:
+        cftses = CounterForTable.query.get(counter_id.STAFFID)
+        # print(f"Counter attribute: {cftses.__dict__}")
+
+        cftses.ONCALL = 0
+        cftses.ONCALL_HOLIDAY = 0
+        cftses.ONCALL_COUNT = 0
+        cftses.ENGEL_COUNT = 0
+        cftses.NENKYU = 0
+        cftses.NENKYU_HALF = 0
+        cftses.TIKOKU = 0
+        cftses.SOUTAI = 0
+        cftses.KEKKIN = 0
+        cftses.SYUTTYOU = 0
+        cftses.SYUTTYOU_HALF = 0
+        cftses.REFLESH = 0
+        cftses.MILEAGE = 0
+        cftses.SUM_WORKTIME = 0
+        cftses.SUM_REAL_WORKTIME = 0
+        cftses.OVERTIME = 0
+        cftses.HOLIDAY_WORK = 0
+        cftses.WORKDAY_COUNT = 0
+        cftses.SUM_WORKTIME_10 = 0
+        cftses.OVERTIME_10 = 0
+        cftses.HOLIDAY_WORK_10 = 0
+        cftses.TIMEOFF = 0
+        cftses.HALFWAY_THROUGH = 0
+
+        db.session.commit()
+
+    attendace_qry_obj = AttendanceQuery(jimu_usr.STAFFID, FromDay, ToDay)
+    clerical_attendance_list = attendace_qry_obj.get_clerical_attendance()
+
+    for clerical_attendance in clerical_attendance_list:
+        sh = clerical_attendance[0]
+
+        # スタッフが変ったら
+        # ここあまり好きじゃない、Unbound変数
+        if UserID != sh.STAFFID:
+            UserID = sh.STAFFID
+            u = User.query.get(sh.STAFFID)
+            cnt_for_tbl = CounterForTable.query.get(sh.STAFFID)
+            rp_holiday = RecordPaidHoliday.query.get(sh.STAFFID)
+            AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
+            # 各スタッフのカウントになる、不思議
+            workday_count = 0
+            # sum_0 = 0
+            """ 24/8/22 納得いかないまでも、追加した変数 """
+            time_sum: int = 0
+            # 各表示初期値
+            oncall = []
+            oncall_holiday = []
+            oncall_cnt = []
+            engel_cnt = []
+
+            nenkyu = []
+            nenkyu_half = []
+            tikoku = []
+            soutai = []
+            kekkin = []
+            syuttyou = []
+            syuttyou_half = []
+            reflesh = []
+            s_kyori = []
+
+            real_time = []
+            real_time_sum = []
+            syukkin_times_0 = []
+            syukkin_holiday_times_0 = []
+            over_time_0 = []
+
+            timeoff1 = []
+            timeoff2 = []
+            timeoff3 = []
+            halfway_through1 = []
+            halfway_through2 = []
+            halfway_through3 = []
+
+        # if u.CONTRACT_CODE == 2:
+        ##### １日基準 #####
+
+        dft = DataForTable(
+            y,
+            m,
+            d,
+            sh.WORKDAY,
+            sh.ONCALL,
+            sh.HOLIDAY,
+            sh.ONCALL_COUNT,
+            sh.ENGEL_COUNT,
+            sh.NOTIFICATION,
+            sh.NOTIFICATION2,
+            sh.MILEAGE,
+            oncall,
+            oncall_holiday,
+            oncall_cnt,
+            engel_cnt,
+            nenkyu,
+            nenkyu_half,
+            tikoku,
+            soutai,
+            kekkin,
+            syuttyou,
+            syuttyou_half,
+            reflesh,
+            s_kyori,
+            FromDay,
+            ToDay,
+        )
+        dft.other_data()
+
+        tm_off = TimeOffClass(
+            y,
+            m,
+            d,
+            sh.WORKDAY,
+            sh.NOTIFICATION,
+            sh.NOTIFICATION2,
+            timeoff1,
+            timeoff2,
+            timeoff3,
+            halfway_through1,
+            halfway_through2,
+            halfway_through3,
+            FromDay,
+            ToDay,
+        )
+        tm_off.cnt_time_off()
+
+        dtm = datetime.strptime(sh.ENDTIME, "%H:%M") - datetime.strptime(
+            sh.STARTTIME, "%H:%M"
+        )
+        # リアル実働時間
+        real_time = dtm
+
+        AttendanceDada[sh.WORKDAY.day][14] = 0
+        settime = CalcTimeClass(
+            dtm,
+            sh.NOTIFICATION,
+            sh.NOTIFICATION2,
+            sh.STARTTIME,
+            sh.ENDTIME,
+            sh.OVERTIME,
+            clerical_attendance.CONTRACT_CODE,
+            AttendanceDada,
+            over_time_0,
+            real_time,
+            real_time_sum,
+            syukkin_holiday_times_0,
+            sh.HOLIDAY,
+            clerical_attendance.JOBTYPE_CODE,
+            sh.STAFFID,
+            sh.WORKDAY,
+            clerical_attendance.HOLIDAY_TIME,
+        )
+        settime.calc_time()
+
+        ##### データベース貯蔵 #####
+        ln_oncall = len(oncall)
+        ln_oncall_holiday = len(oncall_holiday)
+
+        ln_oncall_cnt = 0
+        for oc in oncall_cnt:
+            if str.isnumeric(oc):
+                ln_oncall_cnt += int(oc)
+
+        ln_engel_cnt = 0
+        for ac in engel_cnt:
+            if str.isnumeric(ac):
+                ln_engel_cnt += int(ac)
+
+        ln_nenkyu = len(nenkyu)
+        ln_nenkyu_half = len(nenkyu_half)
+        ln_tikoku = len(tikoku)
+        ln_soutai = len(soutai)
+        ln_kekkin = len(kekkin)
+        ln_syuttyou = len(syuttyou)
+        ln_syuttyou_half = len(syuttyou_half)
+        ln_reflesh = len(reflesh)
+
+        ln_s_kyori = 0
+        if s_kyori is not None:
+            for s in s_kyori:
+                ln_s_kyori += float(s)
+            ln_s_kyori = math.floor(ln_s_kyori * 10) / 10
+
+        # for n in range(len(syukkin_times_0)):
+        #     if is_integer_num(syukkin_times_0[n]):
+        #         print(f"出勤: {syukkin_times_0[n]}")
+        #         sum_0 += syukkin_times_0[n]
+
+        """ 24/8/22 変更分 """
+        # ここで宣言された変数は“+=”不可
+        # work_time_sum_60: float = 0.0
+        # 🙅 work_time_sum_60 += AttendanceDada[sh.WORKDAY.day][14]
+
+        time_sum += AttendanceDada[sh.WORKDAY.day][14]
+        workday_count += 1 if time_sum != 0 else workday_count
+        # print(f"{sh.STAFFID} aDd: {AttendanceDada[sh.WORKDAY.day][14]}")
+        w_h = time_sum // (60 * 60)
+        w_m = (time_sum - w_h * 60 * 60) / (60 * 60)
+        # 実働時間計（１０進法）：10進数
+        time_sum10 = w_h + w_m
+        sum10_rnd = Decimal(time_sum10).quantize(Decimal("0.01"), ROUND_HALF_UP)
+
+        w_m_60 = w_m * 60 / 100
+        # 実労働時間計：60進数
+        time_sum60 = w_h + w_m_60
+        sum60_rnd = Decimal(time_sum60).quantize(Decimal("0.01"), ROUND_HALF_UP)
+        # print(f"{sh.STAFFID} Sum: {time_sum10} {time_sum60}")
+
+        """ 24/8/19 変更分 """
+        # contract_work_time: float
+        # if clerical_attendance.CONTRACT_CODE == 2:
+        #     contract_work_time = clerical_attendance.PART_WORKTIME
+        # else:
+        #     work_time = (
+        #         db.session.query(KinmuTaisei.WORKTIME)
+        #         .filter(KinmuTaisei.CONTRACT_CODE == clerical_attendance.CONTRACT_CODE)
+        #         .first()
+        #     )
+        #     contract_work_time = work_time.WORKTIME
+
+        # if AttendanceDada[sh.WORKDAY.day][14] != 0:
+        #     AttendanceDada[sh.WORKDAY.day][14] = contract_work_time
+        #     workday_count += 1
+        #     work_time_sum_10 = AttendanceDada[sh.WORKDAY.day][14] * workday_count
+        # print(f"Count: {workday_count}")
+        # working_time_10 = work_time_sum / (60 * 60)
+
+        real_sum = 0
+        for n in range(len(real_time_sum)):
+            real_sum += real_time_sum[n]
+        w_h = real_sum // (60 * 60)
+        w_m = (real_sum - w_h * 60 * 60) // 60
+        real_time = w_h + w_m / 100
+        # real_time_10 = real_sum / (60 * 60)
+        """ 24/8/20 変更分 """
+        # w_m = (real_sum - w_h * 60 * 60) / (60 * 60)
+        # real_time_lengthy = w_h + w_m
+        # real_time = Decimal(real_time_lengthy).quantize(Decimal("0.1"), ROUND_HALF_UP)
+
+        sum_over_0 = 0
+        for n in range(len(over_time_0)):
+            if not over_time_0[n]:
+                sum_over_0 = sum_over_0
+            else:
+                sum_over_0 += over_time_0[n]
+        o_h = sum_over_0 // (60 * 60)
+        o_m = (sum_over_0 - o_h * 60 * 60) // 60
+        over = o_h + o_m / 100
+        over_10 = sum_over_0 / (60 * 60)
+
+        sum_hol_0 = 0
+        for t in syukkin_holiday_times_0:
+            sum_hol_0 += t
+        h_h = sum_hol_0 // (60 * 60)
+        h_m = (sum_hol_0 - h_h * 60 * 60) // 60
+        holiday_work = h_h + h_m / 100
+        holiday_work_10 = sum_hol_0 / (60 * 60)
+
+        # workday_count = len(syukkin_times_0)
+
+        sum_timeoff1 = len(timeoff1)
+        sum_timeoff2 = len(timeoff2)
+        sum_timeoff3 = len(timeoff3)
+        timeoff = sum_timeoff1 + sum_timeoff2 * 2 + sum_timeoff3 * 3
+
+        sum_halfway_through1 = len(halfway_through1)
+        sum_halfway_through2 = len(halfway_through2)
+        sum_halfway_through3 = len(halfway_through3)
+        halfway_through = (
+            sum_halfway_through1 + sum_halfway_through2 * 2 + sum_halfway_through3 * 3
+        )
+
+        if cnt_for_tbl:
+            cnt_for_tbl.ONCALL = ln_oncall
+            cnt_for_tbl.ONCALL_HOLIDAY = ln_oncall_holiday
+            cnt_for_tbl.ONCALL_COUNT = ln_oncall_cnt
+            cnt_for_tbl.ENGEL_COUNT = ln_engel_cnt
+            cnt_for_tbl.NENKYU = ln_nenkyu
+            cnt_for_tbl.NENKYU_HALF = ln_nenkyu_half
+            cnt_for_tbl.TIKOKU = ln_tikoku
+            cnt_for_tbl.SOUTAI = ln_soutai
+            cnt_for_tbl.KEKKIN = ln_kekkin
+            cnt_for_tbl.SYUTTYOU = ln_syuttyou
+            cnt_for_tbl.SYUTTYOU_HALF = ln_syuttyou_half
+            cnt_for_tbl.REFLESH = ln_reflesh
+            cnt_for_tbl.MILEAGE = ln_s_kyori
+            cnt_for_tbl.SUM_WORKTIME = sum60_rnd
+            cnt_for_tbl.SUM_REAL_WORKTIME = real_time
+            cnt_for_tbl.OVERTIME = over
+            cnt_for_tbl.HOLIDAY_WORK = holiday_work
+            cnt_for_tbl.WORKDAY_COUNT = workday_count
+            cnt_for_tbl.SUM_WORKTIME_10 = sum10_rnd
+            cnt_for_tbl.OVERTIME_10 = over_10
+            cnt_for_tbl.HOLIDAY_WORK_10 = holiday_work_10
+            cnt_for_tbl.TIMEOFF = timeoff
+            cnt_for_tbl.HALFWAY_THROUGH = halfway_through
+
+            db.session.commit()
+
+            ##### 退職者表示設定
+
+    # print(f"Date type: {type(User.INDAY)}")
+    """ 24/8/27 変更 """
+    clerk_totlling_filters = []
+    if jimu_usr.TEAM_CODE != 1:
+        clerk_totlling_filters.append(User.TEAM_CODE == jimu_usr.TEAM_CODE)
+        # raise TypeError("Boolean value of this clause is not defined")
+        # https://stackoverflow.com/questions/42681231/sqlalchemy-unexpected-results-when-using-and-and-or
+        # filters.append(
+        #     or_(User.OUTDAY == None, User.OUTDAY > datetime.today())
+        # )
+        # users_without_condition = (
+        #     db.session.query(User).filter(and_(*clerk_totlling_filters)).all()
+        # )
+        # users = get_more_condition_users(users_without_condition, "INDAY", "OUTDAY")
+        users = db.session.query(User).filter(and_(*clerk_totlling_filters)).all()
+    else:
+        users = db.session.query(User).all()
+
+    today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+
+    return render_template(
+        "attendance/jimu_summary_fulltime_diff.html",
+        startday=startday,
+        typ=typ,
+        form_month=form_month,
+        workday_data=workday_data,
+        y=y,
+        m=m,
+        dwl_today=datetime.today(),
+        users=users,
+        cfts=cfts,
+        str_workday=str_workday,
+        bumon=bumon,
+        syozoku=syozoku,
+        syokusyu=syokusyu,
+        keitai=keitai,
+        POST=POST,
+        jimu_usr=jimu_usr,
+        stf_login=stf_login,
+        # workday_count=workday_count,
+        timeoff=timeoff,
+        halfway_rough=halfway_through,
+        FromDay=FromDay,
+        ToDay=ToDay,
+        today=today,
+    )
