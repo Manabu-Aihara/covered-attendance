@@ -278,7 +278,7 @@ def edit_list_user():
             "first_name": user_info.FNAME,
             "family_kana": user_info.LKANA,
             "first_kana": user_info.FKANA,
-            # 24/9/3 それに伴う変更
+            # 24/9/3 それに伴う変更🙅同一人物、複数出るから
             # "job_type": get_user_role(
             #     Jobtype.SHORTNAME, Jobtype.JOBTYPE_CODE, jobtype_code
             # ),

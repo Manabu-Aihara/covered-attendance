@@ -89,14 +89,17 @@ class AttendaceNotice:
         rp_holiday = db.session.get(RecordPaidHoliday, self.id)
         # 年休対象項目ID（M_NOTIFICATION）
         n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
-        print(f"Not test code: {n_code_list[0]}")
-        filter_1 = self.make_attendace_filter(n_code_list[0])
-        # filter_2 = self.make_attendace_filter(*n_code_list[1, 4])
-        # filter_3 = self.make_attendace_filter(*n_code_list[2, 5])
-        notification_time = db.session.query(Shinsei).filter(and_(*filter_1)).all()
-        # sum_time_rest: int = 0
+        filter_1 = self.make_attendace_filter(n_code_list[0], n_code_list[3])
+        filter_2 = self.make_attendace_filter(n_code_list[1], n_code_list[4])
+        filter_3 = self.make_attendace_filter(n_code_list[2], n_code_list[5])
+        notification_time = db.session.query(Shinsei).filter(*filter_1).all()
+        notification_2_times = db.session.query(Shinsei).filter(*filter_2).all()
+        notification_3_times = db.session.query(Shinsei).filter(*filter_3).all()
+        sum_time_rest: int = (
+            notification_time + notification_2_times * 2 + notification_3_times * 3
+        )
 
-        return len(notification_time)
+        return len(sum_time_rest)
         # return math.ceil(sum_time_rest / rp_holiday.BASETIMES_PAIDHLIDAY)
 
 

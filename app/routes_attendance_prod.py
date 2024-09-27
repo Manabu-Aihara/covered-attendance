@@ -1,23 +1,9 @@
-import os, math
-from functools import wraps
-from datetime import datetime, timedelta, date, time
-from decimal import Decimal, ROUND_HALF_UP
-import jpholiday
-from dateutil.relativedelta import relativedelta
-from monthdelta import monthmod
-
-from flask_login import logout_user
-from flask_login import current_user, login_user
-from flask import abort
+from app import routes_attendance_option, jimu_oncall_count
 from flask import render_template, flash, redirect, request, session
+from werkzeug.urls import url_parse
 from flask.helpers import url_for
 from flask_login.utils import login_required
-from sqlalchemy import and_
-from werkzeug.security import generate_password_hash
-from werkzeug.urls import url_parse
-
 from app import app, db
-from app import routes_attendance_option, jimu_oncall_count
 from app.forms import (
     LoginForm,
     AdminUserCreateForm,
@@ -27,24 +13,35 @@ from app.forms import (
     SaveForm,
     SelectMonthForm,
 )
+from flask_login import current_user, login_user
 from app.models import (
     User,
     Shinsei,
     StaffLoggin,
     Todokede,
-    KinmuTaisei,
     RecordPaidHoliday,
     D_HOLIDAY_HISTORY,
     CountAttendance,
     TimeAttendance,
     D_JOB_HISTORY,
     M_TIMECARD_TEMPLATE,
-    Team,
 )
+from flask_login import logout_user
+from flask import abort
+from functools import wraps
+from werkzeug.security import generate_password_hash
+from datetime import datetime, timedelta, date, time
+from decimal import Decimal, ROUND_HALF_UP
+import jpholiday
+import os
+from dateutil.relativedelta import relativedelta
+from monthdelta import monthmod
 from app.attendance_classes import AttendanceAnalysys
 from app.calender_classes import MakeCalender
 from app.calc_work_classes import DataForTable, CalcTimeClass, get_last_date
+from sqlalchemy import and_
 from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
+import math
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -96,11 +93,16 @@ def indextime(STAFFID, intFlg):
     ptn = ["^[0-9０-９]+$", "^[0-9.０-９．]+$"]
     specification = ["readonly", "checked", "selected", "hidden", "disabled"]
     typ = ["submit", "text", "time", "checkbox", "number", "month"]
-    """
-        24/7/25
-        変更分
-        """
-    team_name = db.session.query(Team.NAME).all()
+    team_name = [
+        "本社",
+        "WADEWADE訪問看護ステーション宇都宮",
+        "WADEWADE訪問看護ステーション下野",
+        "WADEWADE訪問看護ステーション鹿沼",
+        "KODOMOTOナースステーションうつのみや",
+        "わでわで在宅支援センターうつのみや",
+        "わでわで子どもそうだんしえん",
+        "WADEWADE訪問看護ステーションつくば",
+    ]
 
     ##### カレンダーとM_NOTIFICATION土日出勤の紐づけ関数 #####
 
@@ -148,13 +150,6 @@ def indextime(STAFFID, intFlg):
         bk = ""
 
     ##### M_NOTIFICATIONとindexの紐づけ #####
-    # notification_items = [db.session.get(Todokede, i) for i in range(1, 21)]
-    # # notification_items[15] = notification_items[9]
-    # exclude_list = [3, 5, 7, 8, 17, 18, 19, 20]
-    # notification_pm_list = [
-    #     n for i, n in enumerate(notification_items, 1) if i not in exclude_list
-    # ]
-
     td1 = Todokede.query.get(1)
     td2 = Todokede.query.get(2)
     td3 = Todokede.query.get(3)  # 年休（全日）はNotification2にはない
@@ -333,7 +328,6 @@ def indextime(STAFFID, intFlg):
             for row in delAttendance:
                 db.session.delete(row)
                 db.session.flush()  # <-保留状態
-                print(f"消滅します {row.id}")
 
         reload_y = request.form.get("reload_h")
         ##### データ取得 #####
@@ -455,8 +449,6 @@ def indextime(STAFFID, intFlg):
                 InsertFlg = 1
             elif data10 != "":
                 InsertFlg = 1
-            else:
-                print(f"Flag false!!: {c}")
 
             if InsertFlg == 1:
 
@@ -490,7 +482,6 @@ def indextime(STAFFID, intFlg):
     # 初期値
     i = 1
     for c in cal:
-        # print(f"*: {c}")
         #
         # AttendanceDada[i][1] = datetime.strptime(str(y, m, i), "%Y-%m-%d")
         # 日付(YYYY-MM-DD)
@@ -556,7 +547,6 @@ def indextime(STAFFID, intFlg):
                 User.LNAME,
                 D_JOB_HISTORY.JOBTYPE_CODE,
                 D_JOB_HISTORY.CONTRACT_CODE,
-                D_JOB_HISTORY.PART_WORKTIME,  # 24/8/16 追加クエリー
                 Parttime.c.HOLIDAY_TIME,
                 M_TIMECARD_TEMPLATE.TEMPLATE_NO,
             ).filter(
@@ -582,10 +572,8 @@ def indextime(STAFFID, intFlg):
         .order_by(Shinsei.STAFFID, Shinsei.WORKDAY)
     )
 
-    # sum_0 = 0
+    sum_0 = 0
     workday_count = 0
-    """ 24/8/16 追加変数 """
-    work_time_sum: float = 0.0
     for Shin in shinseis:
         # 日付
         # 曜日
@@ -641,36 +629,13 @@ def indextime(STAFFID, intFlg):
         )
         settime.calc_time()
 
-        contract_work_time: float
-        if Shin.CONTRACT_CODE == 2:
-            contract_work_time = Shin.PART_WORKTIME
-        else:
-            work_time = (
-                db.session.query(KinmuTaisei.WORKTIME)
-                .filter(KinmuTaisei.CONTRACT_CODE == Shin.CONTRACT_CODE)
-                .first()
-            )
-            contract_work_time = work_time.WORKTIME
-
-        print(f"{Shin.WORKDAY.day} loop")
-        print(f"aDd 10: {AttendanceDada[Shin.WORKDAY.day][10]}")
-        # sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
-        # if AttendanceDada[Shin.WORKDAY.day][14] > 0:
-        #     workday_count += 1
-
-        # w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
-        # """ 24/8/1 修正分 """
-        # w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) / (60 * 60)
-        # AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m
-        """ 24/8/16 追加(勤務時間合計、残業考慮なしver) """
-        if (
-            AttendanceDada[Shin.WORKDAY.day][7] != "00:00"
-            and AttendanceDada[Shin.WORKDAY.day][8] != "00:00"
-        ):
-            AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
-            # if AttendanceDada[Shin.WORKDAY.day][14] != 0:
+        sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
+        if AttendanceDada[Shin.WORKDAY.day][14] > 0:
             workday_count += 1
-            work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
+
+        w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
+        w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) // 60
+        AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m / 100
 
         s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
 
@@ -680,36 +645,31 @@ def indextime(STAFFID, intFlg):
             ln_s_kyori += float(s)
         ln_s_kyori = math.floor(ln_s_kyori * 10) / 10
 
-    # w_h = sum_0 // (60 * 60)
-    # """ 24/8/1 修正分 """
-    # w_m = (sum_0 - w_h * 60 * 60) / (60 * 60)
-    # # 勤務時間合計
-    # working_time = w_h + w_m
-    # working_time_10 = sum_0 / (60 * 60)
+    w_h = sum_0 // (60 * 60)
+    w_m = (sum_0 - w_h * 60 * 60) // 60
+    # 勤務時間合計
+    working_time = w_h + w_m / 100
+    working_time_10 = sum_0 / (60 * 60)
 
     sum_over_0 = 0
     for n in range(len(over_time_0)):
         sum_over_0 += over_time_0[n]
     o_h = sum_over_0 // (60 * 60)
-    """ 24/8/1 修正分 """
-    o_m = (sum_over_0 - o_h * 60 * 60) / (60 * 60)
-    over = o_h + o_m
+    o_m = (sum_over_0 - o_h * 60 * 60) // 60
+    over = o_h + o_m / 100
     over_10 = sum_over_0 / (60 * 60)
 
     sum_hol_0 = 0
     for n in range(len(syukkin_holiday_times_0)):
         sum_hol_0 += syukkin_holiday_times_0[n]
     h_h = sum_hol_0 // (60 * 60)
-    """ 24/8/1 修正分 """
-    h_m = (sum_hol_0 - h_h * 60 * 60) / (60 * 60)
-    holiday_work = h_h + h_m
+    h_m = (sum_hol_0 - h_h * 60 * 60) // 60
+    holiday_work = h_h + h_m / 100
     holiday_work_10 = sum_hol_0 / (60 * 60)
 
     # 配列に入った出勤時間(秒単位)を時間と分に変換
-    """ 24/8/8 修正分 """
     syukkin_times = [
-        # n // (60 * 60) + ((n - (n // (60 * 60)) * 60 * 60) // 60) / 100
-        n // (60 * 60) + (n - (n // (60 * 60) * 3600)) / (60 * 60)
+        n // (60 * 60) + ((n - (n // (60 * 60)) * 60 * 60) // 60) / 100
         for n in syukkin_times_0
     ]
     for n in range(len(syukkin_times)):
@@ -718,8 +678,6 @@ def indextime(STAFFID, intFlg):
     return render_template(
         "attendance/index.html",
         title="ホーム",
-        # notifi_lst=notification_items,
-        # notifi_pm_lst=notification_pm_list,
         cal=cal,
         shinseis=shinseis,
         y=y,
@@ -755,13 +713,13 @@ def indextime(STAFFID, intFlg):
         td14=td14,
         td15=td15,
         td16=td16,
+        workday_data=workday_data,
+        cnt_attemdance=cnt_attemdance,
+        reload_y=reload_y,
         td17=td17,
         td18=td18,
         td19=td19,
         td20=td20,
-        workday_data=workday_data,
-        cnt_attemdance=cnt_attemdance,
-        reload_y=reload_y,
         stf_login=stf_login,
         length_oncall=length_oncall,
         team=team,
@@ -780,7 +738,7 @@ def indextime(STAFFID, intFlg):
         template1=template1,
         template2=template2,
         AttendanceDada=AttendanceDada,
-        working_time=work_time_sum,
+        working_time=working_time,
         ln_s_kyori=ln_s_kyori,
         workday_count=workday_count,
         holiday_work=holiday_work,

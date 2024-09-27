@@ -128,21 +128,21 @@
 
           <tbody>
             {% set ms = namespace(m=0) %} {% set ns = namespace(n = hld|length) %}
-            {% for i in range(1, AttendanceData | length) %}
+            {% for i in range(1, AttendanceDada | length) %}
             <tr>
               <!-- これは隠しかな -->
               <td>
                 <div class="text-center">
                   <input class="form-control hiduke-sun kinshi" type="{{ typ[1] }}" name="row{{ ms.m }}"
-                    value="{{ AttendanceData[i]['date'] }}" {{ specification[3] }} size="0" />
+                    value="{{ AttendanceDada[i][1] }}" {{ specification[3] }} size="0" />
                 </div>
               </td>
               <!-- 日付 -->
               <td class="date">
-                {% if AttendanceData[i]["dow"] == '日' %}
+                {% if AttendanceDada[i][3] == '日' %}
                 {% set DateStyle = "hiduke-sun" %}
                 {% set YoubiStyle = "youbi-sun" %}
-                {% elif AttendanceData[i]["dow"] == '土' %}
+                {% elif AttendanceDada[i][3] == '土' %}
                 {% set DateStyle = "hiduke-sat" %}
                 {% set YoubiStyle = "youbi-sat" %}
                 {% elif hld[-ns.n] %}
@@ -152,18 +152,18 @@
                 {% set DateStyle = "hiduke-base" %}
                 {% set YoubiStyle = "youbi" %}
                 {% endif %}
-                <span class="{{ DateStyle }}">{{ AttendanceData[i]["date_DD"] }}</span>
+                <span class="{{ DateStyle }}">{{ AttendanceDada[i][2] }}</span>
               </td>
               <!-- 曜日 -->
               <td class="youbi text-center">
-                <span class="{{ YoubiStyle }}">{{ AttendanceData[i]["dow"] }}</span>
+                <span class="{{ YoubiStyle }}">{{ AttendanceDada[i][3] }}</span>
               </td>
               {% set ns.n = ns.n - 1 %}
               <!-- オンコール対応 -->
               {% if template1 == 1 or template2 == 1 %}
               <td class="text-center">
                 <div class="custom-control custom-checkbox checkbox-lg">
-                  {% if AttendanceData[i]["oncall"] == '1' %}
+                  {% if AttendanceDada[i][4] == '1' %}
                   <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
                     <input type="{{ typ[3] }}" name="oncall{{ ms.m }}" {{ specification[1] }} />
                   </div>
@@ -177,14 +177,14 @@
               <td class="text-center oncall">
                 <div>
                   <input id="hlf" class="form-control form-control-sm" type="number" name="oncall_cnt{{ ms.m }}"
-                    step="1" inputmode="numeric" pattern="{{ ptn[0] }}" size="2" value="{{ AttendanceData[i][5] }}"
+                    step="1" inputmode="numeric" pattern="{{ ptn[0] }}" size="2" value="{{ AttendanceDada[i][5] }}"
                     style="text-align:right;font-size:0.9em;" />
                 </div>
               </td>
               <td class="text-center oncall">
                 <div>
                   <input id="hlf" class="form-control form-control-sm" type="number" name="engel{{ ms.m }}" step="1"
-                    inputmode="numeric" pattern="{{ ptn[0] }}" size="2" value="{{ AttendanceData[i][6] }}"
+                    inputmode="numeric" pattern="{{ ptn[0] }}" size="2" value="{{ AttendanceDada[i][6] }}"
                     style="text-align:right;font-size:0.9em;" />
                 </div>
               </td>
@@ -192,36 +192,36 @@
               <!-- 開始時間 -->
               <td class="text-center">
                 <div style="font-size:0.9em;" id="forsave1_{{ ms.m }}">
-                  {% if (AttendanceData[i]["start_time"] != "00:00" and AttendanceData[i]["end_time"] != "00:00") or
-                  ((AttendanceData[i]["start_time"] == "00:00" and AttendanceData[i]["end_time"] == "00:00") and
-                  (AttendanceData[i]["notification"] != "" or AttendanceData[i]["notification_pm"] != "")) %}
+                  {% if (AttendanceDada[i][7] != "00:00" and AttendanceDada[i][8] != "00:00") or
+                  ((AttendanceDada[i][7] == "00:00" and AttendanceDada[i][8] == "00:00") and
+                  (AttendanceDada[i][10] != "" or AttendanceDada[i][11] != "")) %}
                   <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="stime{{ ms.m }}"
-                    value="{{ AttendanceData[i]['start_time'] }}">
-                  {% elif AttendanceData[i]["start_time"] == "00:00" and AttendanceData[i]["end_time"] != "00:00" %}
+                    value="{{ AttendanceDada[i][7] }}">
+                  {% elif AttendanceDada[i][7] == "00:00" and AttendanceDada[i][8] != "00:00" %}
                   <input class="form-control form-control-sm alert-time" type="{{ typ[2] }}" name="stime{{ ms.m }}"
-                    value="{{ AttendanceData[i]['start_time'] }}">
+                    value="{{ AttendanceDada[i][7] }}">
                   {% else %}
                   <input class="form-control form-control-sm" type="{{ typ[2] }}" name="stime{{ ms.m }}"
-                    value="{{ AttendanceData[i]['start_time'] }}">
+                    value="{{ AttendanceDada[i][7] }}">
                   {% endif %}
                 </div>
               </td>
               <!-- 終業時間 -->
               <td class="text-center">
                 <div style="font-size:0.9em;" id="forsave2_{{ ms.m }}">
-                  {% if (AttendanceData[i]["start_time"] != "00:00" and AttendanceData[i]["end_time"] != "00:00") %}
+                  {% if (AttendanceDada[i][7] != "00:00" and AttendanceDada[i][8] != "00:00") %}
                   <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="ftime{{ ms.m }}"
-                    value="{{ AttendanceData[i]['end_time'] }}" onchange="func1()">
-                  {% elif (AttendanceData[i]["start_time"] == "00:00" and AttendanceData[i]["end_time"] == "00:00") and
-                  (AttendanceData[i]["notification"] or AttendanceData[i]["notification_pm"]) %}
+                    value="{{ AttendanceDada[i][8] }}" onchange="func1()">
+                  {% elif (AttendanceDada[i][7] == "00:00" and AttendanceDada[i][8] == "00:00") and
+                  (AttendanceDada[i][10] or AttendanceDada[i][11]) %}
                   <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="ftime{{ ms.m }}"
-                    value="{{ AttendanceData[i]['end_time'] }}" onchange="func1()">
-                  {% elif AttendanceData[i]["start_time"] != "00:00" and AttendanceData[i]["end_time"] == "00:00" %}
+                    value="{{ AttendanceDada[i][8] }}" onchange="func1()">
+                  {% elif AttendanceDada[i][7] != "00:00" and AttendanceDada[i][8] == "00:00" %}
                   <input class="form-control form-control-sm alert-time" type="{{ typ[2] }}" name="ftime{{ ms.m }}"
-                    value="{{ AttendanceData[i]['end_time'] }}" onchange="func1()">
+                    value="{{ AttendanceDada[i][8] }}" onchange="func1()">
                   {% else %}
                   <input class="form-control form-control-sm" type="{{ typ[2] }}" name="ftime{{ ms.m }}"
-                    value="{{ AttendanceData[i]['end_time'] }}" onchange="func1()">
+                    value="{{ AttendanceDada[i][8] }}" onchange="func1()">
                   {% endif %}
                 </div>
               </td>
@@ -231,7 +231,7 @@
                 <div class="skyori-w text-center" {{ sk }} id="skyori">
                   <input id="hlf" class="form-control form-control-sm kyori" type="number" step="0.1"
                     onclick="this.select(0,this.value.length)" name="skyori{{ ms.m }}" pattern="{{ ptn[1] }}"
-                    value="{{ AttendanceData[i]['mileage'] }}" size="4" style="font-size:0.9em;">
+                    value="{{ AttendanceDada[i][9] }}" size="4" style="font-size:0.9em;">
                 </div>
               </td>
               {% endif %}
@@ -242,7 +242,7 @@
                   {% for notifi_opt in notifi_lst %}
                   {# Jinja2で数値(int)に変換エラー：UndefinedError: 'int' is undefined #}
                   {# https://yuki.world/jinja2-int-cast/ #}
-                  {% if AttendanceData[i]["notification"]|int == notifi_opt.CODE %}
+                  {% if AttendanceDada[i][10]|int == notifi_opt.CODE %}
                   <option value="{{ notifi_opt.CODE }}" {{ specification[2] }}>{{ notifi_opt.NAME }}</option>
                   {% else %}
                   <option value="{{ notifi_opt.CODE }}">{{ notifi_opt.NAME }}</option>
@@ -256,17 +256,16 @@
                 <div>
                   <select class="form-control form-control-sm" name="todokede_pm{{ ms.m }}"
                     style="border:1px solid;border-color:#dcdcdc;font-size:0.9em;">
-                    {% if AttendanceData[i]["notification_pm"] == "" %}
+                    {% if AttendanceDada[i][11] == "" %}
                     <option value="" {{ specification[2] }}></option>
                     {% else %}
                     <option value=""></option>
                     {% endif %}
                     {% for notifi_opt in notifi_pm_lst %}
-                    {% if AttendanceData[i]["notification_pm"]|int == notifi_opt.CODE %}
+                    {% if AttendanceDada[i][11]|int == notifi_opt.CODE %}
                     <option value="{{ notifi_opt.CODE }}" {{ specification[2] }}>{{ notifi_opt.NAME }}</option>
-                    {% elif AttendanceData[i]["notification"] == "3" or AttendanceData[i]["notification"] == "5" or
-                    AttendanceData[i]["notification"]
-                    == "7" or AttendanceData[i]["notification"] == "8" %}
+                    {% elif AttendanceDada[i][10] == "3" or AttendanceDada[i][10] == "5" or AttendanceDada[i][10]
+                    == "7" or AttendanceDada[i][10] == "8" %}
                     <option value="{{ notifi_opt.CODE }}" {{ specification[4] }}></option>
                     {% else %}
                     <option value="{{ notifi_opt.CODE }}">{{ notifi_opt.NAME }}</option>
@@ -278,7 +277,7 @@
 
               <td class="text-center">
                 <div>
-                  {% if AttendanceData[i]["over_time"] == "1" %}
+                  {% if AttendanceDada[i][12] == "1" %}
 
                   <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
                     <input type="{{ typ[3] }}" name="zangyou{{ ms.m }}" {{ specification[1] }}>
@@ -294,7 +293,7 @@
               <!-- アルコールチェック -->
               <td class="text-center">
                 <div>
-                  {% if AttendanceData[i]["alcohol"] == 1 %}
+                  {% if AttendanceDada[i][13] == 1 %}
                   <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">
                     <input type="{{ typ[3] }}" name="alcohol{{ ms.m }}" {{ specification[1] }} />
                   </div>
@@ -308,14 +307,14 @@
               <!-- 実労時間 -->
               <td>
                 <div class="text-center" {{ bk }}>
-                  <span id="hlf" class="form-control form-control-sm">{{ AttendanceData[i]["worktime"] }}</span>
+                  <span id="hlf" class="form-control form-control-sm">{{ AttendanceDada[i][14] }}</span>
                 </div>
               </td>
               <!-- 備考 -->
               <td class="text-center">
                 <div>
                   <input class="form-control form-control-sm" type="{{ typ[1] }}" name="bikou{{ ms.m }}" size="44"
-                    value="{{ AttendanceData[i]['remark'] }}" style="font-size:0.9em;">
+                    value="{{ AttendanceDada[i][15] }}" style="font-size:0.9em;">
                 </div>
               </td>
               {% set ms.m = ms.m + 1 %}
