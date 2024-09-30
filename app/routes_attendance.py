@@ -35,6 +35,7 @@ from app.models import (
     Todokede,
     KinmuTaisei,
     D_HOLIDAY_HISTORY,
+    RecordPaidHoliday,
     CountAttendance,
     TimeAttendance,
     D_JOB_HISTORY,
@@ -496,6 +497,7 @@ def indextime(STAFFID, intFlg):
         real_time = dtm
         # 常勤看護師の場合
 
+        related_holiday = db.session.get(RecordPaidHoliday, Shin.STAFFID)
         settime = CalcTimeClass(
             dtm,
             Shin.NOTIFICATION,
@@ -513,7 +515,8 @@ def indextime(STAFFID, intFlg):
             attendace_query.JOBTYPE_CODE,
             STAFFID,
             Shin.WORKDAY,
-            attendace_query.HOLIDAY_TIME,
+            # attendace_query.HOLIDAY_TIME,
+            related_holiday.BASETIMES_PAIDHOLIDAY,
         )
         settime.calc_time()
 
@@ -530,7 +533,10 @@ def indextime(STAFFID, intFlg):
             contract_work_time = work_time.WORKTIME
 
         print(f"{Shin.WORKDAY.day} 日")
-        print(f"aDd 14: {AttendanceDada[Shin.WORKDAY.day][14]}")
+        # print(f"aD remark: {AttendanceData[Shin.WORKDAY.day]['remark']}")
+        print(f"Real time: {real_time}")
+        print(f"Real time list: {real_time_sum}")
+        print(f"What?: {syukkin_times_0}")
         # sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
 
         # w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
@@ -618,7 +624,7 @@ def indextime(STAFFID, intFlg):
         AttendanceDada[Shin.WORKDAY.day][13] += syukkin_times[n]
 
     return render_template(
-        "attendance/index_diff.html",
+        "attendance/index_diff_diff.html",
         title="ホーム",
         notifi_lst=notification_items,
         notifi_pm_lst=notification_pm_list,

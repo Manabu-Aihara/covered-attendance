@@ -43,7 +43,7 @@ from app.models import (
 )
 from app.attendance_classes import AttendanceAnalysys
 from app.calender_classes import MakeCalender
-from app.calc_work_classes_diff import DataForTable, CalcTimeClass, get_last_date
+from app.calc_work_classes import DataForTable, CalcTimeClass, get_last_date
 from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
 from app.attendance_query_class import AttendanceQuery
 
@@ -545,7 +545,10 @@ def indextime(STAFFID, intFlg):
             contract_work_time = work_time.WORKTIME
 
         print(f"{Shin.WORKDAY.day} 日")
-        print(f"aD remark: {AttendanceData[Shin.WORKDAY.day]['remark']}")
+        # print(f"aD remark: {AttendanceData[Shin.WORKDAY.day]['remark']}")
+        print(f"Real time: {real_time}")
+        print(f"Real time list: {real_time_sum}")
+        print(f"What?: {syukkin_times_0}")
         # sum_0 += AttendanceData[Shin.WORKDAY.day][14]
 
         # w_h = AttendanceData[Shin.WORKDAY.day][14] // (60 * 60)

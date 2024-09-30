@@ -129,8 +129,8 @@ class SubjectImpl(Subject):
         # Python の datetime.now で秒以下を切り捨てる方法
         # https://hawksnowlog.blogspot.com/2022/06/python-datetime-now-without-seconds.html
         now = datetime.now().replace(second=0, microsecond=0)
-        it_time3 = datetime(now.year, 3, 31, 7, 0)
-        it_time9 = datetime(now.year, 9, 30, 7, 0)
+        it_time3 = datetime(now.year, 3, 31, 18, 0)
+        it_time9 = datetime(now.year, 9, 30, 18, 0)
         it_time4 = datetime(now.year, 4, 1, 7, 0)
         it_time10 = datetime(now.year, 10, 1, 7, 0)
         self._state = 3 if (now == it_time3) else self._state

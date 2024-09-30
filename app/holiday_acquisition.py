@@ -222,7 +222,7 @@ class HolidayAcquire:
 
     def get_notification_rests(self, notification_id: int) -> Union[float, str]:
         # 年休対象項目ID（M_NOTIFICATION）
-        n_code_list: List[int] = [3, 4, 10, 11, 12, 13, 14, 15]
+        n_code_list: List[int] = [3, 4, 9, 10, 11, 12, 13, 14, 15]
 
         # 条件フィルター
         filters = []
@@ -436,7 +436,7 @@ class HolidayAcquire:
             from_prev_last = from_list[-2]
 
         filters.append(Shinsei.WORKDAY.between(from_prev_last, to_list[-2]))
-        filters.append(Shinsei.STARTTIME != 0)
+        filters.append(Shinsei.WORKDAY != 0)
 
         attendance_list = (
             db.session.query(Shinsei.id)

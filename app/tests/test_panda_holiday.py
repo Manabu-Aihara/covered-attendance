@@ -111,19 +111,19 @@ def concerned_id_from_panda_indirect(app_context):
 
 # 勤務日数
 @pytest.fixture(name="panda_count")
-@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 18, 0, 0))
 def count_workday_from_panda_indirect(app_context):
-    # return [x for x in work_count_to_mock()[0]]
+    return [x for x in work_count_to_mock()[0]]
     # 下記、例えば付与日一ヶ月前だと12/11倍で仮定する
-    return [round(x * 12 / 11) for x in work_count_to_mock()[0]]
+    # return [round(x * 12 / 11) for x in work_count_to_mock()[0]]
 
 
 # 勤務日数（半年未満メンバー）
 @pytest.fixture(name="panda_half_count")
-@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 18, 0, 0))
 def count_half_workday_from_panda_indirect(app_context):
-    # return [x for x in work_count_to_mock()[1]]
-    return [round(x * 12 / 11) for x in work_count_to_mock()[1]]
+    return [x for x in work_count_to_mock()[1]]
+    # return [round(x * 12 / 11) for x in work_count_to_mock()[1]]
 
 
 # 付与時間
@@ -135,7 +135,7 @@ def plus_holidays_indirect(app_context):
 
 # ID、勤務日数、勤務（半年未満）
 @pytest.fixture
-@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 18, 0, 0))
 def get_work_param(panda_id, panda_count, panda_half_count):
     # print(f"{panda_id}")
     # print(f"調整後{panda_count}")
@@ -155,8 +155,8 @@ def get_acquire_param(panda_id, panda_plus):
 
 
 # とりあえず、フィクスチャが動作するか（勤務日数）
-# @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
+@pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 18, 0, 0))
 def test_print_fixture_count(get_work_param):
     print("expensive")
     print(f"{get_work_param.get('ID')}: {get_work_param.get('Work')}日")
@@ -179,8 +179,8 @@ date_now = datetime.now()
 
 
 # 勤務日数から、付与タイプをDMLで出力
-@pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
+# @pytest.mark.skip
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 18, 0, 0))
 def test_merge_observer(app_context, subject, get_work_param, mocker):
     observer = ObserverCheckType()
     subject.attach(observer)
@@ -205,10 +205,9 @@ def test_merge_observer(app_context, subject, get_work_param, mocker):
         # print(f"---{search_half_flag(i)}---")
         # if search_half_flag(i) is True:
         # 下記ログファイルにDMLとして、出力
-        with open(f"update_type_panda{date_now.strftime('%m%d%H%M')}.log", "a") as f:
+        with open(f"update_type_cat{date_now.strftime('%m%d%H%M')}.log", "a") as f:
             f.write(
-                f"UPDATE panda.M_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE\
-                    ='{post}' WHERE STAFFID={i};\n"
+                f"UPDATE cat.M_RECORD_PAIDHOLIDAY SET ACQUISITION_TYPE ='{post}' WHERE STAFFID={i};\n"
             )
         # ダミーの中、オリジナルメソッドを実行
         original_update_func(i, past, post)
@@ -228,7 +227,7 @@ def test_merge_observer(app_context, subject, get_work_param, mocker):
 
 # 繰り越し日数をDMLで出力するダミー
 @pytest.mark.skip
-@pytest.mark.freeze_time(datetime(2024, 9, 30, 7, 0, 0))
+@pytest.mark.freeze_time(datetime(2024, 9, 30, 18, 0, 0))
 def test_carry_observer(app_context, subject, mocker):
     observer = ObserverCarry()
     subject.attach(observer)
