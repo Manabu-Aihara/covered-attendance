@@ -98,7 +98,6 @@ def token_required(f):
 
 def issue_token(user_id: int, group_id: int) -> Dict[str, Any]:
     if current_user:
-        print(f"Result current user: {current_user}")
         payload = {"user_id": user_id, "group_id": group_id}
         # add token expiration time (1 hour):
         payload["exp"] = datetime.now() + timedelta(hours=1)

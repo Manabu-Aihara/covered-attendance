@@ -1,3 +1,4 @@
+
 @app.route("/jimu_summary_fulltime/<startday>", methods=["GET", "POST"])
 @login_required
 def jimu_summary_fulltime(startday):

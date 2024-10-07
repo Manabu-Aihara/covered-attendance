@@ -575,6 +575,8 @@ def indextime(STAFFID, intFlg):
     sum_0 = 0
     workday_count = 0
     for Shin in shinseis:
+        print(f"{Shin.WORKDAY.day} 日")
+        print(f"Notice PM: {Shin.NOTIFICATION2}")
         # 日付
         # 曜日
         # 勤務日
@@ -629,6 +631,10 @@ def indextime(STAFFID, intFlg):
         )
         settime.calc_time()
 
+        print(f"aD 1 worktime: {AttendanceDada[Shin.WORKDAY.day][14]}")
+        print(f"Real time: {real_time}")
+        print(f"Real time list: {real_time_sum}")
+
         sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
         if AttendanceDada[Shin.WORKDAY.day][14] > 0:
             workday_count += 1
@@ -636,6 +642,7 @@ def indextime(STAFFID, intFlg):
         w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
         w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) // 60
         AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m / 100
+        print(f"aD 2 worktime: {AttendanceDada[Shin.WORKDAY.day][14]}")
 
         s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
 
@@ -651,6 +658,7 @@ def indextime(STAFFID, intFlg):
     working_time = w_h + w_m / 100
     working_time_10 = sum_0 / (60 * 60)
 
+    print(f"Over time list: {over_time_0}")
     sum_over_0 = 0
     for n in range(len(over_time_0)):
         sum_over_0 += over_time_0[n]
@@ -665,6 +673,7 @@ def indextime(STAFFID, intFlg):
     h_h = sum_hol_0 // (60 * 60)
     h_m = (sum_hol_0 - h_h * 60 * 60) // 60
     holiday_work = h_h + h_m / 100
+    print(f"Holiday work: {holiday_work}")
     holiday_work_10 = sum_hol_0 / (60 * 60)
 
     # 配列に入った出勤時間(秒単位)を時間と分に変換
@@ -674,6 +683,7 @@ def indextime(STAFFID, intFlg):
     ]
     for n in range(len(syukkin_times)):
         AttendanceDada[Shin.WORKDAY.day][13] += syukkin_times[n]
+        print(f"Work time list: {AttendanceDada[Shin.WORKDAY.day][13]}")
 
     return render_template(
         "attendance/index.html",

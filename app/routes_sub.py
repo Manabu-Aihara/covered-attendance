@@ -58,11 +58,21 @@ def print_all_todo(auth_user) -> List[TodoOrm]:
 #     return redirect(url_for("post_access_token", token_data=token_dict["data"]))
 
 
+# def get_user_group_id() -> Tuple[int, int]:
+#     print(f"Result current user: {current_user}")
+#     timetable_user = (
+#         db.session.query(User).filter(User.STAFFID == current_user.STAFFID).first()
+#     )
+#     return timetable_user.STAFFID, timetable_user.DEPARTMENT_CODE
+
+
 @app.route("/timetable/auth", methods=["GET", "POST"])
 @login_required
 def post_access_token():
-    user_group_id = get_user_group_id()
-    token_dict = issue_token(user_group_id.STAFFID, user_group_id.DEPARTMENT_CODE)
+    print(f"Result current user: {current_user.STAFFID}")
+    user_num, group_num = get_user_group_id(current_user.STAFFID)
+    print(f"First group number: {group_num}")
+    token_dict = issue_token(user_num, group_num)
     # resp = make_response(jsonify(token_data))
     # return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
     # github_page = os.getenv("GIT_PROVIDE")
@@ -92,11 +102,13 @@ def get_team_name(auth_user, extension) -> str:
 # @login_required
 @token_required
 def print_user_inquiry(auth_user, extension):
+    print(f"Auth user at server: {auth_user}")
+    print(f"Group number: {extension}")
+    # user_num, group_num = get_user_group_id()
     group = db.session.get(Team, extension)
-    print(f"Group name: {group.NAME}")
     return {
         "staff_id": str(auth_user.STAFFID),
-        "group_id": str(extension),
+        "group_id": extension,
         "group_name": group.SHORTNAME,
     }
 

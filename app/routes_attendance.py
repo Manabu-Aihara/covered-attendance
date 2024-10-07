@@ -370,7 +370,6 @@ def indextime(STAFFID, intFlg):
                 or data10 != ""
                 or blankCheck(data12) is not None
             ):
-                print(f"Insert: {InsertFlg}")
                 if data5 == "on":
                     oncall = 1
                     print(f"5: {oncall}")
@@ -384,8 +383,8 @@ def indextime(STAFFID, intFlg):
                     print(f"12: {alc}")
 
                 InsertFlg = 1
-            else:
-                print(f"Flag false!!: {c}")
+            # else:
+            #     print(f"Flag false!!: {c}")
 
             if InsertFlg == 1:
                 print(f"消滅しません: {c}")
@@ -457,13 +456,16 @@ def indextime(STAFFID, intFlg):
     attendance_query_list = attendace_qry_obj.get_attendance_query().order_by(
         Shinsei.STAFFID, Shinsei.WORKDAY
     )
-    # print(f"{attendance_query_list}")
 
     workday_count: int = 0
     work_time_sum: float = 0.0
+
+    """ D_JOB_HISTORYに値がそろってないと、以下動きません """
+
     for attendace_query in attendance_query_list:
         Shin = attendace_query[0]
-        print(f"Notice AM: {Shin.NOTIFICATION}")
+        print(f"{Shin.WORKDAY.day} 日")
+        print(f"Notice PM: {Shin.NOTIFICATION2}")
         # 日付
         # 曜日
         # 勤務日
@@ -497,6 +499,7 @@ def indextime(STAFFID, intFlg):
         real_time = dtm
         # 常勤看護師の場合
 
+        # あくまで暫定的に使う変数
         related_holiday = db.session.get(RecordPaidHoliday, Shin.STAFFID)
         settime = CalcTimeClass(
             dtm,
@@ -532,55 +535,57 @@ def indextime(STAFFID, intFlg):
             )
             contract_work_time = work_time.WORKTIME
 
-        print(f"{Shin.WORKDAY.day} 日")
-        # print(f"aD remark: {AttendanceData[Shin.WORKDAY.day]['remark']}")
+        print(f"aD 1 worktime: {AttendanceDada[Shin.WORKDAY.day][14]}")
         print(f"Real time: {real_time}")
         print(f"Real time list: {real_time_sum}")
-        print(f"What?: {syukkin_times_0}")
+        # print(f"What?: {syukkin_times_0}")
         # sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
 
-        # w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
+        w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
         # """ 24/8/1 修正分 """
-        # w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) / (60 * 60)
+        w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) / (60 * 60)
         """ 24/8/16 追加(勤務時間合計、残業考慮なしver) """
-        if (
-            AttendanceDada[Shin.WORKDAY.day][7] != "00:00"
-            and AttendanceDada[Shin.WORKDAY.day][8] != "00:00"
-        ):
-            AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
-            # if AttendanceData[Shin.WORKDAY.day][14] != 0:
-            workday_count += 1
-            work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
-
-        # """ 24/9/20 変更 """
-        # # 出勤してたら
         # if (
         #     AttendanceDada[Shin.WORKDAY.day][7] != "00:00"
         #     and AttendanceDada[Shin.WORKDAY.day][8] != "00:00"
         # ):
-        #     if (
-        #         AttendanceDada[Shin.WORKDAY.day][10] == "4"
-        #         or AttendanceDada[Shin.WORKDAY.day][10] == "6"
-        #     ) or (
-        #         AttendanceDada[Shin.WORKDAY.day][11] == "4"
-        #         or AttendanceDada[Shin.WORKDAY.day][11] == "6"
-        #     ):
-        #         AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time / 2
-        #         workday_count += 1
-        #         work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
-        #     else:
-        #         AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
-        #         workday_count += 1
-        #         work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
-        # # 1日有休 or 1日出張
-        # else:
-        #     if (
-        #         AttendanceDada[Shin.WORKDAY.day][10] == "3"
-        #         or AttendanceDada[Shin.WORKDAY.day][10] == "5"
-        #     ):
-        #         AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
-        #         workday_count += 1
-        #         work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
+        #     AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
+        #     # if AttendanceData[Shin.WORKDAY.day][14] != 0:
+        #     workday_count += 1
+        #     work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
+
+        """ 24/9/20 変更 """
+        # 出勤してたら
+        if (
+            AttendanceDada[Shin.WORKDAY.day][7] != "00:00"
+            and AttendanceDada[Shin.WORKDAY.day][8] != "00:00"
+        ):
+            if (
+                AttendanceDada[Shin.WORKDAY.day][10] == "1"
+                or AttendanceDada[Shin.WORKDAY.day][10] == "2"
+            ) or (
+                AttendanceDada[Shin.WORKDAY.day][11] == "1"
+                or AttendanceDada[Shin.WORKDAY.day][11] == "2"
+            ):
+                AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m
+            else:
+                if Shin.OVERTIME == "1":
+                    AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m
+                else:
+                    AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
+
+            workday_count += 1
+            work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
+        # 1日有休 or 1日出張
+        else:
+            if (
+                AttendanceDada[Shin.WORKDAY.day][10] == "3"
+                or AttendanceDada[Shin.WORKDAY.day][10] == "5"
+            ):
+                AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
+                work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
+
+        print(f"aD 2 worktime: {AttendanceDada[Shin.WORKDAY.day][14]}")
 
         s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
 
@@ -597,6 +602,7 @@ def indextime(STAFFID, intFlg):
     # working_time = w_h + w_m
     # working_time_10 = sum_0 / (60 * 60)
 
+    print(f"Over time list: {over_time_0}")
     sum_over_0 = 0
     for n in range(len(over_time_0)):
         sum_over_0 += over_time_0[n]
@@ -611,6 +617,7 @@ def indextime(STAFFID, intFlg):
     h_h = sum_hol_0 // (60 * 60)
     h_m = (sum_hol_0 - h_h * 60 * 60) // 60
     holiday_work = h_h + h_m / 100
+    print(f"Holiday work: {holiday_work}")
     holiday_work_10 = sum_hol_0 / (60 * 60)
 
     # 配列に入った出勤時間(秒単位)を時間と分に変換
@@ -622,6 +629,7 @@ def indextime(STAFFID, intFlg):
     ]
     for n in range(len(syukkin_times)):
         AttendanceDada[Shin.WORKDAY.day][13] += syukkin_times[n]
+        print(f"Work time list: {AttendanceDada[Shin.WORKDAY.day][13]}")
 
     return render_template(
         "attendance/index_diff_diff.html",

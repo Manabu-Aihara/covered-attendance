@@ -135,7 +135,7 @@ class DataForTable:
                     self.reflesh.append("cnt")
                 # 走行距離
                 if self.sh_mileage:
-                    self.s_kyori.append(str(self.sh_mileage))
+                    self.s_kyori.append(self.sh_mileage)
 
 
 

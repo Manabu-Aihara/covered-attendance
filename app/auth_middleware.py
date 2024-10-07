@@ -14,13 +14,11 @@ from app.models import StaffLoggin, Team, User
 from app.dummy_model_todo import EventORM
 
 
-def get_user_group_id() -> Tuple[int, int]:
-    print(f"Result current user: {current_user}")
-    return (
-        db.session.query(User.STAFFID, User.DEPARTMENT_CODE)
-        .filter(User.STAFFID == current_user.STAFFID)
-        .first()
+def get_user_group_id(current_user_id: int) -> Tuple[int, int]:
+    timetable_user = (
+        db.session.query(User).filter(User.STAFFID == current_user_id).first()
     )
+    return timetable_user.STAFFID, timetable_user.TEAM_CODE
 
 
 # 特にいらない
@@ -39,8 +37,8 @@ def token_required(f):
     def decorated(*args, **kwargs):
         # 以下コメントで、issue_tokenか!?
         # info = get_user_group_id()
-        # token = issue_token(info.STAFFID, info.CODE)["data"]
-        token = ""
+        # token = issue_token(info.STAFFID, info.DEPARTMENT_CODE)["data"]
+        # token = ""
         if "Authorization" in request.headers:
             # token = request.headers["Authorization"].split(" ")[1]
             # header_parts: list = token.split(".")
@@ -55,12 +53,12 @@ def token_required(f):
             # return header_parts[1]
             token = header_parts[1]
             print(f"Made toke: {token}")
-        if not token:
-            return {
-                "message": "Authentication Token is missing!",
-                "data": token,
-                "error": "Unauthorized",
-            }, 401
+            if not token:
+                return {
+                    "message": "Authentication Token is missing!",
+                    "data": current_user.STAFFID,
+                    "error": "Unauthorized",
+                }, 401
         try:
             data = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
             # current_user = models.User().get_by_id(data["user_id"])
@@ -73,7 +71,7 @@ def token_required(f):
                 .filter(StaffLoggin.STAFFID == data["user_id"])
                 .first()
             )
-            print(f"Auth user: {auth_user}")
+            print(f"Auth user at middle: {auth_user}")
             extension: int = data["group_id"]
             if auth_user is None:
                 return {
@@ -112,7 +110,7 @@ def issue_token(user_id: int, group_id: int) -> Dict[str, Any]:
     if current_user:
         payload = {"user_id": user_id, "group_id": group_id}
         # add token expiration time (5 seconds):
-        payload["exp"] = datetime.now() + timedelta(hours=1)
+        # payload["exp"] = datetime.now() + timedelta(hours=1)
         try:
             # token should expire after 24 hrs
             token = jwt.encode(

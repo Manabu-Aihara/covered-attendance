@@ -361,12 +361,12 @@ def jimu_summary_fulltime(startday):
             y = datetime.today().year
             m = datetime.today().month
 
-        # session['workday_data'] = selected_workday
-        # workday_data = session['workday_data']
+        session["workday_data"] = selected_workday
+        workday_data = session["workday_data"]
     else:
         y = datetime.today().year
         m = datetime.today().month
-        # workday_data = datetime.today().strftime('%Y-%m-%d')
+        workday_data = datetime.today().strftime("%Y-%m-%d")
 
     d = get_last_date(y, m)
     if int(startday) != 1:
@@ -604,10 +604,12 @@ def jimu_summary_fulltime(startday):
         ln_syuttyou_half = len(syuttyou_half)
         ln_reflesh = len(reflesh)
 
-        ln_s_kyori = 0
-        for s in s_kyori:
-            if is_integer_num(s):
-                ln_s_kyori += float(s)
+        ln_s_kyori: float = 0.0
+        # for s in s_kyori:
+        #     if is_integer_num(s):
+        #         ln_s_kyori += float(s)
+        float_list: List[float] = [float(x) for x in s_kyori]
+        ln_s_kyori = math.fsum(float_list)
 
         real_sum = 0
         # for n in range(len(syukkin_times_0)):

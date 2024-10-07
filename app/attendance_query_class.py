@@ -46,6 +46,16 @@ class AttendanceQuery:
             else attendance_filters
         )
 
+    def db_error_handler(func):
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except ValueError as e:
+                return e
+
+        return wrapper
+
+    @db_error_handler
     def get_templates(self):
         template_filters = [D_JOB_HISTORY.STAFFID == self.staff_id]
         template_filters += self._get_filter(2, 7)
@@ -54,6 +64,7 @@ class AttendanceQuery:
             and_(*template_filters)
         )
 
+    @db_error_handler
     def _get_sub_parttime(self):
         attendance_filters = self._get_filter(0, 4)
         attendance_filters.append(Shinsei.STAFFID == D_HOLIDAY_HISTORY.STAFFID)
@@ -68,6 +79,7 @@ class AttendanceQuery:
             .subquery()
         )
 
+    @db_error_handler
     def get_attendance_query(self):
         attendance_filters = self._get_filter()
 
@@ -105,6 +117,7 @@ class AttendanceQuery:
             .subquery()
         )
 
+    @db_error_handler
     def get_clerical_attendance(self):
         clerk_filters = self._get_filter(1, 6)
 
