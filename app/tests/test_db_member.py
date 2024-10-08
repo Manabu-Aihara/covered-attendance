@@ -26,8 +26,9 @@ def test_add_user_form(app_context):
     # print(getattr(AddDataUserForm, "department"))
 
 
+@pytest.mark.skip
 def test_raise_filter(app_context):
-    print(check_table_member(3))
+    print(check_table_member(31, D_JOB_HISTORY))
     # with pytest.raises(ValueError) as except_info:
     #     check_table_member(3)
     # print(except_info.value)
@@ -49,6 +50,22 @@ def test_join_data_count(app_context):
     )
     # assert len(join_info_objects) == 8
     print(join_info_objects)
+
+
+def test_cat_mileage_member(app_context):
+    filters = []
+    from_day = datetime(year=2024, month=9, day=1)
+    to_day = datetime(year=2024, month=9, day=30)
+    filters.append(Shinsei.WORKDAY.between(from_day, to_day))
+    filters.append(User.CONTRACT_CODE == 2)
+    filters.append(Shinsei.MILEAGE != 0.0)
+    concerned_users = (
+        db.session.query(Shinsei.STAFFID)
+        .join(User, User.STAFFID == Shinsei.STAFFID)
+        .filter(and_(*filters))
+        .all()
+    )
+    print(set(concerned_users))
 
 
 @pytest.mark.skip
@@ -96,7 +113,7 @@ def get_attendance_query_obj(app_context):
     return aq_obj20, aq_obj201
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_get_attendance_query(aq):
     querys = aq[0].get_attendance_query()
     cnt: int = 0

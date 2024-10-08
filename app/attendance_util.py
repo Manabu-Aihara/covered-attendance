@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import session
 
 from app import db
-from app.models import Busho, KinmuTaisei, Post, Team, Jobtype, D_JOB_HISTORY
+from app.models import Busho, KinmuTaisei, Post, Team, Jobtype
 
 
 def get_month_workday(selected_date: str = "") -> Tuple[int, int, str]:
@@ -63,25 +63,16 @@ def convert_null_role(db_obj: T) -> T:
     return db_obj
 
 
-def check_table_member(staff_id: int):
-    # neccesary_object = db.session.get(D_JOB_HISTORY, self.staff_id)
-    neccesary_object = (
-        db.session.query(D_JOB_HISTORY)
-        .filter(D_JOB_HISTORY.STAFFID == staff_id)
-        .first()
-    )
+def check_table_member(staff_id: int, table_model: T):
+    neccesary_object = db.session.get(table_model, staff_id)
     object_attributes = [n for n in neccesary_object.__dict__]
-    return object_attributes
-    # attr_list = []
-    # for neccesary_attr in object_attributes[1:]:
-    #     attr_list.append(getattr(neccesary_object, neccesary_attr))
-    # if (
-    #     getattr(neccesary_object, neccesary_attr) is None
-    #     or getattr(neccesary_object, neccesary_attr) == ""
-    # ):
-    #     print("ここ通ります")
-    #     return neccesary_attr
-    # raise ValueError(f"There is not {neccesary_attr} value of {staff_id}")
-    # else:
-    #     return 0
-    # return attr_list
+    attr_list = []
+    for neccesary_attr in object_attributes[1:]:
+        attribute_value = getattr(neccesary_object, neccesary_attr)
+        if attribute_value is None or attribute_value == "":
+            attr_list.append(neccesary_attr)
+            # raise ValueError(f"There is not {neccesary_attr} value of {staff_id}")
+    if len(attr_list) != 0:
+        return attr_list
+    else:
+        return "無問題"

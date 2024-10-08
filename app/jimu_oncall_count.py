@@ -577,8 +577,8 @@ def jimu_summary_fulltime(startday):
             sh.JOBTYPE_CODE,
             sh.STAFFID,
             sh.WORKDAY,
-            # sh.HOLIDAY_TIME,
-            related_holiday.BASETIMES_PAIDHOLIDAY,
+            sh.HOLIDAY_TIME,
+            # related_holiday.BASETIMES_PAIDHOLIDAY,
         )
         settime.calc_time()
 

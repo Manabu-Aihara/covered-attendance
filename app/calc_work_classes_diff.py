@@ -5,7 +5,7 @@
 **********
 """
 
-import os
+import os, math
 from functools import wraps
 from typing import Tuple, List
 from datetime import datetime, timedelta, time
@@ -313,6 +313,7 @@ class CalcTimeClass:
             # self.real_time_sum.append(self.real_time.seconds)
 
     """ ここが問題 """
+
     # 休憩分を引く
     # if self.t - timedelta(hours=rest) >= timedelta(hours=6):
     #     self.t = self.t - timedelta(hours=1)  # ６時間以上は休憩１時間を引く
@@ -320,8 +321,19 @@ class CalcTimeClass:
     # elif self.t - timedelta(hours=rest) >= timedelta(hours=5):
     #     self.t = self.t - timedelta(minutes=45)  # ５時間以上は休憩４５分を引く
     #     self.real_time = self.real_time - timedelta(minutes=45)
+    def calc_normal_rest(self):
+        contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
+        # actual_time = self.calc_actual_work_time()
+        if contract_work_time >= 6:
+            timedelta(hours=1)
+        else:
+            timedelta(minutes=45)
 
-    # routes_attendanceにて、if Shin.OVERTIME == "1" で使う
+    def calc_meticulous_normal_rest(self, notification: str):
+        if self.sh_starttime >= "13:00":
+            timedelta(hours=0)
+        if notification == "2" and self.sh_endtime <= "13:00":
+            timedelta(hours=0)
 
     """
         残業なし: 契約時間
@@ -333,7 +345,7 @@ class CalcTimeClass:
     def check_over_work(self) -> timedelta:
         input_working_time = self.calc_actual_work_time()
         contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
-        if input_working_time > timedelta(hours=contract_work_time):
+        if input_working_time >= timedelta(hours=contract_work_time):
             if self.sh_overtime == "0":
                 return timedelta(hours=contract_work_time)
             elif self.sh_overtime == "1":  # 残業した場合
@@ -370,13 +382,15 @@ class CalcTimeClass:
         working_time = self.check_over_work()
         for one_notification in notifications:
             if one_notification in self.n_code_list:
-                return working_time - self.get_times_rest(one_notification)
+                working_time -= self.get_times_rest(one_notification)
             elif one_notification in self.n_half_list:
-                return working_time - self.get_half_rest()
+                working_time -= self.get_half_rest()
+            # ❗ self.sh_starttime != "00:00" or self.sh_endtime != "00:00"
             elif one_notification == "9":
-                return working_time - timedelta(hours=contract_work_time)
-            elif one_notification == "" or one_notification is None:
-                return working_time
+                working_time -= timedelta(hours=contract_work_time / 2)
+            # elif one_notification == "":
+            #     return working_time
+        return working_time
 
     """
         看護師限定、休日出勤リスト
@@ -384,26 +398,23 @@ class CalcTimeClass:
         @Return: list<float>        
         """
 
-    def calc_nurse_holiday_working(self, *notifications: str) -> List[float]:
+    def calc_nurse_holiday_works(self, *notifications: str) -> List[float]:
         # 祝日(2)、もしくはNSで土日(1)
         nurse_holiday_work_list = []
         nurse_member = db.session.get(User, self.staffid)
         job_type = db.session.get(Jobtype, nurse_member.JOBTYPE_CODE)
-        decrement_rest_time = self.change_notify_method(notifications)
+        # * 必須
+        decrement_rest_time = self.change_notify_method(*notifications)
         if (
             self.sh_holiday == "2"
             or self.sh_holiday == "1"
             and job_type.JOBTYPE_CODE == 1
-            and nurse_member.CONTRACT_CODE == 2
+            # and nurse_member.CONTRACT_CODE == 2
         ):
-            if notifications != ():
-                decrement_time_second = decrement_rest_time.total_seconds()
-                nurse_holiday_work_list.append(decrement_time_second)
-            else:
-                working_time_second = decrement_rest_time.total_seconds()
-                nurse_holiday_work_list.append(working_time_second)
-
-        return nurse_holiday_work_list
+            nurse_holiday_work_list.append(decrement_rest_time.total_seconds())
+            return nurse_holiday_work_list
+        else:
+            return "Missing"
 
     # 打刻は00:00で
     def get_zero_time_notification(self, notification: str) -> float:
