@@ -128,7 +128,7 @@
 
           <tbody>
             {% set ms = namespace(m=0) %} {% set ns = namespace(n = hld|length) %}
-            {% for i in range(1, AttendanceData | length) %}
+            {% for i in range(1, AttendanceData | length - 1) %}
             <tr>
               <!-- これは隠しかな -->
               <td>
@@ -194,9 +194,10 @@
                 <div style="font-size:0.9em;" id="forsave1_{{ ms.m }}">
                   {% if (AttendanceData[i]["start_time"] != "00:00" and AttendanceData[i]["end_time"] != "00:00") or
                   ((AttendanceData[i]["start_time"] == "00:00" and AttendanceData[i]["end_time"] == "00:00") and
-                  (AttendanceData[i]["notification"] != "" or AttendanceData[i]["notification_pm"] != "")) %}
+                  (AttendanceData[i]["notification"] is not none or AttendanceData[i]["notification_pm"] is not none))
+                  %}
                   <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="stime{{ ms.m }}"
-                    value="{{ AttendanceData[i]['start_time'] }}">
+                    value="{{ AttendanceData[i]['start_time'] }}"><span>{{ AttendanceData[i]["notification"] }}</span>
                   {% elif AttendanceData[i]["start_time"] == "00:00" and AttendanceData[i]["end_time"] != "00:00" %}
                   <input class="form-control form-control-sm alert-time" type="{{ typ[2] }}" name="stime{{ ms.m }}"
                     value="{{ AttendanceData[i]['start_time'] }}">
@@ -211,7 +212,8 @@
                 <div style="font-size:0.9em;" id="forsave2_{{ ms.m }}">
                   {% if (AttendanceData[i]["start_time"] != "00:00" and AttendanceData[i]["end_time"] != "00:00") %}
                   <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="ftime{{ ms.m }}"
-                    value="{{ AttendanceData[i]['end_time'] }}" onchange="func1()">
+                    value="{{ AttendanceData[i]['end_time'] }}" onchange="func1()"><span>{{
+                    AttendanceData[i]["notification_pm"] }}</span>
                   {% elif (AttendanceData[i]["start_time"] == "00:00" and AttendanceData[i]["end_time"] == "00:00") and
                   (AttendanceData[i]["notification"] or AttendanceData[i]["notification_pm"]) %}
                   <input class="form-control form-control-sm checked-time" type="{{ typ[2] }}" name="ftime{{ ms.m }}"
