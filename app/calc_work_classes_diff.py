@@ -218,19 +218,6 @@ class CalcTimeClass:
 
     n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
     n_half_list: List[str] = ["4", "6", "16"]
-    # ちょっと待って
-    # real_time_list: list = []
-    # over_time_list: list = []
-    # incorrect_list: list = []
-
-    # def setup(cls):
-    #     return cls()
-
-    # @classmethod
-    # def setup(
-    #     cls, staff_id: int, start_time: str, end_time: str, over_time: str, holiday: str
-    # ):
-    #     return cls(staff_id, start_time, end_time, over_time, holiday)
 
     # 実働時間の算出
     def calc_actual_work_time(self) -> timedelta:
@@ -271,10 +258,6 @@ class CalcTimeClass:
         else:
             return result_work_time, related_holiday.BASETIMES_PAIDHOLIDAY
             # return work_time, related_holiday.HOLIDAY_TIME
-
-    # 今だけ暫定
-    # if intHolidaytime == 0 or worktime == 0:
-    #     messagebox.showerror('エラー', '社員番号:' + str(self.staffid) + '\nのD_JOB_HISTORYのCONTRACT_CODEが登録されていません')
 
     """
         - 時間休
@@ -317,8 +300,6 @@ class CalcTimeClass:
             # self.real_time_sum.append(self.real_time.seconds)
             raise ValueError("入力に誤りがあります。申請はありせんか？")
 
-    """ ここが問題 """
-
     # 休憩分を引く
     # if self.t - timedelta(hours=rest) >= timedelta(hours=6):
     #     self.t = self.t - timedelta(hours=1)  # ６時間以上は休憩１時間を引く
@@ -332,6 +313,7 @@ class CalcTimeClass:
     #     if notification == "2" and self.sh_endtime <= "13:00":
     #         timedelta(hours=0)
 
+    # 通常一日の時間休
     def calc_normal_rest(self) -> timedelta:
         contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
         # 今のところ私の判断、追加・変更あり
@@ -349,7 +331,6 @@ class CalcTimeClass:
         @Return: timedelta
         """
 
-    # 9: 慶弔 congratulations and condolences
     def check_over_work(self) -> timedelta:
         actual_work_time = self.calc_actual_work_time()
         input_working_time = actual_work_time - self.calc_normal_rest()
@@ -373,13 +354,7 @@ class CalcTimeClass:
             return working_time
         # 半日出張、半休、生理休暇かつ慶弔半日を想定して
         else:
-            work_time_plus_half = working_time + timedelta(
-                hours=contract_holiday_time / 2
-            )
-            if work_time_plus_half >= timedelta(hours=contract_work_time):
-                return work_time_plus_half
-            else:
-                raise ValueError("入力に誤りがあります。申請はありせんか？")
+            return working_time + timedelta(hours=contract_holiday_time / 2)
 
     """
         残業分
@@ -387,11 +362,13 @@ class CalcTimeClass:
         """
 
     def get_over_time(self) -> float:
-        repaired_time = self.repaire_working_time()
+        working_time = (
+            self.repaire_working_time()
+        )  # 契約時間未満なら、半日足ささる（北海道弁）
         contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
-        over_time_second = repaired_time.total_seconds() - contract_work_time * 60 * 60
+        over_time_second = working_time.total_seconds() - contract_work_time * 60 * 60
         # self.over_time_0.append(self.t.seconds - worktime * 60 * 60)
-        return over_time_second if over_time_second != 0.0 else 9.99
+        return over_time_second if over_time_second > 0.0 else 9.99
 
     """
         勤務時間 - 時間休などの申請時間
@@ -399,6 +376,7 @@ class CalcTimeClass:
         @Return: timedelta
         """
 
+    # 9: 慶弔 congratulations and condolences
     def change_notify_method(self, *notifications: str) -> timedelta:
         working_time = self.repaire_working_time()
         contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
@@ -411,6 +389,12 @@ class CalcTimeClass:
             elif one_notification == "9":
                 working_time -= timedelta(hours=contract_work_time / 2)
         return working_time
+
+    """
+        リアル実働時間（労働時間 - 年休、出張、時間休など）
+        @Params: tuple<str>
+        @Return: float
+        """
 
     def get_real_time(self, *notifications: str) -> float:
         decrement_rest_time = self.change_notify_method(*notifications)

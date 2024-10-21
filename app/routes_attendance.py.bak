@@ -1,6 +1,6 @@
 import os, math
 from functools import wraps
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta, date, time
 from decimal import Decimal, ROUND_HALF_UP
 import jpholiday
@@ -35,7 +35,6 @@ from app.models import (
     Todokede,
     KinmuTaisei,
     D_HOLIDAY_HISTORY,
-    RecordPaidHoliday,
     CountAttendance,
     TimeAttendance,
     D_JOB_HISTORY,
@@ -44,10 +43,9 @@ from app.models import (
 )
 from app.attendance_classes import AttendanceAnalysys
 from app.calender_classes import MakeCalender
-from app.calc_work_classes import DataForTable, CalcTimeClass, get_last_date
+from app.calc_work_classes_diff import DataForTable, CalcTimeClass, get_last_date
 from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
 from app.attendance_query_class import AttendanceQuery
-from app.new_calendar import NewCalendar
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -293,63 +291,57 @@ def indextime(STAFFID, intFlg):
         reload_y = request.form.get("reload_h")
         ##### データ取得 #####
         # cal = []
-        calendar_obj = NewCalendar(y, m)
-        str_date_list = [
-            f"{y}-{m}-{date_tuple[0]}"
-            for date_tuple in calendar_obj.get_itermonthdays()
-        ]
-        i = 0
-        for c in cal:
-            # for str_date in str_date_list:
-            data0 = request.form.get("dat" + str(i))  # フラッグID
-            data1 = request.form.get("row" + str(i))  # 日付
-            data2 = TimeCheck(request.form.get("stime" + str(i)))  # 開始時間
-            data3 = TimeCheck(request.form.get("ftime" + str(i)))  # 終了時間
-            data_4 = request.form.get("skyori" + str(i))  # 移動距離
-            data5 = request.form.get("oncall" + str(i))  # オンコール
-            data6 = request.form.get("oncall_cnt" + str(i))  # オンコール回数
-            data7 = request.form.get("todokede" + str(i))  # 届出AM
-            data8 = request.form.get("zangyou" + str(i))  # 残業
-            data9 = request.form.get("engel" + str(i))  # エンゼル回数
-            data10 = request.form.get("bikou" + str(i))  # 備考
-            data11 = request.form.get("todokede_pm" + str(i))  # 届出PM
-            data12 = request.form.get("alcohol" + str(i))  # アルコール
+        # i = 0
+        for i, c in enumerate(cal):
+            flag_id = request.form.get("dat" + str(i))  # フラッグID
+            current_date = request.form.get("row" + str(i))  # 日付
+            start_time = TimeCheck(request.form.get("stime" + str(i)))  # 開始時間
+            finish_time = TimeCheck(request.form.get("ftime" + str(i)))  # 終了時間
+            mileage = request.form.get("skyori" + str(i))  # 移動距離
+            oncall = request.form.get("oncall" + str(i))  # オンコール
+            oncall_cnt = request.form.get("oncall_cnt" + str(i))  # オンコール回数
+            engel_cnt = request.form.get("engel" + str(i))  # エンゼル回数
+            notification = request.form.get("todokede" + str(i))  # 届出AM
+            notification_pm = request.form.get("todokede_pm" + str(i))  # 届出PM
+            overtime = request.form.get("zangyou" + str(i))  # 残業
+            alcohol = request.form.get("alcohol" + str(i))  # アルコール
+            remark = request.form.get("bikou" + str(i))  # 備考
 
             ##### 勤怠条件分け #####
             # c = datetime.strptime(str_date, "%Y-%m-%d")[0]
             InsertFlg = 0
             atd = AttendanceAnalysys(
                 c,
-                data0,
-                data1,
-                data2,
-                data3,
-                data_4,
-                data5,
-                data6,
-                data7,
-                data8,
-                data9,
-                data10,
-                data11,
-                data12,
+                flag_id,
+                current_date,
+                start_time,
+                finish_time,
+                mileage,
+                oncall,
+                oncall_cnt,
+                notification,
+                overtime,
+                engel_cnt,
+                remark,
+                notification_pm,
+                alcohol,
                 STAFFID,
                 InsertFlg,
             )
             atd.analysys()
 
             ##### 走行距離小数第1位表示に変換 #####
-            data4 = get_move_distance(data_4)
+            result_mileage = get_move_distance(mileage)
 
-            todokede_AM = data7
-            zangyou = 1 if data8 == "on" else 0
-            todokede_PM = data11
+            todokede_AM = notification
+            zangyou = 1 if overtime == "on" else 0
+            todokede_PM = notification_pm
 
             holiday = ""
-            if jpholiday.is_holiday_name(datetime.strptime(data1, "%Y-%m-%d")):
+            if jpholiday.is_holiday_name(datetime.strptime(current_date, "%Y-%m-%d")):
                 # 要は祝日
                 holiday = "2"
-            elif get_day_of_week_jp(datetime.strptime(data1, "%Y-%m-%d")) == "1":
+            elif get_day_of_week_jp(datetime.strptime(current_date, "%Y-%m-%d")) == "1":
                 # 要は土日
                 holiday = "1"
 
@@ -358,139 +350,168 @@ def indextime(STAFFID, intFlg):
             engel: str = "0"
             alc: int = 0
             # 登録するかの判定
-            # 開始時間
             if (
-                data2 != "00:00"
-                or data3 != "00:00"
-                or (data4 is not None and data4 != "0.0" and data4 != "")
-                or blankCheck(data6) is not None
+                start_time != "00:00"
+                or finish_time != "00:00"
+                or (
+                    result_mileage is not None
+                    and result_mileage != "0.0"
+                    and result_mileage != ""
+                )
+                or blankCheck(oncall_cnt) is not None
                 or blankCheck(todokede_AM) is not None
                 or blankCheck(todokede_PM) is not None
-                or blankCheck(data9) is not None
-                or data10 != ""
-                or blankCheck(data12) is not None
+                or blankCheck(engel_cnt) is not None
+                or remark != ""
+                or blankCheck(alcohol) is not None
             ):
-                if data5 == "on":
+                # この条件に当てはまれば、消去されない
+                print(f"Insert: {InsertFlg}")
+                if oncall == "on":
                     oncall = 1
                     print(f"5: {oncall}")
-                if data6 != "0":
-                    oncall_cnt = data6
-                if data9 != "0":
-                    engel = data9
+                if oncall_cnt != "0":
+                    oncall_cnt = oncall_cnt
+                if engel_cnt != "0":
+                    engel = engel_cnt
                     print(f"9: {engel}")
-                if data12 == "on":
+                if alcohol == "on":
                     alc = 1
                     print(f"12: {alc}")
 
                 InsertFlg = 1
-            # else:
-            #     print(f"Flag false!!: {c}")
+                # else:
+                #     print(f"Flag false!!: {c}")
 
-            if InsertFlg == 1:
-                print(f"消滅しません: {c}")
-                AddATTENDANCE = Shinsei(
-                    STAFFID,
-                    data1,
-                    holiday,
-                    data2,
-                    data3,
-                    data4,
-                    oncall,
-                    oncall_cnt,
-                    engel,
-                    todokede_AM,
-                    todokede_PM,
-                    zangyou,
-                    alc,
-                    data10,
-                )
-                db.session.add(AddATTENDANCE)
-            i = i + 1
-
-        db.session.commit()
+                if InsertFlg == 1:
+                    print(f"消滅しません: {c}")
+                    print(f"End: {finish_time}")
+                    calc_time_obj = CalcTimeClass(
+                        STAFFID, start_time, finish_time, zangyou, holiday
+                    )
+                    (
+                        print(f"Type: {type(todokede_PM)}")
+                        if todokede_PM == ""
+                        else print(f"Notification PM: {todokede_PM}")
+                    )
+                    # calc_real_time = calc_time_obj.get_real_time(
+                    #     todokede_AM, todokede_PM
+                    # )
+                    AddATTENDANCE = Shinsei(
+                        STAFFID,
+                        current_date,
+                        holiday,
+                        start_time,
+                        finish_time,
+                        result_mileage,
+                        oncall,
+                        oncall_cnt,
+                        engel,
+                        todokede_AM,
+                        todokede_PM,
+                        zangyou,
+                        alc,
+                        remark,
+                    )
+                    db.session.add(AddATTENDANCE)
+                db.session.commit()
 
     """ ここから、押下後の表示 """
     # d = get_last_date(y, m)
     # 配列に初期値入れてデータの存在するとこに入れる
     # オンコールカウント用　2次元配列
-    AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
-    # AttendanceDada[日付][項目]
-
-    calendar_obj = NewCalendar(y, m)
-    str_date_list = [
-        f"{y}-{m}-{date_tuple[0]}" for date_tuple in calendar_obj.get_itermonthdays()
+    attendance_key_list = [
+        "date",
+        "date_DD",
+        "dow",
+        "oncall",
+        "oncall_count",
+        "engel_count",
+        "start_time",
+        "end_time",
+        "mileage",
+        "notification",
+        "notification_pm",
+        "over_time",
+        "alcohol",
+        "worktime",
+        "remark",
     ]
+    # AttendanceDada = [["" for i in range(0, 16)] for j in range(d + 1)]
+    AttendanceData: List[Dict[str, Any]] = [{}]
+    list_null_15 = [None for i in range(0, 16)]
+    for i in range(d + 1):
+        dict_data = dict(zip(attendance_key_list, list_null_15))
+        # print(f"Expent dict: {AttendanceData}")
+        AttendanceData.append(dict_data)
+
     # 初期値
-    i = 1
-    for c in cal:
-        # for str_date in str_date_list:
+    # i = 1
+    for i, c in enumerate(cal, 1):
         #     c = datetime.strptime(str_date, "%Y-%m-%d")
         # print(f"cal 一個: {c}")
         #
-        # AttendanceDada[i][1] = datetime.strptime(str(y, m, i), "%Y-%m-%d")
+        # AttendanceData[i][1] = datetime.strptime(str(y, m, i), "%Y-%m-%d")
         # 日付(YYYY-MM-DD)
-        AttendanceDada[i][1] = c.strftime("%Y-%m-%d")
+        AttendanceData[i]["date"] = c.strftime("%Y-%m-%d")
         # 日付(DD)
-        AttendanceDada[i][2] = c.strftime("%d")
+        AttendanceData[i]["date_DD"] = c.strftime("%d")
         # 曜日(日本語)
-        AttendanceDada[i][3] = d_week[c.strftime("%a")]
+        AttendanceData[i]["dow"] = d_week[c.strftime("%a")]
         # オンコール当番
         # オンコール対応
         # エンゼル対応
         # 開始時間
-        AttendanceDada[i][7] = "00:00"
+        AttendanceData[i]["start_time"] = "00:00"
         # 終了時間
-        AttendanceDada[i][8] = "00:00"
+        AttendanceData[i]["end_time"] = "00:00"
         # 走行距離
-        AttendanceDada[i][9] = 0.0
+        AttendanceData[i]["mileage"] = 0.0
         # 申請(AM)
         # 申請(PM)
         # 残業申請
         # アルコールチェック
         # 勤務時間
-        AttendanceDada[i][14] = 0
+        AttendanceData[i]["worktime"] = 0
         # 備考
-        i = i + 1
+        AttendanceData[i]["remark"] = ""
+        # i = i + 1
 
     # attendace_qry_obj = AttendanceQuery(STAFFID, FromDay, ToDay)
     attendance_query_list = attendace_qry_obj.get_attendance_query().order_by(
         Shinsei.STAFFID, Shinsei.WORKDAY
     )
 
+    nurse_holiday_work_list = []
     workday_count: int = 0
     work_time_sum: float = 0.0
-
-    """ D_JOB_HISTORYに値がそろってないと、以下動きません """
-
     for attendace_query in attendance_query_list:
         Shin = attendace_query[0]
-        print(f"{Shin.WORKDAY.day} 日")
-        print(f"Notice PM: {Shin.NOTIFICATION2}")
         # 日付
         # 曜日
         # 勤務日
         # オンコール当番
-        AttendanceDada[Shin.WORKDAY.day][4] = Shin.ONCALL
+        AttendanceData[Shin.WORKDAY.day]["oncall"] = Shin.ONCALL
         # オンコール対応
-        AttendanceDada[Shin.WORKDAY.day][5] = NoneCheck(Shin.ONCALL_COUNT)
+        AttendanceData[Shin.WORKDAY.day]["oncall_count"] = NoneCheck(Shin.ONCALL_COUNT)
         # エンゼル対応
-        AttendanceDada[Shin.WORKDAY.day][6] = NoneCheck(Shin.ENGEL_COUNT)
+        AttendanceData[Shin.WORKDAY.day]["engel_count"] = NoneCheck(Shin.ENGEL_COUNT)
         # 開始時間
-        AttendanceDada[Shin.WORKDAY.day][7] = TimeCheck(Shin.STARTTIME)
+        AttendanceData[Shin.WORKDAY.day]["start_time"] = TimeCheck(Shin.STARTTIME)
         # 終了時間
-        AttendanceDada[Shin.WORKDAY.day][8] = TimeCheck(Shin.ENDTIME)
+        AttendanceData[Shin.WORKDAY.day]["end_time"] = TimeCheck(Shin.ENDTIME)
         # 走行距離
-        AttendanceDada[Shin.WORKDAY.day][9] = Shin.MILEAGE
+        AttendanceData[Shin.WORKDAY.day]["mileage"] = Shin.MILEAGE
         # 申請(AM)
-        AttendanceDada[Shin.WORKDAY.day][10] = Shin.NOTIFICATION
+        AttendanceData[Shin.WORKDAY.day]["notification"] = Shin.NOTIFICATION
         # 申請(PM)
-        AttendanceDada[Shin.WORKDAY.day][11] = Shin.NOTIFICATION2
+        AttendanceData[Shin.WORKDAY.day]["notification_pm"] = Shin.NOTIFICATION2
         # 残業申請
-        AttendanceDada[Shin.WORKDAY.day][12] = Shin.OVERTIME
+        AttendanceData[Shin.WORKDAY.day]["over_time"] = Shin.OVERTIME
         # アルコールチェック
-        AttendanceDada[Shin.WORKDAY.day][13] = Shin.ALCOHOL
+        AttendanceData[Shin.WORKDAY.day]["alcohol"] = Shin.ALCOHOL
         # 備考
-        AttendanceDada[Shin.WORKDAY.day][15] = Shin.REMARK
+        AttendanceData[Shin.WORKDAY.day]["remark"] = Shin.REMARK
 
         # 参照モード
         dtm = datetime.strptime(Shin.ENDTIME, "%H:%M") - datetime.strptime(
@@ -499,29 +520,51 @@ def indextime(STAFFID, intFlg):
         real_time = dtm
         # 常勤看護師の場合
 
-        # あくまで暫定的に使う変数
-        related_holiday = db.session.get(RecordPaidHoliday, Shin.STAFFID)
-        settime = CalcTimeClass(
-            dtm,
-            Shin.NOTIFICATION,
-            Shin.NOTIFICATION2,
-            Shin.STARTTIME,
-            Shin.ENDTIME,
-            Shin.OVERTIME,
-            attendace_query.CONTRACT_CODE,
-            AttendanceDada,
-            over_time_0,
-            real_time,
-            real_time_sum,
-            syukkin_holiday_times_0,
-            Shin.HOLIDAY,
-            attendace_query.JOBTYPE_CODE,
-            STAFFID,
-            Shin.WORKDAY,
-            # attendace_query.HOLIDAY_TIME,
-            related_holiday.BASETIMES_PAIDHOLIDAY,
+        # settime = CalcTimeClass(
+        #     dtm,
+        #     Shin.NOTIFICATION,
+        #     Shin.NOTIFICATION2,
+        #     Shin.STARTTIME,
+        #     Shin.ENDTIME,
+        #     Shin.OVERTIME,
+        #     attendace_query.CONTRACT_CODE,
+        #     AttendanceData,
+        #     over_time_0,
+        #     real_time,
+        #     real_time_sum,
+        #     syukkin_holiday_times_0,
+        #     Shin.HOLIDAY,
+        #     attendace_query.JOBTYPE_CODE,
+        #     STAFFID,
+        #     Shin.WORKDAY,
+        #     attendace_query.HOLIDAY_TIME,
+        # )
+        # settime.calc_time()
+        # if Shin.STARTTIME != "00:00" and Shin.ENDTIME != "00:00":
+        setting_time = CalcTimeClass(
+            Shin.STAFFID, Shin.STARTTIME, Shin.ENDTIME, Shin.OVERTIME, Shin.HOLIDAY
         )
-        settime.calc_time()
+        try:
+            calc_real_time = setting_time.get_real_time(
+                Shin.NOTIFICATION, Shin.NOTIFICATION2
+            )
+            nurse_holiday_work_time = setting_time.calc_nurse_holiday_work(
+                Shin.NOTIFICATION, Shin.NOTIFICATION2
+            )
+        except ValueError as e:
+            print(e)
+            # return render_template(
+            #     "error/403.html",
+            #     title=current_date,
+            #     message=e,
+            #     u=current_user,
+            # )
+        else:
+            real_time_sum.append(calc_real_time)
+            if setting_time.get_over_time() != 9.99:
+                over_time_0.append(setting_time.get_over_time())
+            if nurse_holiday_work_time != 9.99:
+                nurse_holiday_work_list.append(nurse_holiday_work_time)
 
         """ 24/8/1 変更分 """
         contract_work_time: float = 0.0
@@ -535,57 +578,63 @@ def indextime(STAFFID, intFlg):
             )
             contract_work_time = work_time.WORKTIME
 
-        print(f"aD 1 worktime: {AttendanceDada[Shin.WORKDAY.day][14]}")
-        print(f"Real time: {real_time}")
-        print(f"Real time list: {real_time_sum}")
-        # print(f"What?: {syukkin_times_0}")
-        # sum_0 += AttendanceDada[Shin.WORKDAY.day][14]
+        print(f"{Shin.WORKDAY.day} 日")
+        print(f"Real time: {calc_real_time}")
+        print(f"In real time list: {real_time_sum}")
+        print(f"In over time list: {over_time_0}")
+        print(f"Nurse holiday: {nurse_holiday_work_list}")
+        # sum_0 += AttendanceData[Shin.WORKDAY.day][14]
 
-        w_h = AttendanceDada[Shin.WORKDAY.day][14] // (60 * 60)
+        w_h = calc_real_time // (60 * 60)
         # """ 24/8/1 修正分 """
-        w_m = (AttendanceDada[Shin.WORKDAY.day][14] - w_h * 60 * 60) / (60 * 60)
+        w_m = (calc_real_time - w_h * 60 * 60) / (60 * 60)
         """ 24/8/16 追加(勤務時間合計、残業考慮なしver) """
         # if (
-        #     AttendanceDada[Shin.WORKDAY.day][7] != "00:00"
-        #     and AttendanceDada[Shin.WORKDAY.day][8] != "00:00"
+        #     AttendanceData[Shin.WORKDAY.day]["start_time"] != "00:00"
+        #     and AttendanceData[Shin.WORKDAY.day]["end_time"] != "00:00"
         # ):
-        #     AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
+        #     AttendanceData[Shin.WORKDAY.day]["worktime"] = contract_work_time
         #     # if AttendanceData[Shin.WORKDAY.day][14] != 0:
         #     workday_count += 1
-        #     work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
+        #     work_time_sum = AttendanceData[Shin.WORKDAY.day]["worktime"] * workday_count
 
         """ 24/9/20 変更 """
         # 出勤してたら
         if (
-            AttendanceDada[Shin.WORKDAY.day][7] != "00:00"
-            and AttendanceDada[Shin.WORKDAY.day][8] != "00:00"
+            AttendanceData[Shin.WORKDAY.day]["start_time"] != "00:00"
+            and AttendanceData[Shin.WORKDAY.day]["end_time"] != "00:00"
         ):
             if (
-                AttendanceDada[Shin.WORKDAY.day][10] == "1"
-                or AttendanceDada[Shin.WORKDAY.day][10] == "2"
+                AttendanceData[Shin.WORKDAY.day]["notification"] == "1"
+                or AttendanceData[Shin.WORKDAY.day]["notification"] == "2"
             ) or (
-                AttendanceDada[Shin.WORKDAY.day][11] == "1"
-                or AttendanceDada[Shin.WORKDAY.day][11] == "2"
+                AttendanceData[Shin.WORKDAY.day]["notification_pm"] == "1"
+                or AttendanceData[Shin.WORKDAY.day]["notification_pm"] == "2"
             ):
-                AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m
+                AttendanceData[Shin.WORKDAY.day]["worktime"] = w_h + w_m
+                workday_count += 1
+                work_time_sum = (
+                    AttendanceData[Shin.WORKDAY.day]["worktime"] * workday_count
+                )
             else:
-                if Shin.OVERTIME == "1":
-                    AttendanceDada[Shin.WORKDAY.day][14] = w_h + w_m
-                else:
-                    AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
-
-            workday_count += 1
-            work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
+                AttendanceData[Shin.WORKDAY.day]["worktime"] = contract_work_time
+                workday_count += 1
+                work_time_sum = (
+                    AttendanceData[Shin.WORKDAY.day]["worktime"] * workday_count
+                )
         # 1日有休 or 1日出張
         else:
             if (
-                AttendanceDada[Shin.WORKDAY.day][10] == "3"
-                or AttendanceDada[Shin.WORKDAY.day][10] == "5"
+                AttendanceData[Shin.WORKDAY.day]["notification"] == "3"
+                or AttendanceData[Shin.WORKDAY.day]["notification"] == "5"
             ):
-                AttendanceDada[Shin.WORKDAY.day][14] = contract_work_time
-                work_time_sum = AttendanceDada[Shin.WORKDAY.day][14] * workday_count
+                AttendanceData[Shin.WORKDAY.day]["worktime"] = contract_work_time
+                workday_count += 1
+                work_time_sum = (
+                    AttendanceData[Shin.WORKDAY.day]["worktime"] * workday_count
+                )
 
-        print(f"aD 2 worktime: {AttendanceDada[Shin.WORKDAY.day][14]}")
+        # print(f"aD worktime: {AttendanceData[Shin.WORKDAY.day]['worktime']}")
 
         s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
 
@@ -602,7 +651,6 @@ def indextime(STAFFID, intFlg):
     # working_time = w_h + w_m
     # working_time_10 = sum_0 / (60 * 60)
 
-    print(f"Over time list: {over_time_0}")
     sum_over_0 = 0
     for n in range(len(over_time_0)):
         sum_over_0 += over_time_0[n]
@@ -617,9 +665,9 @@ def indextime(STAFFID, intFlg):
     h_h = sum_hol_0 // (60 * 60)
     h_m = (sum_hol_0 - h_h * 60 * 60) // 60
     holiday_work = h_h + h_m / 100
-    print(f"Holiday work: {holiday_work}")
     holiday_work_10 = sum_hol_0 / (60 * 60)
 
+    print(f"Nurse holiday old: {syukkin_holiday_times_0}")
     # 配列に入った出勤時間(秒単位)を時間と分に変換
     """ 24/8/8 修正分 """
     syukkin_times = [
@@ -628,11 +676,10 @@ def indextime(STAFFID, intFlg):
         for n in syukkin_times_0
     ]
     for n in range(len(syukkin_times)):
-        AttendanceDada[Shin.WORKDAY.day][13] += syukkin_times[n]
-        print(f"Work time list: {AttendanceDada[Shin.WORKDAY.day][13]}")
+        AttendanceData[Shin.WORKDAY.day]["alcohol"] += syukkin_times[n]
 
     return render_template(
-        "attendance/index_diff_diff.html",
+        "attendance/index_diff.html",
         title="ホーム",
         notifi_lst=notification_items,
         notifi_pm_lst=notification_pm_list,
@@ -675,7 +722,7 @@ def indextime(STAFFID, intFlg):
         STAFFID=STAFFID,
         template1=template1,
         template2=template2,
-        AttendanceDada=AttendanceDada,
+        AttendanceData=AttendanceData,
         working_time=work_time_sum,
         ln_s_kyori=ln_s_kyori,
         workday_count=workday_count,
