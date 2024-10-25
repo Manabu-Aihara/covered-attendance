@@ -385,18 +385,6 @@ def indextime(STAFFID, intFlg):
 
                 if InsertFlg == 1:
                     print(f"消滅しません: {c}")
-                    print(f"End: {finish_time}")
-                    calc_time_obj = CalcTimeClass(
-                        STAFFID, start_time, finish_time, zangyou, holiday
-                    )
-                    (
-                        print(f"Type: {type(todokede_PM)}")
-                        if todokede_PM == ""
-                        else print(f"Notification PM: {todokede_PM}")
-                    )
-                    # calc_real_time = calc_time_obj.get_real_time(
-                    #     todokede_AM, todokede_PM
-                    # )
                     AddATTENDANCE = Shinsei(
                         STAFFID,
                         current_date,
@@ -563,7 +551,6 @@ def indextime(STAFFID, intFlg):
             # )
         else:
             real_time_sum.append(calc_real_time)
-
             if Shin.OVERTIME == "1":
                 over_time_0.append(over_time)
             if nurse_holiday_work_time != 9.99:
@@ -584,8 +571,6 @@ def indextime(STAFFID, intFlg):
         print(f"{Shin.WORKDAY.day} 日")
         print(f"Real time: {calc_real_time}")
         print(f"In real time list: {real_time_sum}")
-        print(f"In over time list: {over_time_0}")
-        print(f"Nurse holiday: {nurse_holiday_work_list}")
         # sum_0 += AttendanceData[Shin.WORKDAY.day][14]
 
         w_h = calc_real_time // (60 * 60)
@@ -654,6 +639,7 @@ def indextime(STAFFID, intFlg):
     # working_time = w_h + w_m
     # working_time_10 = sum_0 / (60 * 60)
 
+    print(f"Out over time list: {over_time_0}")
     sum_over_0 = 0.0
     for n in range(len(over_time_0)):
         sum_over_0 += over_time_0[n]
@@ -662,6 +648,7 @@ def indextime(STAFFID, intFlg):
     over = o_h + o_m / 100
     over_10 = sum_over_0 / (60 * 60)
 
+    print(f"Nurse holiday: {nurse_holiday_work_list}")
     sum_hol_0 = 0
     for n in range(len(syukkin_holiday_times_0)):
         sum_hol_0 += syukkin_holiday_times_0[n]

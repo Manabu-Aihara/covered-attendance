@@ -1,5 +1,7 @@
 from typing import Tuple, TypeVar
-from datetime import datetime
+from datetime import datetime, time
+import pstats
+import cProfile
 
 from flask import session
 
@@ -76,3 +78,36 @@ def check_table_member(staff_id: int, table_model: T):
         return attr_list
     else:
         return "無問題"
+
+
+# Pythonの実行速度を測定(プロファイル)
+# https://zenn.dev/timoneko/articles/16f9ee7113f3cd
+def execution_speed_lib(func):
+    """
+    実行速度計測用のデコレータ
+    """
+
+    def wrapper(*args, **kwargs):
+        pr = cProfile.Profile()
+        # 実行処理の計測
+        pr.runcall(func, *args, **kwargs)
+
+        stats = pstats.Stats(pr)
+        stats.print_stats()
+
+    return wrapper
+
+
+def execution_speed(func):
+    """
+    実行速度計測用のデコレータ
+    """
+
+    def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        func(*args, **kwargs)
+        end_time = time.perf_counter()
+        run_time = end_time - start_time
+        print("実行時間" + str(run_time) + "秒")
+
+    return wrapper

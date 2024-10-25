@@ -219,6 +219,22 @@ class CalcTimeClass:
     n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
     n_half_list: List[str] = ["4", "6", "16"]
 
+    # 今のところお昼だけ採用、勤務時間影響なし
+    @staticmethod
+    def round_up_time(which_time: str) -> datetime:
+        select_time_hm = datetime.strptime(which_time, "%H:%M")
+        h_split = select_time_hm.hour
+        m_split = select_time_hm.minute
+        if m_split == 0:
+            return select_time_hm
+        elif m_split > 30:
+            h_integer = h_split + 1
+            h_string_time = f"{h_integer}:00"
+            return datetime.strptime(h_string_time, "%H:%M")
+        else:
+            h_string_time = f"{h_split}:30"
+            return datetime.strptime(h_string_time, "%H:%M")
+
     # 実働時間の算出
     def calc_actual_work_time(self) -> timedelta:
         # self.jobtype != 12
@@ -235,6 +251,8 @@ class CalcTimeClass:
             ) - datetime.combine(d, start_time_hm)
 
             return actual_work_time
+        # elif self.sh_starttime != "00:00" and (start_time_hm.minute != 0):
+        #     start_time_hm = self.round_up_time()
         else:
             actual_work_time = end_time_hm - start_time_hm
             return actual_work_time
@@ -283,22 +301,30 @@ class CalcTimeClass:
     def provide_half_rest(self) -> timedelta:
         actual_time = self.calc_actual_work_time()
         contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
-        working_plus_half_time = actual_time + timedelta(
-            hours=contract_holiday_time / 2
-        )
+        # working_plus_half_time = actual_time + timedelta(
+        #     hours=contract_holiday_time / 2
+        # )
         approval_times: list[timedelta] = []
-        # 有休と実働合わせて契約時間以上
-        if working_plus_half_time >= timedelta(hours=contract_work_time):
-            for half_notice in self.notifications:
-                if half_notice in self.n_half_list or half_notice == "9":
-                    print("Half pass")
-                    approval_times.append(timedelta(hours=contract_work_time / 2))
-            if len(approval_times) == 0:
+        for half_notice in self.notifications:
+            if half_notice in self.n_half_list or half_notice == "9":
+                print("Half pass")
+                approval_times.append(timedelta(hours=contract_work_time / 2))
+
+        if len(approval_times) == 0:
+            if actual_time < timedelta(hours=contract_work_time):
+                # raise ValueError("入力に誤りがあります。申請はありせんか？")
+                return timedelta(hours=contract_holiday_time) - actual_time
+            else:
                 return timedelta(0)
+        elif len(approval_times) == 1:
+            if actual_time < timedelta(hours=contract_work_time / 2):
+                return timedelta(hours=contract_holiday_time) - actual_time
             else:
                 return approval_times[0]
-        else:
-            raise ValueError("入力に誤りがあります。申請はありせんか？")
+        elif len(approval_times) == 2:
+            return timedelta(hours=contract_work_time)
+        # ホントはこっちにしたい
+        # raise ValueError("入力に誤りがあります。申請はありせんか？")
 
     # 休憩分を引く
     # if self.t - timedelta(hours=rest) >= timedelta(hours=6):
@@ -311,8 +337,10 @@ class CalcTimeClass:
 
     # 通常一日の時間休
     def calc_normal_rest(self, input_work_time: timedelta) -> timedelta:
+        round_up_start = self.round_up_time(self.sh_starttime)
+
         # 今のところ私の判断、追加・変更あり
-        if self.sh_starttime >= "13:00" or self.sh_endtime < "13:00":
+        if round_up_start.strftime("%H:%M") >= "13:00" or self.sh_endtime < "13:00":
             return timedelta(0)
         else:
             if input_work_time >= timedelta(hours=6):
@@ -325,6 +353,7 @@ class CalcTimeClass:
             1.残業あり → 終業時間 - 開始時間
             2.残業なし → 契約時間
             3.残業なしで半日申請あり → 契約時間 / 2
+            4.irregular → 終業時間 - 開始時間
         """
 
     def check_over_work(self) -> timedelta:
@@ -394,6 +423,7 @@ class CalcTimeClass:
         else:
             return 9.99
 
+    # なくても機能するみたいだ
     # 打刻は00:00で
     def get_zero_time_notification(self, notification: str) -> float:
         contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()

@@ -576,7 +576,6 @@ def indextime(STAFFID, intFlg):
     workday_count = 0
     for Shin in shinseis:
         print(f"{Shin.WORKDAY.day} 日")
-        print(f"Notice PM: {Shin.NOTIFICATION2}")
         # 日付
         # 曜日
         # 勤務日
@@ -610,6 +609,8 @@ def indextime(STAFFID, intFlg):
         real_time = dtm
         # 常勤看護師の場合
 
+        # あくまで暫定的に使う変数
+        related_holiday = db.session.get(RecordPaidHoliday, Shin.STAFFID)
         settime = CalcTimeClass(
             dtm,
             Shin.NOTIFICATION,
@@ -627,7 +628,8 @@ def indextime(STAFFID, intFlg):
             Shin.JOBTYPE_CODE,
             STAFFID,
             Shin.WORKDAY,
-            Shin.HOLIDAY_TIME,
+            # Shin.HOLIDAY_TIME,
+            related_holiday.BASETIMES_PAIDHOLIDAY,
         )
         settime.calc_time()
 
@@ -667,13 +669,13 @@ def indextime(STAFFID, intFlg):
     over = o_h + o_m / 100
     over_10 = sum_over_0 / (60 * 60)
 
+    print(f"Holiday work: {syukkin_holiday_times_0}")
     sum_hol_0 = 0
     for n in range(len(syukkin_holiday_times_0)):
         sum_hol_0 += syukkin_holiday_times_0[n]
     h_h = sum_hol_0 // (60 * 60)
     h_m = (sum_hol_0 - h_h * 60 * 60) // 60
     holiday_work = h_h + h_m / 100
-    print(f"Holiday work: {holiday_work}")
     holiday_work_10 = sum_hol_0 / (60 * 60)
 
     # 配列に入った出勤時間(秒単位)を時間と分に変換
