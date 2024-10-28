@@ -217,7 +217,7 @@ class CalcTimeClass:
         self.sh_holiday = sh_holiday
 
     n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
-    n_half_list: List[str] = ["4", "6", "16"]
+    n_half_list: List[str] = ["4", "9", "16"]
 
     # 今のところお昼だけ採用、勤務時間影響なし
     @staticmethod
@@ -293,6 +293,8 @@ class CalcTimeClass:
 
     """
         - 契約時間 / 2 or 0
+        if irregular:
+            契約時間 - 入力時間
         @Return: timedelta
         """
 
@@ -306,34 +308,28 @@ class CalcTimeClass:
         # )
         approval_times: list[timedelta] = []
         for half_notice in self.notifications:
-            if half_notice in self.n_half_list or half_notice == "9":
-                print("Half pass")
+            if half_notice in self.n_half_list:
+                print("Half rest pass")
+                approval_times.append(timedelta(hours=contract_holiday_time / 2))
+            elif half_notice == "6":
+                print("Half trip pass")
                 approval_times.append(timedelta(hours=contract_work_time / 2))
 
         if len(approval_times) == 0:
             if actual_time < timedelta(hours=contract_work_time):
                 # raise ValueError("入力に誤りがあります。申請はありせんか？")
-                return timedelta(hours=contract_holiday_time) - actual_time
+                return timedelta(hours=contract_work_time) - actual_time
             else:
                 return timedelta(0)
         elif len(approval_times) == 1:
             if actual_time < timedelta(hours=contract_work_time / 2):
-                return timedelta(hours=contract_holiday_time) - actual_time
+                return timedelta(hours=contract_work_time) - actual_time
             else:
                 return approval_times[0]
         elif len(approval_times) == 2:
-            return timedelta(hours=contract_work_time)
-        # ホントはこっちにしたい
-        # raise ValueError("入力に誤りがあります。申請はありせんか？")
-
-    # 休憩分を引く
-    # if self.t - timedelta(hours=rest) >= timedelta(hours=6):
-    #     self.t = self.t - timedelta(hours=1)  # ６時間以上は休憩１時間を引く
-    #     self.real_time = self.real_time - timedelta(hours=1)
-    # elif self.t - timedelta(hours=rest) >= timedelta(hours=5):
-    #     self.t = self.t - timedelta(minutes=45)  # ５時間以上は休憩４５分を引く
-    #     self.real_time = self.real_time - timedelta(minutes=45)
-    # def calc_meticulous_normal_rest(self, notification: str):
+            return timedelta(hours=contract_work_time / 2) + timedelta(
+                hours=contract_holiday_time / 2
+            )
 
     # 通常一日の時間休
     def calc_normal_rest(self, input_work_time: timedelta) -> timedelta:
@@ -358,8 +354,10 @@ class CalcTimeClass:
 
     def check_over_work(self) -> timedelta:
         actual_work_time = self.calc_actual_work_time()
-        work_time_with_rest = actual_work_time - self.calc_normal_rest(actual_work_time)
         contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
+        # 1.残業あり → 終業時間 - 開始時間
+        # 2.残業なし → 契約時間
+        # 3.残業なしで半日申請あり → 契約時間 / 2
         if self.sh_overtime == "0":
             working_time = (
                 timedelta(hours=contract_work_time)
@@ -368,8 +366,26 @@ class CalcTimeClass:
             # 契約時間 / 2 or 契約時間
             return working_time
         elif self.sh_overtime == "1":  # 残業した場合
-            print(f"Overtime pass: {work_time_with_rest}")
-            return work_time_with_rest
+            work_time_without_rest = actual_work_time - self.calc_normal_rest(
+                actual_work_time
+            )
+            print(f"Overtime pass: {work_time_without_rest}")
+            return work_time_without_rest
+
+    def get_actual_work_time(self) -> timedelta:
+        actual_work_time = self.calc_actual_work_time()
+        contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
+        for notification in self.notifications:
+            if notification in ["1", "2"] or self.sh_overtime == "1":
+                return (
+                    actual_work_time
+                    + self.provide_half_rest()
+                    - self.calc_normal_rest(actual_work_time)
+                )
+            elif notification not in ["1", "2", "8"]:
+                return timedelta(hours=contract_work_time)
+            elif notification == "8":
+                return timedelta(0)
 
     """
         残業分
@@ -379,9 +395,6 @@ class CalcTimeClass:
     def get_over_time(self) -> float:
         contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
         working_time = self.check_over_work()
-        # 1.残業あり → 終業時間 - 開始時間
-        # 2.残業なし → 契約時間
-        # 3.残業なしで半日申請あり → 契約時間 / 2
         over_time = working_time - (
             timedelta(hours=contract_work_time) - self.provide_half_rest()
         )

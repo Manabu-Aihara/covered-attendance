@@ -22,29 +22,49 @@ class AttendanceQuery:
     # sub_query: T = None
     # def __init__(self, staff_id: str, sub_query: T) -> None:
     #     self.staff_id = staff_id
-    def _get_filter(self, *array_number: int) -> list:
+    def _get_filter(self) -> list:
         attendance_filters = []
-        attendance_filters.append(Shinsei.STAFFID == self.staff_id)  # 0
+        attendance_filters.append(Shinsei.STAFFID == self.staff_id)
         attendance_filters.append(
             Shinsei.WORKDAY.between(self.filter_from_day, self.filter_to_day)
-        )  # 1
-        attendance_filters.append(D_JOB_HISTORY.START_DAY <= Shinsei.WORKDAY)  # 2
-        attendance_filters.append(D_JOB_HISTORY.END_DAY >= Shinsei.WORKDAY)  # 3
-        attendance_filters.append(Shinsei.STAFFID == User.STAFFID)  # 4
-        attendance_filters.append(Shinsei.STAFFID == D_JOB_HISTORY.STAFFID)  # 5
+        )
+        attendance_filters.append(Shinsei.STAFFID == User.STAFFID)
+        return attendance_filters
+
+    @staticmethod
+    def _get_job_filter():
+        attendance_filters = []
+        attendance_filters.append(Shinsei.STAFFID == D_JOB_HISTORY.STAFFID)
+        attendance_filters.append(D_JOB_HISTORY.START_DAY <= Shinsei.WORKDAY)
+        attendance_filters.append(D_JOB_HISTORY.END_DAY >= Shinsei.WORKDAY)
+        return attendance_filters
+
+    @staticmethod
+    def _get_holiday_filter():
+        attendance_filters = []
+        attendance_filters.append(Shinsei.STAFFID == D_HOLIDAY_HISTORY.STAFFID)
+        attendance_filters.append(D_HOLIDAY_HISTORY.START_DAY <= Shinsei.WORKDAY)
+        attendance_filters.append(D_HOLIDAY_HISTORY.END_DAY >= Shinsei.WORKDAY)
+        return attendance_filters
+
+    def _get_template_filter(self):
+        attendance_filters = []
+        attendance_filters.append(D_JOB_HISTORY.START_DAY <= self.filter_from_day)  # 2
+        attendance_filters.append(D_JOB_HISTORY.END_DAY >= self.filter_to_day)  # 3
         attendance_filters.append(
             D_JOB_HISTORY.JOBTYPE_CODE == M_TIMECARD_TEMPLATE.JOBTYPE_CODE
-        )  # 6
+        )
         attendance_filters.append(
             D_JOB_HISTORY.CONTRACT_CODE == M_TIMECARD_TEMPLATE.CONTRACT_CODE
-        )  # 7
+        )
+        return attendance_filters
 
         # Max attendance_filters[0:8] index7まで取り出す
-        return (
-            attendance_filters[array_number[0] : array_number[1]]
-            if array_number != ()
-            else attendance_filters
-        )
+        # return (
+        #     attendance_filters[array_number[0] : array_number[1]]
+        #     if array_number != ()
+        #     else attendance_filters
+        # )
 
     def db_error_handler(func):
         def wrapper(*args, **kwargs):
@@ -58,15 +78,14 @@ class AttendanceQuery:
     @db_error_handler
     def get_templates(self):
         template_filters = [D_JOB_HISTORY.STAFFID == self.staff_id]
-        template_filters += self._get_filter(2, 7)
-        del template_filters[3:5]
+        template_filters += self._get_template_filter()
         return db.session.query(M_TIMECARD_TEMPLATE.TEMPLATE_NO).filter(
             and_(*template_filters)
         )
 
     @db_error_handler
     def _get_sub_parttime(self):
-        attendance_filters = self._get_filter(0, 4)
+        attendance_filters = self._get_filter()[0:2] + self._get_holiday_filter()
         attendance_filters.append(Shinsei.STAFFID == D_HOLIDAY_HISTORY.STAFFID)
 
         return (
@@ -81,7 +100,11 @@ class AttendanceQuery:
 
     @db_error_handler
     def get_attendance_query(self):
-        attendance_filters = self._get_filter()
+        attendance_filters = (
+            self._get_filter()
+            + self._get_job_filter()
+            + self._get_template_filter()[-2:]
+        )
 
         sub_query = self._get_sub_parttime()
         return (
@@ -119,7 +142,7 @@ class AttendanceQuery:
 
     @db_error_handler
     def get_clerical_attendance(self):
-        clerk_filters = self._get_filter(1, 6)
+        clerk_filters = self._get_filter()[1:] + self._get_job_filter()
 
         sub_clerk_query = self._get_sub_clerk_query()
         return (

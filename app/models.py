@@ -59,7 +59,7 @@ class User(db.Model):
     M_SYSTEMINFOs = db.relationship("SystemInfo", backref="M_STAFFINFO", lazy="dynamic")
 
     """ 2023/8/7 リレーション機能追加 """
-    notification_list = db.relationship("NotificationList")
+    notification_list = db.relationship("NotificationList", backref="user")
 
     """ 2023/9/19 リレーション機能追加 """
     # joinはしてるが、必要だろうか

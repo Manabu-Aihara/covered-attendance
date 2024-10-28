@@ -4,7 +4,14 @@ from datetime import date, datetime
 from sqlalchemy import or_, and_
 
 from app import db
-from app.models import User, Busho, Post, Shinsei, D_JOB_HISTORY
+from app.models import (
+    User,
+    Busho,
+    KinmuTaisei,
+    Shinsei,
+    D_JOB_HISTORY,
+    D_HOLIDAY_HISTORY,
+)
 from app.forms import AddDataUserForm
 from app.jimu_oncall_count import get_more_condition_users
 from app.attendance_query_class import AttendanceQuery
@@ -52,6 +59,29 @@ def test_join_data_count(app_context):
     print(join_info_objects)
 
 
+def test_print_holiday(app_context):
+    users = db.session.query(User).all()
+    holiday_his_lst = db.session.query(D_HOLIDAY_HISTORY).all()
+    user_time_dict = {}
+    user_time_list = []
+    for user in users:
+        user_time_dict = {
+            "Staff": user.STAFFID,
+            "Worktime": get_user_role(
+                KinmuTaisei.WORKTIME, KinmuTaisei.CONTRACT_CODE, user.CONTRACT_CODE
+            ),
+        }
+        user_time_list.append(user_time_dict)
+    # print(user_time_list)
+    holiday_time_list = []
+    for holi_his in holiday_his_lst:
+        # if holi_his.STAFFID == user_time.get("Staff"):
+        holiday_time_list.append(f"{holi_his.STAFFID}: {holi_his.HOLIDAY_TIME}")
+
+    print(holiday_time_list)
+
+
+@pytest.mark.skip
 def test_cat_mileage_member(app_context):
     filters = []
     from_day = datetime(year=2024, month=9, day=1)
