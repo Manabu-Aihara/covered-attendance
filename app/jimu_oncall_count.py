@@ -1,5 +1,7 @@
 import os, math
-from datetime import date, datetime, time, timedelta
+import syslog
+from datetime import date, datetime, timedelta
+import time
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
 from typing import List, TypeVar
@@ -339,6 +341,11 @@ def jimu_summary_fulltime(startday):
     #     KinmuTaisei.CONTRACT_CODE,
     # )
     # POST = GetData(Post, Post.CODE, Post.NAME, Post.CODE)
+
+    # from datetime import time は不可
+    # パフォーマンス測定開始
+    start_time = time.perf_counter()
+
     outer_display = 0
     jimu_usr = User.query.get(current_user.STAFFID)
 
@@ -426,7 +433,7 @@ def jimu_summary_fulltime(startday):
             workday_count = 0
             # sum_0 = 0
             """ 24/8/22 納得いかないまでも、追加した変数 """
-            time_sum: int = 0
+            time_sum = timedelta(0)
             # 各表示初期値
             oncall = []
             oncall_holiday = []
@@ -515,6 +522,7 @@ def jimu_summary_fulltime(startday):
 
         # あくまで暫定的に使う変数
         related_holiday = db.session.get(RecordPaidHoliday, sh.STAFFID)
+        # これを抹殺する
         AttendanceDada[sh.WORKDAY.day][14] = 0
         # settime = CalcTimeClass(
         #     dtm,
@@ -545,7 +553,7 @@ def jimu_summary_fulltime(startday):
             sh.OVERTIME,
             sh.HOLIDAY,
         )
-        attendance_work_time = setting_time.get_actual_work_time()
+        actual_work_time = setting_time.get_actual_work_time()
         calc_real_time = setting_time.get_real_time()
         over_time = setting_time.get_over_time()
         nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
@@ -557,7 +565,7 @@ def jimu_summary_fulltime(startday):
 
         print(f"{sh.WORKDAY.day} 日")
         print(f"Real time: {calc_real_time}")
-        print(f"Actual time: {attendance_work_time}")
+        print(f"Actual time: {actual_work_time}")
         print(f"In real time list: {real_time_sum}")
         print(f"In over time list: {over_time_0}")
         print(f"Nurse holiday: {nurse_holiday_work_list}")
@@ -602,11 +610,12 @@ def jimu_summary_fulltime(startday):
         # work_time_sum_60: float = 0.0
         # 🙅 work_time_sum_60 += AttendanceDada[sh.WORKDAY.day][14]
 
-        time_sum += AttendanceDada[sh.WORKDAY.day][14]
-        workday_count += 1 if time_sum != 0 else workday_count
+        # time_sum += AttendanceDada[sh.WORKDAY.day][14]
+        time_sum += actual_work_time
+        workday_count += 1 if time_sum != timedelta(0) else workday_count
         # print(f"{sh.STAFFID} aDd: {AttendanceDada[sh.WORKDAY.day][14]}")
-        w_h = time_sum // (60 * 60)
-        w_m = (time_sum - w_h * 60 * 60) / (60 * 60)
+        w_h = time_sum.total_seconds() // (60 * 60)
+        w_m = (time_sum.total_seconds() - w_h * 60 * 60) / (60 * 60)
         # 実働時間計（１０進法）：10進数
         time_sum10 = w_h + w_m
         sum10_rnd = Decimal(time_sum10).quantize(Decimal("0.01"), ROUND_HALF_UP)
@@ -715,6 +724,11 @@ def jimu_summary_fulltime(startday):
         null_checked_users.append(convert_null_role(user))
 
     today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+
+    end_time = time.perf_counter()
+    run_time = end_time - start_time
+    pref_result = f"'実行時間'{str(run_time)}'秒'"
+    syslog.syslog(pref_result)
 
     return render_template(
         "attendance/jimu_summary_fulltime_diff.html",

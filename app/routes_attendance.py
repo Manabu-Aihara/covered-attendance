@@ -537,7 +537,7 @@ def indextime(STAFFID, intFlg):
             Shin.OVERTIME,
             Shin.HOLIDAY,
         )
-        attendance_work_time = setting_time.get_actual_work_time()
+        actual_work_time = setting_time.get_actual_work_time()
         calc_real_time = setting_time.get_real_time()
         over_time = setting_time.get_over_time()
         nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
@@ -569,7 +569,7 @@ def indextime(STAFFID, intFlg):
 
         print(f"{Shin.WORKDAY.day} 日")
         print(f"Real time: {calc_real_time}")
-        print(f"Actual time: {attendance_work_time}")
+        print(f"Actual time: {actual_work_time}")
         print(f"In real time list: {real_time_sum}")
         print(f"In over time list: {over_time_0}")
         print(f"Nurse holiday: {nurse_holiday_work_list}")

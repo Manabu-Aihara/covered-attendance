@@ -217,6 +217,7 @@ class CalcTimeClass:
         self.sh_holiday = sh_holiday
 
     n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
+    # 9: 慶弔 congratulations and condolences
     n_half_list: List[str] = ["4", "9", "16"]
 
     # 今のところお昼だけ採用、勤務時間影響なし
@@ -299,7 +300,6 @@ class CalcTimeClass:
         """
 
     # 半日出張、半休、生理休暇かつ打刻のある場合
-    # 9: 慶弔 congratulations and condolences
     def provide_half_rest(self) -> timedelta:
         actual_time = self.calc_actual_work_time()
         contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
@@ -371,6 +371,13 @@ class CalcTimeClass:
             )
             print(f"Overtime pass: {work_time_without_rest}")
             return work_time_without_rest
+
+    """
+        実働時間表示
+        遅刻、早退では反映
+        欠勤では0時間
+        @Return: timedelta
+        """
 
     def get_actual_work_time(self) -> timedelta:
         actual_work_time = self.calc_actual_work_time()

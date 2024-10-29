@@ -1,5 +1,7 @@
 import os, math
-from datetime import date, datetime, time, timedelta
+import syslog
+from datetime import date, datetime, timedelta
+import time
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
 from typing import List, TypeVar
@@ -55,7 +57,6 @@ from app.models import (
     is_integer_num,
 )
 from app.common_func import GetPullDownList, ZeroCheck, GetData, GetDataS
-from app.attendance_query_class import AttendanceQuery
 from app.attendance_util import convert_null_role
 from app.db_check_util import compare_db_item, check_contract_value
 
@@ -338,6 +339,11 @@ def jimu_summary_fulltime(startday):
         KinmuTaisei.CONTRACT_CODE,
     )
     POST = GetData(Post, Post.CODE, Post.NAME, Post.CODE)
+
+    # from datetime import time は不可
+    # パフォーマンス測定開始
+    start_time = time.perf_counter()
+
     y = ""
     m = ""
     outer_display = 0
@@ -501,7 +507,7 @@ def jimu_summary_fulltime(startday):
         # if u.CONTRACT_CODE == 2:
         ##### １日基準 #####
 
-        print(f"Mileage: {sh.MILEAGE}")
+        # print(f"Mileage: {sh.MILEAGE}")
         dft = DataForTable(
             y,
             m,
@@ -531,7 +537,7 @@ def jimu_summary_fulltime(startday):
             ToDay,
         )
         dft.other_data()
-        print(f"Mileage list: {s_kyori}")
+        # print(f"Mileage list: {s_kyori}")
 
         tm_off = TimeOffClass(
             y,
@@ -577,8 +583,8 @@ def jimu_summary_fulltime(startday):
             sh.JOBTYPE_CODE,
             sh.STAFFID,
             sh.WORKDAY,
-            sh.HOLIDAY_TIME,
-            # related_holiday.BASETIMES_PAIDHOLIDAY,
+            # sh.HOLIDAY_TIME,
+            related_holiday.BASETIMES_PAIDHOLIDAY,
         )
         settime.calc_time()
 
@@ -698,6 +704,10 @@ def jimu_summary_fulltime(startday):
         conv_obj = convert_null_role(user)
         null_checked_users.append(conv_obj)
 
+    end_time = time.perf_counter()
+    run_time = end_time - start_time
+    pref_result = f"'実行時間'{str(run_time)}'秒'"
+    syslog.syslog(pref_result)
     ##### 退職者表示設定
 
     return render_template(
