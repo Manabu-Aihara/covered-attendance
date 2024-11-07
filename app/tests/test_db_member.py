@@ -1,7 +1,9 @@
 import pytest
-from datetime import date, datetime
+import math
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import or_, and_
+from sqlalchemy.sql import func
 
 from app import db
 from app.models import (
@@ -59,11 +61,11 @@ def test_join_data_count(app_context):
     print(join_info_objects)
 
 
+@pytest.mark.skip
 def test_print_holiday(app_context):
     users = db.session.query(User).all()
     holiday_his_lst = db.session.query(D_HOLIDAY_HISTORY).all()
     user_time_dict = {}
-    user_time_list = []
     for user in users:
         user_time_dict = {
             "Staff": user.STAFFID,
@@ -71,31 +73,75 @@ def test_print_holiday(app_context):
                 KinmuTaisei.WORKTIME, KinmuTaisei.CONTRACT_CODE, user.CONTRACT_CODE
             ),
         }
-        user_time_list.append(user_time_dict)
-    # print(user_time_list)
-    holiday_time_list = []
-    for holi_his in holiday_his_lst:
-        # if holi_his.STAFFID == user_time.get("Staff"):
-        holiday_time_list.append(f"{holi_his.STAFFID}: {holi_his.HOLIDAY_TIME}")
+        print(f"{user_time_dict}")
 
-    print(holiday_time_list)
+    holiday_time_dict = {}
+    for holi_his in holiday_his_lst:
+        holiday_time_dict = {
+            "Staff": holi_his.STAFFID,
+            "Worktime": holi_his.HOLIDAY_TIME,
+        }
+        print(holiday_time_dict)
 
 
 @pytest.mark.skip
-def test_cat_mileage_member(app_context):
+def test_print_sub_holiday(app_context):
+    part_users = db.session.query(User).filter(User.CONTRACT_CODE == 2).all()
+    for part_user in part_users:
+        sub_q = (
+            db.session.query(
+                func.max(D_HOLIDAY_HISTORY.START_DAY).label("start_day_max")
+            )
+            .filter(D_HOLIDAY_HISTORY.STAFFID == part_user.STAFFID)
+            .subquery()
+        )
+        related_holiday = (
+            db.session.query(D_HOLIDAY_HISTORY)
+            .filter(
+                and_(
+                    D_HOLIDAY_HISTORY.STAFFID == part_user.STAFFID,
+                    D_HOLIDAY_HISTORY.START_DAY == sub_q.c.start_day_max,
+                )
+            )
+            .first()
+        )
+        print(f"{part_user.STAFFID}: {related_holiday}")
+
+
+@pytest.fixture(name="cat_works")
+def get_cat_attendance_member(app_context):
     filters = []
     from_day = datetime(year=2024, month=9, day=1)
     to_day = datetime(year=2024, month=9, day=30)
     filters.append(Shinsei.WORKDAY.between(from_day, to_day))
-    filters.append(User.CONTRACT_CODE == 2)
-    filters.append(Shinsei.MILEAGE != 0.0)
-    concerned_users = (
-        db.session.query(Shinsei.STAFFID)
-        .join(User, User.STAFFID == Shinsei.STAFFID)
-        .filter(and_(*filters))
-        .all()
+    filters.append(Shinsei.STAFFID == 84)
+    # filters.append(User.CONTRACT_CODE == 2)
+    # filters.append(Shinsei.MILEAGE != 0.0)
+    concerned_attendances = (
+        db.session.query(Shinsei)
+        # .join(User, User.STAFFID == Shinsei.STAFFID)
+        .filter(and_(*filters)).all()
     )
-    print(set(concerned_users))
+    # print(set(concerned_users))
+    return concerned_attendances
+
+
+def test_print_work_time(cat_works):
+    print(len(cat_works))
+    time_list = []
+    for cat_work in cat_works:
+        start_date_type = datetime.strptime("8:00", "%H:%M")
+        end_date_type = datetime.strptime(cat_work.ENDTIME, "%H:%M")
+        diff_date = (
+            end_date_type - start_date_type
+            if cat_work.STARTTIME != "00:00"
+            else timedelta(0)
+        )
+        print(f"Day: {cat_work.WORKDAY} Time: {diff_date}")
+        time_list.append(diff_date.total_seconds())
+
+    time_sum = math.fsum(time_list)
+    print(f"Sum: {time_sum / 3600}")
 
 
 @pytest.mark.skip

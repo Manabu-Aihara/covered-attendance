@@ -2,6 +2,8 @@ import os, math
 import syslog
 from datetime import date, datetime, timedelta
 import time
+import cProfile
+import pstats
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
 from typing import List, TypeVar
@@ -345,10 +347,11 @@ def jimu_summary_fulltime(startday):
     # from datetime import time は不可
     # パフォーマンス測定開始
     start_time = time.perf_counter()
+    c_profile = cProfile.Profile()
+    c_profile.enable()
 
     outer_display = 0
     jimu_usr = User.query.get(current_user.STAFFID)
-
     # users = User.query.all()
     # 後述
 
@@ -364,7 +367,7 @@ def jimu_summary_fulltime(startday):
     if form_month.validate_on_submit():
         selected_workday = request.form.get("workday_name")  # 選択された日付
 
-    print(f"Select month: {selected_workday}")
+    # print(f"Select month: {selected_workday}")
     y, m, workday_data = get_month_workday(selected_workday)
     # print(f"Select value: {workday_data}")
 
@@ -523,7 +526,7 @@ def jimu_summary_fulltime(startday):
         # あくまで暫定的に使う変数
         related_holiday = db.session.get(RecordPaidHoliday, sh.STAFFID)
         # これを抹殺する
-        AttendanceDada[sh.WORKDAY.day][14] = 0
+        # AttendanceDada[sh.WORKDAY.day][14] = 0
         # settime = CalcTimeClass(
         #     dtm,
         #     sh.NOTIFICATION,
@@ -545,6 +548,8 @@ def jimu_summary_fulltime(startday):
         #     related_holiday.BASETIMES_PAIDHOLIDAY,
         # )
         # settime.calc_time()
+        over_time_append = over_time_0.append
+        nurse_holiday_append = syukkin_holiday_times_0.append
         setting_time = CalcTimeClass(
             sh.STAFFID,
             sh.STARTTIME,
@@ -553,22 +558,29 @@ def jimu_summary_fulltime(startday):
             sh.OVERTIME,
             sh.HOLIDAY,
         )
-        actual_work_time = setting_time.get_actual_work_time()
-        calc_real_time = setting_time.get_real_time()
-        over_time = setting_time.get_over_time()
-        nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
-        real_time_sum.append(calc_real_time)
-        if sh.OVERTIME == "1":
-            over_time_0.append(over_time)
-        if nurse_holiday_work_time != 9.99:
-            nurse_holiday_work_list.append(nurse_holiday_work_time)
+        print(f"ID: {sh.STAFFID}")
+        try:
+            actual_work_time = setting_time.get_actual_work_time()
+            calc_real_time = setting_time.get_real_time()
+            over_time = setting_time.get_over_time()
+            nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
+        except TypeError as e:
+            print(e)
+        else:
+            real_time_sum.append(calc_real_time)
+            if sh.OVERTIME == "1":
+                # over_time_0.append(over_time)
+                over_time_append(over_time)
+            if nurse_holiday_work_time != 9.99:
+                # syukkin_holiday_times_0.append(nurse_holiday_work_time)
+                nurse_holiday_append(nurse_holiday_work_time)
 
-        print(f"{sh.WORKDAY.day} 日")
-        print(f"Real time: {calc_real_time}")
-        print(f"Actual time: {actual_work_time}")
-        print(f"In real time list: {real_time_sum}")
-        print(f"In over time list: {over_time_0}")
-        print(f"Nurse holiday: {nurse_holiday_work_list}")
+            print(f"{sh.WORKDAY.day} 日")
+            print(f"Real time: {calc_real_time}")
+            print(f"Actual time: {actual_work_time}")
+            print(f"In real time list: {real_time_sum}")
+            print(f"In over time list: {over_time_0}")
+            print(f"Nurse holiday: {syukkin_holiday_times_0}")
 
         ##### データベース貯蔵 #####
         ln_oncall = len(oncall)
@@ -725,10 +737,14 @@ def jimu_summary_fulltime(startday):
 
     today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
+    c_profile.disable()
+    c_stats = pstats.Stats(c_profile)
+    c_stats.sort_stats("cumtime").print_stats(20)
+
     end_time = time.perf_counter()
     run_time = end_time - start_time
     pref_result = f"'実行時間'{str(run_time)}'秒'"
-    syslog.syslog(pref_result)
+    print(pref_result)
 
     return render_template(
         "attendance/jimu_summary_fulltime_diff.html",
