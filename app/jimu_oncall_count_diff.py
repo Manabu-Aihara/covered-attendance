@@ -2,6 +2,8 @@ import os, math
 import syslog
 from datetime import date, datetime, timedelta
 import time
+import cProfile
+import pstats
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
 from typing import List, TypeVar
@@ -343,6 +345,8 @@ def jimu_summary_fulltime(startday):
     # from datetime import time は不可
     # パフォーマンス測定開始
     start_time = time.perf_counter()
+    c_profile = cProfile.Profile()
+    c_profile.enable()
 
     y = ""
     m = ""
@@ -703,6 +707,10 @@ def jimu_summary_fulltime(startday):
     for user in users:
         conv_obj = convert_null_role(user)
         null_checked_users.append(conv_obj)
+
+    c_profile.disable()
+    c_stats = pstats.Stats(c_profile)
+    c_stats.sort_stats("cumtime").print_stats(20)
 
     end_time = time.perf_counter()
     run_time = end_time - start_time

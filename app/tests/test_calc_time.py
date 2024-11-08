@@ -1,4 +1,5 @@
 import pytest
+import math
 from datetime import datetime, timedelta
 from typing import List
 import cProfile
@@ -44,52 +45,85 @@ def test_get_real_time(calc_work):
     assert time_second / 3600 == 4.5
 
 
-def get_month_attendance(staff_id: int) -> List[Shinsei]:
-    filters = []
-    from_day = datetime(year=2024, month=9, day=1)
-    to_day = datetime(year=2024, month=9, day=30)
-    filters.append(Shinsei.WORKDAY.between(from_day, to_day))
-    filters.append(Shinsei.STAFFID == staff_id)
-    attendances = db.session.query(Shinsei).filter(*filters).all()
+def get_month_attendance(*staff_ids: int) -> List[Shinsei]:
+    from_day = datetime(year=2024, month=10, day=1)
+    to_day = datetime(year=2024, month=10, day=31)
+    attendances: list[list[Shinsei]] = []
+    for staff_id in staff_ids:
+        filters = []
+        filters.append(Shinsei.WORKDAY.between(from_day, to_day))
+        filters.append(Shinsei.STAFFID == staff_id)
+        month_attendance = db.session.query(Shinsei).filter(*filters).all()
+        attendances.append(month_attendance)
+
     return attendances
 
 
 @pytest.fixture(name="month_attends")
 def make_month_attend_info(app_context):
-    attendances = get_month_attendance(20)
+    attendances = get_month_attendance(201, 20)
     return attendances
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_attendance_count(month_attends):
-    assert len(month_attends) == 7
+    assert len(month_attends) == 2
+    assert len(month_attends[0]) == 10
+    assert len(month_attends[1]) == 9
 
 
+# @pytest.mark.skip
 def test_output_month_log(month_attends):
     for month_attend in month_attends:
-        ct_obj = CalcTimeClass(
-            month_attend.STAFFID,
-            month_attend.STARTTIME,
-            month_attend.ENDTIME,
-            (month_attend.NOTIFICATION, month_attend.NOTIFICATION2),
-            month_attend.OVERTIME,
-            month_attend.HOLIDAY,
-        )
-        print(f"{month_attend.WORKDAY}")
-        print(f"Actual time: {ct_obj.get_actual_work_time()}")
-        print(f"Real time: {ct_obj.get_real_time()}")
-        if month_attend.OVERTIME == "1":
-            print(f"Over time: {ct_obj.get_over_time()}")
-        # ct_obj.get_actual_work_time()
-        # ct_obj.get_real_time()
-        # if month_attend.OVERTIME == "1":
-        #     ct_obj.get_over_time()
+        for target_attend in month_attend:
+            ct_obj = CalcTimeClass(
+                target_attend.STAFFID,
+                target_attend.STARTTIME,
+                target_attend.ENDTIME,
+                (target_attend.NOTIFICATION, target_attend.NOTIFICATION2),
+                target_attend.OVERTIME,
+                target_attend.HOLIDAY,
+            )
+            print(f"{target_attend.WORKDAY}")
+            print(f"Actual time: {ct_obj.get_actual_work_time()}")
+            print(f"Real time: {ct_obj.get_real_time()}")
+            if target_attend.OVERTIME == "1":
+                print(f"Over time: {ct_obj.get_over_time()}")
+            # print(f"Real time list: {ct_obj.real_time_list}")
+
+
+@pytest.mark.skip
+def test_print_list_type(month_attends):
+    actual_list = []
+    real_list = []
+    over_list = []
+    for month_attend in enumerate(month_attends):
+        for target_attend in month_attend:
+            ct_obj = CalcTimeClass(
+                target_attend.STAFFID,
+                target_attend.STARTTIME,
+                target_attend.ENDTIME,
+                (target_attend.NOTIFICATION, target_attend.NOTIFICATION2),
+                target_attend.OVERTIME,
+                target_attend.HOLIDAY,
+            )
+            actual_list.append(ct_obj.get_actual_work_time().total_seconds())
+            real_list.append(ct_obj.get_real_time())
+            if target_attend.OVERTIME == "1":
+                over_list.append(ct_obj.get_over_time())
+
+        actual_sum = math.fsum(actual_list)
+        real_sum = math.fsum(real_list)
+        over_sum = math.fsum(over_list)
+        print(f"Actual time: {actual_sum}")
+        print(f"Real time: {real_sum}")
+        print(f"Over time: {over_sum}")
 
 
 @pytest.mark.skip
 def test_run_perf(month_attends):
     pr = cProfile.Profile()
-    pr.runcall(test_output_month_log, month_attends)
+    pr.runcall(test_print_list_type, month_attends)
     # pr.print_stats()
     status = pstats.Stats(pr)
     status.sort_stats("cumtime").print_stats(10)

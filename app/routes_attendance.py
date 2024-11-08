@@ -430,7 +430,7 @@ def indextime(STAFFID, intFlg):
     list_null_15 = [None for i in range(0, 16)]
     for i in range(d + 1):
         dict_data = dict(zip(attendance_key_list, list_null_15))
-        # print(f"Expent dict: {AttendanceData}")
+        # print(f"Expect dict: {AttendanceData}")
         AttendanceData.append(dict_data)
 
     # 初期値
@@ -537,23 +537,20 @@ def indextime(STAFFID, intFlg):
             Shin.OVERTIME,
             Shin.HOLIDAY,
         )
-        actual_work_time = setting_time.get_actual_work_time()
-        calc_real_time = setting_time.get_real_time()
-        over_time = setting_time.get_over_time()
-        nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
-        # except ValueError as e:
-        #     print(e)
-        # return render_template(
-        #     "error/403.html",
-        #     title=current_date,
-        #     message=e,
-        #     u=current_user,
-        # )
-        real_time_sum.append(calc_real_time)
-        if Shin.OVERTIME == "1":
-            over_time_0.append(over_time)
-        if nurse_holiday_work_time != 9.99:
-            nurse_holiday_work_list.append(nurse_holiday_work_time)
+        print(f"ID: {Shin.STAFFID}")
+        try:
+            actual_work_time = setting_time.get_actual_work_time()
+            calc_real_time = setting_time.get_real_time()
+            over_time = setting_time.get_over_time()
+            nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
+        except TypeError as e:
+            print(e)
+        else:
+            real_time_sum.append(calc_real_time)
+            if Shin.OVERTIME == "1":
+                over_time_0.append(over_time)
+            if nurse_holiday_work_time != 9.99:
+                syukkin_holiday_times_0.append(nurse_holiday_work_time)
 
         """ 24/8/1 変更分 """
         contract_work_time: float = 0.0
@@ -572,7 +569,7 @@ def indextime(STAFFID, intFlg):
         print(f"Actual time: {actual_work_time}")
         print(f"In real time list: {real_time_sum}")
         print(f"In over time list: {over_time_0}")
-        print(f"Nurse holiday: {nurse_holiday_work_list}")
+        print(f"Nurse holiday: {syukkin_holiday_times_0}")
         # sum_0 += AttendanceData[Shin.WORKDAY.day][14]
 
         w_h = calc_real_time // (60 * 60)
@@ -601,7 +598,7 @@ def indextime(STAFFID, intFlg):
                 AttendanceData[Shin.WORKDAY.day]["notification_pm"] == "1"
                 or AttendanceData[Shin.WORKDAY.day]["notification_pm"] == "2"
             ):
-                AttendanceData[Shin.WORKDAY.day]["worktime"] = w_h + w_m
+                AttendanceData[Shin.WORKDAY.day]["worktime"] = actual_work_time
                 workday_count += 1
                 work_time_sum = (
                     AttendanceData[Shin.WORKDAY.day]["worktime"] * workday_count

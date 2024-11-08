@@ -420,7 +420,6 @@ def jimu_summary_fulltime(startday):
     attendace_qry_obj = AttendanceQuery(jimu_usr.STAFFID, FromDay, ToDay)
     clerical_attendance_list = attendace_qry_obj.get_clerical_attendance()
 
-    nurse_holiday_work_list = []
     for clerical_attendance in clerical_attendance_list:
         sh = clerical_attendance[0]
 
@@ -565,7 +564,9 @@ def jimu_summary_fulltime(startday):
             over_time = setting_time.get_over_time()
             nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
         except TypeError as e:
-            print(e)
+            # print(e)
+            err_message = f"{e}"
+            syslog.syslog(err_message)
         else:
             real_time_sum.append(calc_real_time)
             if sh.OVERTIME == "1":
@@ -737,9 +738,9 @@ def jimu_summary_fulltime(startday):
 
     today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
-    c_profile.disable()
-    c_stats = pstats.Stats(c_profile)
-    c_stats.sort_stats("cumtime").print_stats(20)
+    # c_profile.disable()
+    # c_stats = pstats.Stats(c_profile)
+    # c_stats.sort_stats("cumtime").print_stats(20)
 
     end_time = time.perf_counter()
     run_time = end_time - start_time
