@@ -470,7 +470,6 @@ def indextime(STAFFID, intFlg):
         Shinsei.STAFFID, Shinsei.WORKDAY
     )
 
-    nurse_holiday_work_list = []
     workday_count: int = 0
     work_time_sum: float = 0.0
     for attendace_query in attendance_query_list:
@@ -567,8 +566,8 @@ def indextime(STAFFID, intFlg):
         print(f"{Shin.WORKDAY.day} 日")
         print(f"Real time: {calc_real_time}")
         print(f"Actual time: {actual_work_time}")
-        print(f"In real time list: {real_time_sum}")
-        print(f"In over time list: {over_time_0}")
+        print(f"List of real time: {real_time_sum}")
+        print(f"List of over time: {over_time_0}")
         print(f"Nurse holiday: {syukkin_holiday_times_0}")
         # sum_0 += AttendanceData[Shin.WORKDAY.day][14]
 

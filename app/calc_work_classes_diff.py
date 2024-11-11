@@ -211,53 +211,57 @@ class CalcTimeParent(metaclass=ABCMeta):
     #     dataclass(cls)
     #     return super().__new__(cls)
 
-    def __post_init__(self):
-        you = db.session.get(User, self.staff_id)
-        contract = db.session.get(KinmuTaisei, you.CONTRACT_CODE)
+    def __post_init__(self) -> tuple[float, float]:
+        if self.staff_id is not None:
+            you = db.session.get(User, self.staff_id)
+            contract = db.session.get(KinmuTaisei, you.CONTRACT_CODE)
 
-        self.contract_work_time = contract.WORKTIME
+            self.contract_work_time = contract.WORKTIME
+            # db_holiday_time = contract.WORKTIME
 
-        related_holiday = db.session.get(RecordPaidHoliday, self.staff_id)
-        # sub_q = (
-        #     db.session.query(
-        #         func.max(D_HOLIDAY_HISTORY.START_DAY).label("start_day_max")
-        #     )
-        #     .filter(D_HOLIDAY_HISTORY.STAFFID == self.staff_id)
-        #     .subquery()
-        # )
-        # related_holiday = (
-        #     db.session.query(D_HOLIDAY_HISTORY)
-        #     .filter(
-        #         and_(
-        #             D_HOLIDAY_HISTORY.STAFFID == self.staff_id,
-        #             D_HOLIDAY_HISTORY.START_DAY == sub_q.c.start_day_max,
-        #         )
-        #     )
-        #     .first()
-        # )
-        self.contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
-        # self.contract_holiday_time = related_holiday.HOLIDAY_TIME
-        if contract.CONTRACT_CODE == 2:
-            contract = (
-                db.session.query(D_JOB_HISTORY)
-                .filter(D_JOB_HISTORY.STAFFID == self.staff_id)
-                .first()
-            )
-            self.contract_work_time = contract.PART_WORKTIME
+            related_holiday = db.session.get(RecordPaidHoliday, self.staff_id)
+            self.contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
+            # sub_q = (
+            #     db.session.query(
+            #         func.max(D_HOLIDAY_HISTORY.START_DAY).label("start_day_max")
+            #     )
+            #     .filter(D_HOLIDAY_HISTORY.STAFFID == self.staff_id)
+            #     .subquery()
+            # )
+            # related_holiday = (
+            #     db.session.query(D_HOLIDAY_HISTORY)
+            #     .filter(
+            #         and_(
+            #             D_HOLIDAY_HISTORY.STAFFID == self.staff_id,
+            #             D_HOLIDAY_HISTORY.START_DAY == sub_q.c.start_day_max,
+            #         )
+            #     )
+            #     .first()
+            # )
+            if contract.CONTRACT_CODE == 2:
+                contract = (
+                    db.session.query(D_JOB_HISTORY)
+                    .filter(D_JOB_HISTORY.STAFFID == self.staff_id)
+                    .first()
+                )
+                self.contract_work_time = contract.PART_WORKTIME
 
-            if related_holiday is not None:
-                return self.contract_work_time, self.contract_holiday_time
+                if related_holiday is not None:
+                    # db_holiday_time = related_holiday.HOLIDAY_TIME
+                    return self.contract_work_time, self.contract_holiday_time
+                else:
+                    raise TypeError(
+                        f"There is not in D_HOLIDAY_HISTORY: {self.staff_id}"
+                    )
+                    # return self.contract_work_time, self.contract_holiday_time
             else:
-                raise TypeError(f"There is not in D_HOLIDAY_HISTORY: {self.staffid}")
-                # return self.contract_work_time, self.contract_holiday_time
-        else:
-            return self.contract_work_time, self.contract_holiday_time
+                return self.contract_work_time, self.contract_holiday_time
 
 
 # ***** 常勤用各勤怠時間計算ひな形 *****#
 @dataclass
 class CalcTimeClass(CalcTimeParent):
-    # staffid: int
+    # staff_id: int
     sh_starttime: str
     sh_endtime: str
     notifications: tuple[str]
@@ -270,12 +274,15 @@ class CalcTimeClass(CalcTimeParent):
     n_half_list: List[str] = field(default_factory=lambda: ["4", "9", "16"])
     # real_time_list: list[float] = field(default_factory=list)
 
-    def __post_init__(self):
-        return super().__post_init__()
-        # self.contract_work_time: float = super().__init__(self.staff_id).contract_work_time
-        # self.contract_holiday_time: float = (
-        #     super().__init__(self.staff_id).contract_holiday_time
-        # )
+    # あるとすれば、これはどこのタイミング？
+    # def __post_init__(self):
+    #     # return super().__post_init__()
+    #     if self.staff_id is not None:
+    #         you = db.session.get(User, self.staff_id)
+    #         contract = db.session.get(KinmuTaisei, you.CONTRACT_CODE)
+    #         self.contract_work_time = contract.WORKTIME
+    #         related_holiday = db.session.get(RecordPaidHoliday, self.staff_id)
+    #         self.contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
 
     # 今のところお昼だけ採用、勤務時間影響なし
     @staticmethod
@@ -338,35 +345,34 @@ class CalcTimeClass(CalcTimeParent):
 
     # 半日出張、半休、生理休暇かつ打刻のある場合
     def provide_half_rest(self) -> timedelta:
+        # print(f"Child func: {super().__post_init__()[1]}")
         actual_time = self.calc_actual_work_time()
-        # contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
         working_plus_half_time = actual_time + timedelta(
-            hours=self.contract_holiday_time / 2
+            hours=super().__post_init__()[1] / 2
         )
         approval_times: list[timedelta] = []
         for half_notice in self.notifications:
             if half_notice in self.n_half_list:
                 print("Half rest pass")
-                approval_times.append(timedelta(hours=self.contract_holiday_time / 2))
+                approval_times.append(timedelta(hours=super().__post_init__()[1] / 2))
             elif half_notice == "6":
                 print("Half trip pass")
-                approval_times.append(timedelta(hours=self.contract_work_time / 2))
+                approval_times.append(timedelta(hours=super().__post_init__()[0] / 2))
 
         if len(approval_times) == 0:
-            if working_plus_half_time < timedelta(hours=self.contract_work_time):
+            if working_plus_half_time < timedelta(hours=super().__post_init__()[0]):
                 # raise ValueError("入力に誤りがあります。申請はありせんか？")
-                return timedelta(hours=self.contract_work_time) - actual_time
+                return timedelta(hours=super().__post_init__()[0]) - actual_time
             else:
                 return timedelta(0)
         elif len(approval_times) == 1:
-            if actual_time < timedelta(hours=self.contract_work_time / 2):
-                return timedelta(hours=self.contract_work_time) - actual_time
+            if actual_time < timedelta(hours=super().__post_init__()[0] / 2):
+                return timedelta(hours=super().__post_init__()[0]) - actual_time
             else:
-                # ここが問題、残業のとき困る
                 return approval_times[0]
         elif len(approval_times) == 2:
-            return timedelta(hours=self.contract_work_time / 2) + timedelta(
-                hours=self.contract_holiday_time / 2
+            return timedelta(hours=super().__post_init__()[0] / 2) + timedelta(
+                hours=super().__post_init__()[1] / 2
             )
 
     # 通常一日の時間休
@@ -392,13 +398,12 @@ class CalcTimeClass(CalcTimeParent):
 
     def check_over_work(self) -> timedelta:
         actual_work_time = self.calc_actual_work_time()
-        # contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
         # 1.残業あり → 終業時間 - 開始時間
         # 2.残業なし → 契約時間
         # 3.残業なしで半日申請あり → 契約時間 / 2
         if self.sh_overtime == "0":
             working_time = (
-                timedelta(hours=self.contract_work_time)
+                timedelta(hours=super().__post_init__()[0])
                 - self.provide_half_rest()  # 契約時間 / 2 or 0
             )
             # 契約時間 / 2 or 契約時間
@@ -407,7 +412,7 @@ class CalcTimeClass(CalcTimeParent):
             work_without_time_rest = actual_work_time - self.calc_normal_rest(
                 actual_work_time
             )
-            print(f"Overtime pass: {work_without_time_rest}")
+            print(f"Over in class: {work_without_time_rest}")
             return work_without_time_rest
 
     """
@@ -420,22 +425,22 @@ class CalcTimeClass(CalcTimeParent):
     # 9: 慶弔 congratulations and condolences
     def get_actual_work_time(self) -> timedelta:
         actual_work_time = self.calc_actual_work_time()
-        # contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
+        correct_actual_time = (
+            actual_work_time
+            + self.provide_half_rest()
+            - self.calc_normal_rest(actual_work_time)
+        )
         for notification in self.notifications:
-            if notification in ["1", "2"] or self.sh_overtime == "1":
-                return (
-                    actual_work_time
-                    + self.provide_half_rest()
-                    - self.calc_normal_rest(actual_work_time)
-                )
-            elif notification not in ["1", "2", "8"]:
-                return timedelta(hours=self.contract_work_time)
-            elif notification in ["3", "5"] or (
+            if notification == "5":
+                return timedelta(hours=super().__post_init__()[0])
+            elif notification == "3" or (
                 notification == "9" and self.sh_starttime == "00:00"
             ):
-                return timedelta(hours=self.contract_work_time)
+                return timedelta(hours=super().__post_init__()[1])
             elif notification == "8":
                 return timedelta(0)
+            else:
+                return correct_actual_time
 
     """
         残業分
@@ -445,20 +450,19 @@ class CalcTimeClass(CalcTimeParent):
     def get_over_time(self) -> float:
         # contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
         working_time = self.check_over_work()
-        # # if パートwork6h holiday5.5h
-        # # 出張 provide_half_rest → 3h
-        # over_time_in_work = working_time - (
-        #     timedelta(hours=self.contract_work_time) - self.provide_half_rest()
-        # )
+        # パートはありません
+        over_time_in_work = working_time - (
+            timedelta(hours=super().__post_init__()[0]) - self.provide_half_rest()
+        )
         # # 半休 provide_half_rest → 2.75h
         # over_time_in_holiday = working_time - (
         #     timedelta(hours=self.contract_holiday_time) - self.provide_half_rest()
         # )
-        if self.provide_half_rest() != timedelta(0):
-            over_time = working_time - timedelta(hours=self.contract_work_time / 2)
-        else:
-            over_time = working_time - timedelta(hours=self.contract_work_time)
-        return over_time.total_seconds()
+        # if self.provide_half_rest() != timedelta(0):
+        #     over_time = working_time - timedelta(hours=self.contract_work_time / 2)
+        # else:
+        #     over_time = working_time - timedelta(hours=self.contract_work_time)
+        return over_time_in_work.total_seconds()
 
     """
         @Return: float
@@ -468,7 +472,7 @@ class CalcTimeClass(CalcTimeParent):
     # リアル実働時間（労働時間 - 年休、出張、時間休など）
     def get_real_time(self) -> list[float]:
         working_time = self.check_over_work()
-        print(f"Work time in real: {working_time}")
+        print(f"Real time in class: {working_time}")
         for one_notification in self.notifications:
             if one_notification in self.n_code_list:
                 working_time -= self.get_times_rest(one_notification)

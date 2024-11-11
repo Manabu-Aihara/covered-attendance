@@ -557,7 +557,7 @@ def jimu_summary_fulltime(startday):
             sh.OVERTIME,
             sh.HOLIDAY,
         )
-        print(f"ID: {sh.STAFFID}")
+        # print(f"ID: {sh.STAFFID}")
         try:
             actual_work_time = setting_time.get_actual_work_time()
             calc_real_time = setting_time.get_real_time()
@@ -576,12 +576,12 @@ def jimu_summary_fulltime(startday):
                 # syukkin_holiday_times_0.append(nurse_holiday_work_time)
                 nurse_holiday_append(nurse_holiday_work_time)
 
-            print(f"{sh.WORKDAY.day} 日")
-            print(f"Real time: {calc_real_time}")
-            print(f"Actual time: {actual_work_time}")
-            print(f"In real time list: {real_time_sum}")
-            print(f"In over time list: {over_time_0}")
-            print(f"Nurse holiday: {syukkin_holiday_times_0}")
+            # print(f"{sh.WORKDAY.day} 日")
+            # print(f"Real time: {calc_real_time}")
+            # print(f"Actual time: {actual_work_time}")
+            # print(f"In real time list: {real_time_sum}")
+            # print(f"In over time list: {over_time_0}")
+            # print(f"Nurse holiday: {syukkin_holiday_times_0}")
 
         ##### データベース貯蔵 #####
         ln_oncall = len(oncall)
@@ -745,7 +745,7 @@ def jimu_summary_fulltime(startday):
     end_time = time.perf_counter()
     run_time = end_time - start_time
     pref_result = f"'実行時間'{str(run_time)}'秒'"
-    print(pref_result)
+    syslog.syslog(pref_result)
 
     return render_template(
         "attendance/jimu_summary_fulltime_diff.html",

@@ -715,7 +715,7 @@ def jimu_summary_fulltime(startday):
     end_time = time.perf_counter()
     run_time = end_time - start_time
     pref_result = f"'実行時間'{str(run_time)}'秒'"
-    print(pref_result)
+    syslog.syslog(pref_result)
     ##### 退職者表示設定
 
     return render_template(
