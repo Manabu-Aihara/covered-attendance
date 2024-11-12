@@ -34,7 +34,7 @@ def get_month_workday(selected_date: str = "") -> Tuple[int, int, str]:
         """
 
 
-def get_user_role(query_name, table_code, user_code: int = 0) -> tuple:
+def get_user_role(query_name, table_code, user_code: int = 0) -> str:
     result_query = db.session.query(query_name).filter(table_code == user_code).first()
     if result_query is None:
         # リスト対応させるため、空の場合は空文字を返す
@@ -64,6 +64,52 @@ def convert_null_role(db_obj: T) -> T:
     db_obj.job_type = disp_jobtype
     db_obj.post = disp_post
     return db_obj
+
+
+"""
+    例: 第2引数（退職日）が今日を過ぎていても、今月なら対象とする
+    @Params:
+        query_instances: list<T>
+        date_columns: tuple<str>
+    @Return
+        result_data_list: list<T> 
+    """
+
+
+def get_more_condition_users(query_instances: list[T], *date_columun: str) -> list[T]:
+    today = datetime.today()
+    result_data_list = []
+    for query_instance in query_instances:
+        try:
+            # 入職日
+            date_c_name0: datetime = getattr(query_instance, date_columun[0])
+            # 退職日
+            date_c_name1: datetime = getattr(query_instance, date_columun[1])
+            # if date_c_name0 is None:
+            #     TypeError出してくれる
+            if date_c_name0 <= today:
+                if (
+                    date_c_name1 is None
+                    or date_c_name1 > today
+                    or (
+                        date_c_name1.year == today.year
+                        # ここの == だね
+                        and date_c_name1.month == today.month
+                    )
+                ):
+                    result_data_list.append(query_instance)
+        except TypeError:
+            (
+                print(f"{query_instance.STAFFID}: 入職日の入力がありません")
+                if query_instance.STAFFID
+                else print("入職日の入力がありません")
+            )
+            result_data_list.append(query_instance)
+
+    return result_data_list
+
+
+# date_c_name0.year == today.year and date_c_name0.month <= today.month
 
 
 def check_table_member(staff_id: int, table_model: T):

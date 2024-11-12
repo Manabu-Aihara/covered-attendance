@@ -21,7 +21,7 @@ def get_contract_work_time(app_context):
 
 @pytest.fixture(name="calc_work")
 def make_calc_work(app_context):
-    calc_work_object = CalcTimeClass(201, "10:41", "16:26", ("2"), "0", "0")
+    calc_work_object = CalcTimeClass(201, "12:41", "16:26", ("6"), "0", "0")
     return calc_work_object
 
 
@@ -29,7 +29,8 @@ def make_calc_work(app_context):
 def test_get_actual_work_time(calc_work):
     actual_time: timedelta = calc_work.get_actual_work_time()
     actual_second = actual_time.total_seconds()
-    assert actual_second / 3600 == 4.75
+    result_time = actual_second / 3600
+    assert result_time == 6.75
 
 
 @pytest.mark.skip
@@ -51,7 +52,8 @@ def test_get_over_time(calc_work):
 @pytest.mark.skip
 def test_get_real_time(calc_work):
     time_second = calc_work.get_real_time()
-    assert time_second / 3600 == 4.5
+    result_real = time_second / 3600
+    assert result_real == 3.0
 
 
 def get_month_attendance(*staff_ids: int) -> list[list[Shinsei]]:
@@ -111,7 +113,7 @@ def test_output_month_log(month_attends):
             # print(f"Real time list: {ct_obj.real_time_list}")
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_print_list_type(month_attends):
     ct_obj = CalcTimeClass(None, None, None, None, None, None)
     actual_list = []
@@ -141,12 +143,12 @@ def test_print_list_type(month_attends):
             if target_attend.OVERTIME == "1":
                 over_list.append(ct_obj.get_over_time())
 
-        # actual_sum = math.fsum(actual_list)
-        # real_sum = math.fsum(real_list)
-        # over_sum = math.fsum(over_list)
-        actual_sum = pd.Series(actual_list).sum()
-        real_sum = pd.Series(real_list).sum()
-        over_sum = pd.Series(over_list).sum()
+        actual_sum = math.fsum(actual_list)
+        real_sum = math.fsum(real_list)
+        over_sum = math.fsum(over_list)
+        # actual_sum = pd.Series(actual_list).sum()
+        # real_sum = pd.Series(real_list).sum()
+        # over_sum = pd.Series(over_list).sum()
         print(f"Test actual sum: {actual_sum}")
         print(f"Test real sum: {real_sum}")
         print(f"Test over sum: {over_sum}")

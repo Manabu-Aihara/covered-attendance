@@ -213,11 +213,15 @@ class CalcTimeParent(metaclass=ABCMeta):
 
     def __post_init__(self) -> tuple[float, float]:
         if self.staff_id is not None:
-            you = db.session.get(User, self.staff_id)
+            you = (
+                db.session.query(D_JOB_HISTORY)
+                .filter(D_JOB_HISTORY.STAFFID == self.staff_id)
+                .first()
+            )
             contract = db.session.get(KinmuTaisei, you.CONTRACT_CODE)
 
             self.contract_work_time = contract.WORKTIME
-            # db_holiday_time = contract.WORKTIME
+            # self.contract_holiday_time = contract.WORKTIME
 
             related_holiday = db.session.get(RecordPaidHoliday, self.staff_id)
             self.contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
@@ -247,7 +251,7 @@ class CalcTimeParent(metaclass=ABCMeta):
                 self.contract_work_time = contract.PART_WORKTIME
 
                 if related_holiday is not None:
-                    # db_holiday_time = related_holiday.HOLIDAY_TIME
+                    # self.contract_holiday_time = related_holiday.HOLIDAY_TIME
                     return self.contract_work_time, self.contract_holiday_time
                 else:
                     raise TypeError(
@@ -268,23 +272,20 @@ class CalcTimeClass(CalcTimeParent):
     sh_overtime: str
     sh_holiday: str
 
-    n_code_list: List[str] = field(
-        default_factory=lambda: ["10", "11", "12", "13", "14", "15"]
-    )
-    n_half_list: List[str] = field(default_factory=lambda: ["4", "9", "16"])
-    # real_time_list: list[float] = field(default_factory=list)
+    # どっちでもいい
+    # n_code_list: List[str] = field(
+    #     default_factory=lambda: ["10", "11", "12", "13", "14", "15"]
+    # )
+    # n_half_list: List[str] = field(default_factory=lambda: ["4", "9", "16"])
 
     # あるとすれば、これはどこのタイミング？
-    # def __post_init__(self):
-    #     # return super().__post_init__()
-    #     if self.staff_id is not None:
-    #         you = db.session.get(User, self.staff_id)
-    #         contract = db.session.get(KinmuTaisei, you.CONTRACT_CODE)
-    #         self.contract_work_time = contract.WORKTIME
-    #         related_holiday = db.session.get(RecordPaidHoliday, self.staff_id)
-    #         self.contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
+    def __post_init__(self):
+        self.n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
+        self.n_half_list: List[str] = ["4", "9", "16"]
+        super().__post_init__()
+        print(f"Parent arg: {self.staff_id}")
 
-    # 今のところお昼だけ採用、勤務時間影響なし
+    # 今のところお昼だけ採用
     @staticmethod
     def round_up_time(which_time: str) -> datetime:
         select_time_hm = datetime.strptime(which_time, "%H:%M")
@@ -345,7 +346,7 @@ class CalcTimeClass(CalcTimeParent):
 
     # 半日出張、半休、生理休暇かつ打刻のある場合
     def provide_half_rest(self) -> timedelta:
-        # print(f"Child func: {super().__post_init__()[1]}")
+        # print(f"Child func: {self.contract_holiday_time}")
         actual_time = self.calc_actual_work_time()
         working_plus_half_time = actual_time + timedelta(
             hours=super().__post_init__()[1] / 2
@@ -470,16 +471,14 @@ class CalcTimeClass(CalcTimeParent):
         """
 
     # リアル実働時間（労働時間 - 年休、出張、時間休など）
-    def get_real_time(self) -> list[float]:
+    def get_real_time(self) -> float:
         working_time = self.check_over_work()
         print(f"Real time in class: {working_time}")
         for one_notification in self.notifications:
             if one_notification in self.n_code_list:
                 working_time -= self.get_times_rest(one_notification)
-                # self.real_time_list.append(working_time.total_seconds())
 
         return working_time.total_seconds()
-        # return self.real_time_list
 
     """
         看護師限定、休日出勤

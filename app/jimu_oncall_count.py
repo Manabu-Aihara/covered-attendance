@@ -60,7 +60,11 @@ from app.models import (
 )
 from app.common_func import GetPullDownList, ZeroCheck, GetData, GetDataS
 from app.attendance_query_class import AttendanceQuery
-from app.attendance_util import get_month_workday, convert_null_role
+from app.attendance_util import (
+    get_month_workday,
+    convert_null_role,
+    get_more_condition_users,
+)
 from app.db_check_util import compare_db_item, check_contract_value
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
@@ -281,48 +285,6 @@ def jimu_oncall_count_26(STAFFID):
     )
 
 
-T = TypeVar("T")
-
-
-def get_more_condition_users(query_instances: List[T], *date_columun: str):
-    today = datetime.today()
-    result_users = []
-    for query_instance in query_instances:
-        try:
-            # 入職日
-            date_c_name0: datetime = getattr(query_instance, date_columun[0])
-            # 退職日
-            date_c_name1: datetime = getattr(query_instance, date_columun[1])
-            # if date_c_name0 is None:
-            #     raise TypeError("入職日の入力がありません")
-            # if User.INDAY <= datetime.today()
-            # Today 2024/8/23 if 2024/8/24 は入らない
-            # if User.OUTDAY >= datetime.today()
-            # Today 2024/8/23 if 2024/8/22 は入らない
-            if date_c_name0 <= today:
-                if (
-                    date_c_name1 is None
-                    or date_c_name1 > today
-                    or (
-                        date_c_name1.year == today.year
-                        and date_c_name1.month >= today.month
-                    )
-                ):
-                    result_users.append(query_instance)
-        except TypeError:
-            (
-                print(f"{query_instance.STAFFID}: 入職日の入力がありません")
-                if query_instance.STAFFID
-                else print("入職日の入力がありません")
-            )
-            result_users.append(query_instance)
-
-    return result_users
-
-
-# date_c_name0.year == today.year and date_c_name0.month <= today.month
-
-
 ##### 常勤1日基準 ######
 @app.route("/jimu_summary_fulltime/<startday>", methods=["GET", "POST"])
 @login_required
@@ -417,19 +379,52 @@ def jimu_summary_fulltime(startday):
 
         db.session.commit()
 
+    # print(f"Date type: {type(User.INDAY)}")
+    """ 24/8/27 変更 """
+    clerk_totalling_filters = []
+    if jimu_usr.TEAM_CODE != 1:
+        # raise TypeError("Boolean value of this clause is not defined")
+        # https://stackoverflow.com/questions/42681231/sqlalchemy-unexpected-results-when-using-and-and-or
+        # filters.append(
+        #     or_(User.OUTDAY == None, User.OUTDAY > datetime.today())
+        # )
+
+        clerk_totalling_filters.append(User.TEAM_CODE == jimu_usr.TEAM_CODE)
+
+        users_without_condition = (
+            db.session.query(User).filter(and_(*clerk_totalling_filters)).all()
+        )
+        conditional_users = get_more_condition_users(
+            users_without_condition, "INDAY", "OUTDAY"
+        )
+    else:
+        users_without_condition = db.session.query(User).all()
+        conditional_users = get_more_condition_users(
+            users_without_condition, "INDAY", "OUTDAY"
+        )
+        print(f"こっちのはず: {len(conditional_users)}")
+
+    null_checked_users = []
+    for conditional_user in users_without_condition:
+        null_checked_users.append(convert_null_role(conditional_user))
+
     attendace_qry_obj = AttendanceQuery(jimu_usr.STAFFID, FromDay, ToDay)
     clerical_attendance_list = attendace_qry_obj.get_clerical_attendance()
+    # print(f"Totalling item length: {len(clerical_attendance_list)}")
+    totalling_counter: int = 0
 
+    setting_time = CalcTimeClass(None, None, None, None, None, None)
+    # for user in null_checked_users:
     for clerical_attendance in clerical_attendance_list:
-        sh = clerical_attendance[0]
+        Shin = clerical_attendance[0]
 
         # スタッフが変ったら
         # ここあまり好きじゃない、Unbound変数
-        if UserID != sh.STAFFID:
-            UserID = sh.STAFFID
-            u = User.query.get(sh.STAFFID)
-            cnt_for_tbl = CounterForTable.query.get(sh.STAFFID)
-            rp_holiday = RecordPaidHoliday.query.get(sh.STAFFID)
+        if UserID != Shin.STAFFID:
+            UserID = Shin.STAFFID
+            u = User.query.get(Shin.STAFFID)
+            cnt_for_tbl = CounterForTable.query.get(Shin.STAFFID)
+            rp_holiday = RecordPaidHoliday.query.get(Shin.STAFFID)
             AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
             # 各スタッフのカウントになる、不思議
             workday_count = 0
@@ -472,14 +467,14 @@ def jimu_summary_fulltime(startday):
             y,
             m,
             d,
-            sh.WORKDAY,
-            sh.ONCALL,
-            sh.HOLIDAY,
-            sh.ONCALL_COUNT,
-            sh.ENGEL_COUNT,
-            sh.NOTIFICATION,
-            sh.NOTIFICATION2,
-            sh.MILEAGE,
+            Shin.WORKDAY,
+            Shin.ONCALL,
+            Shin.HOLIDAY,
+            Shin.ONCALL_COUNT,
+            Shin.ENGEL_COUNT,
+            Shin.NOTIFICATION,
+            Shin.NOTIFICATION2,
+            Shin.MILEAGE,
             oncall,
             oncall_holiday,
             oncall_cnt,
@@ -502,9 +497,9 @@ def jimu_summary_fulltime(startday):
             y,
             m,
             d,
-            sh.WORKDAY,
-            sh.NOTIFICATION,
-            sh.NOTIFICATION2,
+            Shin.WORKDAY,
+            Shin.NOTIFICATION,
+            Shin.NOTIFICATION2,
             timeoff1,
             timeoff2,
             timeoff3,
@@ -516,48 +511,59 @@ def jimu_summary_fulltime(startday):
         )
         tm_off.cnt_time_off()
 
-        dtm = datetime.strptime(sh.ENDTIME, "%H:%M") - datetime.strptime(
-            sh.STARTTIME, "%H:%M"
+        dtm = datetime.strptime(Shin.ENDTIME, "%H:%M") - datetime.strptime(
+            Shin.STARTTIME, "%H:%M"
         )
         # リアル実働時間
         real_time = dtm
 
         # あくまで暫定的に使う変数
-        related_holiday = db.session.get(RecordPaidHoliday, sh.STAFFID)
+        related_holiday = db.session.get(RecordPaidHoliday, Shin.STAFFID)
         # これを抹殺する
-        # AttendanceDada[sh.WORKDAY.day][14] = 0
+        # AttendanceDada[Shin.WORKDAY.day][14] = 0
         # settime = CalcTimeClass(
         #     dtm,
-        #     sh.NOTIFICATION,
-        #     sh.NOTIFICATION2,
-        #     sh.STARTTIME,
-        #     sh.ENDTIME,
-        #     sh.OVERTIME,
+        #     Shin.NOTIFICATION,
+        #     Shin.NOTIFICATION2,
+        #     Shin.STARTTIME,
+        #     Shin.ENDTIME,
+        #     Shin.OVERTIME,
         #     clerical_attendance.CONTRACT_CODE,
         #     AttendanceDada,
         #     over_time_0,
         #     real_time,
         #     real_time_sum,
         #     syukkin_holiday_times_0,
-        #     sh.HOLIDAY,
+        #     Shin.HOLIDAY,
         #     clerical_attendance.JOBTYPE_CODE,
-        #     sh.STAFFID,
-        #     sh.WORKDAY,
+        #     Shin.STAFFID,
+        #     Shin.WORKDAY,
         #     # clerical_attendance.HOLIDAY_TIME,
         #     related_holiday.BASETIMES_PAIDHOLIDAY,
         # )
         # settime.calc_time()
+
         over_time_append = over_time_0.append
         nurse_holiday_append = syukkin_holiday_times_0.append
-        setting_time = CalcTimeClass(
-            sh.STAFFID,
-            sh.STARTTIME,
-            sh.ENDTIME,
-            (sh.NOTIFICATION, sh.NOTIFICATION2),
-            sh.OVERTIME,
-            sh.HOLIDAY,
+        # setting_time = CalcTimeClass(
+        #     Shin.STAFFID,
+        #     Shin.STARTTIME,
+        #     Shin.ENDTIME,
+        #     (Shin.NOTIFICATION, Shin.NOTIFICATION2),
+        #     Shin.OVERTIME,
+        #     Shin.HOLIDAY,
+        # )
+        setting_time.staff_id = Shin.STAFFID
+        setting_time.sh_starttime = Shin.STARTTIME
+        setting_time.sh_endtime = Shin.ENDTIME
+        setting_time.notifications = (
+            Shin.NOTIFICATION,
+            Shin.NOTIFICATION2,
         )
-        # print(f"ID: {sh.STAFFID}")
+        setting_time.sh_overtime = Shin.OVERTIME
+        setting_time.sh_holiday = Shin.HOLIDAY
+
+        # print(f"ID: {Shin.STAFFID}")
         try:
             actual_work_time = setting_time.get_actual_work_time()
             calc_real_time = setting_time.get_real_time()
@@ -569,14 +575,14 @@ def jimu_summary_fulltime(startday):
             syslog.syslog(err_message)
         else:
             real_time_sum.append(calc_real_time)
-            if sh.OVERTIME == "1":
+            if Shin.OVERTIME == "1" and clerical_attendance.CONTRACT_CODE != 2:
                 # over_time_0.append(over_time)
                 over_time_append(over_time)
             if nurse_holiday_work_time != 9.99:
                 # syukkin_holiday_times_0.append(nurse_holiday_work_time)
                 nurse_holiday_append(nurse_holiday_work_time)
 
-            # print(f"{sh.WORKDAY.day} 日")
+            # print(f"{Shin.WORKDAY.day} 日")
             # print(f"Real time: {calc_real_time}")
             # print(f"Actual time: {actual_work_time}")
             # print(f"In real time list: {real_time_sum}")
@@ -621,12 +627,12 @@ def jimu_summary_fulltime(startday):
         """ 24/8/22 変更分 """
         # ここで宣言された変数は“+=”不可
         # work_time_sum_60: float = 0.0
-        # 🙅 work_time_sum_60 += AttendanceDada[sh.WORKDAY.day][14]
+        # 🙅 work_time_sum_60 += AttendanceDada[Shin.WORKDAY.day][14]
 
-        # time_sum += AttendanceDada[sh.WORKDAY.day][14]
+        # time_sum += AttendanceDada[Shin.WORKDAY.day][14]
         time_sum += actual_work_time
         workday_count += 1 if time_sum != timedelta(0) else workday_count
-        # print(f"{sh.STAFFID} aDd: {AttendanceDada[sh.WORKDAY.day][14]}")
+        # print(f"{Shin.STAFFID} aDd: {AttendanceDada[Shin.WORKDAY.day][14]}")
         w_h = time_sum.total_seconds() // (60 * 60)
         w_m = (time_sum.total_seconds() - w_h * 60 * 60) / (60 * 60)
         # 実働時間計（１０進法）：10進数
@@ -637,7 +643,7 @@ def jimu_summary_fulltime(startday):
         # 実労働時間計：60進数
         time_sum60 = w_h + w_m_60
         sum60_rnd = Decimal(time_sum60).quantize(Decimal("0.01"), ROUND_HALF_UP)
-        # print(f"{sh.STAFFID} Sum: {time_sum10} {time_sum60}")
+        # print(f"{Shin.STAFFID} Sum: {time_sum10} {time_sum60}")
 
         real_sum = 0
         for n in range(len(real_time_sum)):
@@ -711,36 +717,14 @@ def jimu_summary_fulltime(startday):
 
             db.session.commit()
 
-            ##### 退職者表示設定
-
-    # print(f"Date type: {type(User.INDAY)}")
-    """ 24/8/27 変更 """
-    clerk_totlling_filters = []
-    if jimu_usr.TEAM_CODE != 1:
-        clerk_totlling_filters.append(User.TEAM_CODE == jimu_usr.TEAM_CODE)
-        # raise TypeError("Boolean value of this clause is not defined")
-        # https://stackoverflow.com/questions/42681231/sqlalchemy-unexpected-results-when-using-and-and-or
-        # filters.append(
-        #     or_(User.OUTDAY == None, User.OUTDAY > datetime.today())
-        # )
-        # users_without_condition = (
-        #     db.session.query(User).filter(and_(*clerk_totlling_filters)).all()
-        # )
-        # users = get_more_condition_users(users_without_condition, "INDAY", "OUTDAY")
-        users = db.session.query(User).filter(and_(*clerk_totlling_filters)).all()
-    else:
-        users = db.session.query(User).all()
-        print(f"こっちのはず: {len(users)}")
-
-    null_checked_users = []
-    for user in users:
-        null_checked_users.append(convert_null_role(user))
+        totalling_counter += 1
 
     today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
-    # c_profile.disable()
-    # c_stats = pstats.Stats(c_profile)
-    # c_stats.sort_stats("cumtime").print_stats(20)
+    syslog.syslog(f"Totalling item count: {totalling_counter}")
+    c_profile.disable()
+    c_stats = pstats.Stats(c_profile)
+    c_stats.sort_stats("cumtime").print_stats(20)
 
     end_time = time.perf_counter()
     run_time = end_time - start_time
