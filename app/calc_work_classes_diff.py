@@ -273,17 +273,17 @@ class CalcTimeClass(CalcTimeParent):
     sh_holiday: str
 
     # どっちでもいい
-    # n_code_list: List[str] = field(
-    #     default_factory=lambda: ["10", "11", "12", "13", "14", "15"]
-    # )
-    # n_half_list: List[str] = field(default_factory=lambda: ["4", "9", "16"])
+    n_code_list: List[str] = field(
+        default_factory=lambda: ["10", "11", "12", "13", "14", "15"]
+    )
+    n_half_list: List[str] = field(default_factory=lambda: ["4", "9", "16"])
 
     # あるとすれば、これはどこのタイミング？
-    def __post_init__(self):
-        self.n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
-        self.n_half_list: List[str] = ["4", "9", "16"]
-        super().__post_init__()
-        print(f"Parent arg: {self.staff_id}")
+    # def __post_init__(self):
+    #     self.n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
+    #     self.n_half_list: List[str] = ["4", "9", "16"]
+    #     super().__post_init__()
+    #     print(f"Parent arg: {self.staff_id}")
 
     # 今のところお昼だけ採用
     @staticmethod
@@ -337,6 +337,19 @@ class CalcTimeClass(CalcTimeParent):
         elif self.n_code_list[2] == notification or self.n_code_list[5] == notification:
             return timedelta(hours=3)
 
+    # 通常一日の時間休
+    def calc_normal_rest(self, input_work_time: timedelta) -> timedelta:
+        round_up_start = self.round_up_time(self.sh_starttime)
+
+        # 今のところ私の判断、追加・変更あり
+        if round_up_start.strftime("%H:%M") >= "13:00" or self.sh_endtime < "13:00":
+            return timedelta(0)
+        else:
+            if input_work_time >= timedelta(hours=6):
+                return timedelta(hours=1)
+            else:
+                return timedelta(minutes=45)
+
     """
         - 契約時間 / 2 or 0
         if irregular:
@@ -348,9 +361,8 @@ class CalcTimeClass(CalcTimeParent):
     def provide_half_rest(self) -> timedelta:
         # print(f"Child func: {self.contract_holiday_time}")
         actual_time = self.calc_actual_work_time()
-        working_plus_half_time = actual_time + timedelta(
-            hours=super().__post_init__()[1] / 2
-        )
+        working_time = actual_time - self.calc_normal_rest(actual_time)
+
         approval_times: list[timedelta] = []
         for half_notice in self.notifications:
             if half_notice in self.n_half_list:
@@ -361,7 +373,7 @@ class CalcTimeClass(CalcTimeParent):
                 approval_times.append(timedelta(hours=super().__post_init__()[0] / 2))
 
         if len(approval_times) == 0:
-            if working_plus_half_time < timedelta(hours=super().__post_init__()[0]):
+            if working_time < timedelta(hours=super().__post_init__()[0]):
                 # raise ValueError("入力に誤りがあります。申請はありせんか？")
                 return timedelta(hours=super().__post_init__()[0]) - actual_time
             else:
@@ -375,19 +387,6 @@ class CalcTimeClass(CalcTimeParent):
             return timedelta(hours=super().__post_init__()[0] / 2) + timedelta(
                 hours=super().__post_init__()[1] / 2
             )
-
-    # 通常一日の時間休
-    def calc_normal_rest(self, input_work_time: timedelta) -> timedelta:
-        round_up_start = self.round_up_time(self.sh_starttime)
-
-        # 今のところ私の判断、追加・変更あり
-        if round_up_start.strftime("%H:%M") >= "13:00" or self.sh_endtime < "13:00":
-            return timedelta(0)
-        else:
-            if input_work_time >= timedelta(hours=6):
-                return timedelta(hours=1)
-            else:
-                return timedelta(minutes=45)
 
     """
         @Return: timedelta
