@@ -37,6 +37,7 @@ class AttendanceQuery:
         attendance_filters.append(Shinsei.STAFFID == D_JOB_HISTORY.STAFFID)
         attendance_filters.append(D_JOB_HISTORY.START_DAY <= Shinsei.WORKDAY)
         attendance_filters.append(D_JOB_HISTORY.END_DAY >= Shinsei.WORKDAY)
+        # attendance_filters.append(D_JOB_HISTORY.CONTRACT_CODE != 2)
         return attendance_filters
 
     @staticmethod

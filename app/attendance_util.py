@@ -1,4 +1,4 @@
-from typing import Tuple, TypeVar
+from typing import Tuple, TypeVar, Any
 from datetime import datetime
 import time
 import pstats
@@ -26,15 +26,15 @@ def get_month_workday(selected_date: str = "") -> Tuple[int, int, str]:
 
 """
     @Params:
-        query_name: str 実質返すクエリーのカラム名
+        query_name: 実質返すクエリーのカラム名
         table_code: int DBテーブルコード
         user_code: int User内コード
     @Return:
-        result_query: str DBテーブルコードから返す名称
+        result_query: Any DBテーブルコードから返す名称
         """
 
 
-def get_user_role(query_name, table_code, user_code: int = 0) -> str:
+def get_user_role(query_name, table_code: int, user_code: int = 0) -> Any:
     result_query = db.session.query(query_name).filter(table_code == user_code).first()
     if result_query is None:
         # リスト対応させるため、空の場合は空文字を返す
@@ -67,6 +67,7 @@ def convert_null_role(db_obj: T) -> T:
 
 
 """
+    CalcTimeClass専用
     例: 第2引数（退職日）が今日を過ぎていても、今月なら対象とする
     @Params:
         query_instances: list<T>
@@ -76,35 +77,31 @@ def convert_null_role(db_obj: T) -> T:
     """
 
 
-def get_more_condition_users(query_instances: list[T], *date_columun: str) -> list[T]:
+def get_more_condition_users(query_instances: list[T], date_columun: str) -> list[T]:
     today = datetime.today()
     result_data_list = []
     for query_instance in query_instances:
-        try:
-            # 入職日
-            date_c_name0: datetime = getattr(query_instance, date_columun[0])
-            # 退職日
-            date_c_name1: datetime = getattr(query_instance, date_columun[1])
-            # if date_c_name0 is None:
-            #     TypeError出してくれる
-            if date_c_name0 <= today:
-                if (
-                    date_c_name1 is None
-                    or date_c_name1 > today
-                    or (
-                        date_c_name1.year == today.year
-                        # ここの == だね
-                        and date_c_name1.month == today.month
-                    )
-                ):
-                    result_data_list.append(query_instance)
-        except TypeError:
-            (
-                print(f"{query_instance.STAFFID}: 入職日の入力がありません")
-                if query_instance.STAFFID
-                else print("入職日の入力がありません")
+        # 退職日
+        date_c_name1: datetime = getattr(query_instance, date_columun)
+        # if date_c_name0 is None:
+        #     TypeError出してくれる
+        if (
+            date_c_name1 is None
+            or date_c_name1 > today
+            or (
+                date_c_name1.year == today.year
+                # ここの == だね
+                and date_c_name1.month == today.month
             )
+        ):
             result_data_list.append(query_instance)
+        # except TypeError:
+        #     (
+        #         print(f"{query_instance.STAFFID}: 入職日の入力がありません")
+        #         if query_instance.STAFFID
+        #         else print("入職日の入力がありません")
+        #     )
+        #     result_data_list.append(query_instance)
 
     return result_data_list
 

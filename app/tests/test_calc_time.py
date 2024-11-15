@@ -8,7 +8,7 @@ import pstats
 import pandas as pd
 
 from app import db
-from app.models import User, KinmuTaisei, Shinsei
+from app.models import User, KinmuTaisei, Shinsei, D_JOB_HISTORY
 from app.calc_work_classes_diff import CalcTimeClass
 
 
@@ -56,7 +56,7 @@ def test_get_real_time(calc_work):
     assert result_real == 3.0
 
 
-def get_month_attendance(*staff_ids: int) -> list[list[Shinsei]]:
+def get_month_attendance(staff_ids: list[int]) -> list[list[Shinsei]]:
     from_day = datetime(year=2024, month=10, day=1)
     to_day = datetime(year=2024, month=10, day=31)
     attendances: list[list[Shinsei]] = []
@@ -72,11 +72,17 @@ def get_month_attendance(*staff_ids: int) -> list[list[Shinsei]]:
 
 @pytest.fixture(name="month_attends")
 def make_month_attend_info(app_context):
-    attendances = get_month_attendance(201, 20)
+    part_members = (
+        db.session.query(D_JOB_HISTORY.STAFFID)
+        .filter(D_JOB_HISTORY.CONTRACT_CODE == 2)
+        .all()
+    )
+    part_list = [m.STAFFID for m in part_members]
+    attendances = get_month_attendance([201, 135])
     return attendances
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_attendance_count(month_attends):
     assert len(month_attends) == 2
     assert len(month_attends[0]) == 10

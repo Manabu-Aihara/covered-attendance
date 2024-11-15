@@ -63,30 +63,28 @@ def test_join_data_count(app_context):
 
 @pytest.mark.skip
 def test_print_holiday(app_context):
-    users = db.session.query(User).filter(User.CONTRACT_CODE == 2).all()
-    holiday_his_lst = db.session.query(D_HOLIDAY_HISTORY).all()
+    users = (
+        db.session.query(D_JOB_HISTORY).filter(D_JOB_HISTORY.CONTRACT_CODE == 2).all()
+    )
     user_time_dict = {}
-    # for user in users:
-    #     user_time_dict = {
-    #         "Staff": user.STAFFID,
-    #         "Worktime": get_user_role(
-    #             D_JOB_HISTORY.PART_WORKTIME,
-    #             D_JOB_HISTORY.CONTRACT_CODE,
-    #             user.CONTRACT_CODE,
-    #         ),
-    #     }
-    #     print(f"{user_time_dict}")
-
-    holiday_time_dict = {}
-    for holi_his in holiday_his_lst:
-        holiday_time_dict = {
-            "Staff": holi_his.STAFFID,
-            "Worktime": holi_his.HOLIDAY_TIME,
+    for user in users:
+        user_time_dict = {
+            "Staff": user.STAFFID,
+            "Worktime": user.PART_WORKTIME,
         }
-        print(holiday_time_dict)
+        print(f"{user_time_dict}")
+
+    # holiday_his_lst = db.session.query(D_HOLIDAY_HISTORY).all()
+    # holiday_time_dict = {}
+    # for holi_his in holiday_his_lst:
+    #     holiday_time_dict = {
+    #         "Staff": holi_his.STAFFID,
+    #         "Worktime": holi_his.HOLIDAY_TIME,
+    #     }
+    #     print(holiday_time_dict)
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_print_sub_holiday(app_context):
     part_users = db.session.query(User).filter(User.CONTRACT_CODE == 2).all()
     part_list = []
@@ -94,13 +92,17 @@ def test_print_sub_holiday(app_context):
         part_list.append(part_user.STAFFID)
     # for part_user in part_users:
     sub_q = (
-        db.session.query(func.max(D_HOLIDAY_HISTORY.START_DAY).label("start_day_max"))
+        db.session.query(
+            D_HOLIDAY_HISTORY.STAFFID,
+            func.max(D_HOLIDAY_HISTORY.START_DAY).label("start_day_max"),
+        )
         .filter(D_HOLIDAY_HISTORY.STAFFID.in_(part_list))
+        .group_by(D_HOLIDAY_HISTORY.STAFFID)
         .subquery()
     )
     related_holiday_list = db.session.query(D_HOLIDAY_HISTORY).filter(
         and_(
-            D_HOLIDAY_HISTORY.STAFFID.in_(part_list),
+            D_HOLIDAY_HISTORY.STAFFID == sub_q.c.STAFFID,
             D_HOLIDAY_HISTORY.START_DAY == sub_q.c.start_day_max,
         )
     )
@@ -161,17 +163,17 @@ def test_compare_db_item(app_context):
 def condition_users(app_context):
     sample_users = (
         db.session.query(User.STAFFID, User.INDAY, User.OUTDAY)
-        .filter(User.TEAM_CODE == 2)
+        # .filter(User.TEAM_CODE == 2)
         .all()
     )
     # print(sample_users)
     return sample_users
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_get_more_condition_users(condition_users):
     # assert isinstance(condition_users, list)
-    test_users = get_more_condition_users(condition_users, "INDAY", "OUTDAY")
+    test_users = get_more_condition_users(condition_users, "OUTDAY")
     print(test_users)
 
 

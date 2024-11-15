@@ -213,11 +213,12 @@ class CalcTimeParent(metaclass=ABCMeta):
 
     def __post_init__(self) -> tuple[float, float]:
         if self.staff_id is not None:
-            you = (
-                db.session.query(D_JOB_HISTORY)
-                .filter(D_JOB_HISTORY.STAFFID == self.staff_id)
-                .first()
-            )
+            you = db.session.get(User, self.staff_id)
+            # you = (
+            #     db.session.query(D_JOB_HISTORY)
+            #     .filter(D_JOB_HISTORY.STAFFID == self.staff_id)
+            #     .first()
+            # )
             contract = db.session.get(KinmuTaisei, you.CONTRACT_CODE)
 
             self.contract_work_time = contract.WORKTIME
@@ -227,16 +228,18 @@ class CalcTimeParent(metaclass=ABCMeta):
             self.contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
             # sub_q = (
             #     db.session.query(
-            #         func.max(D_HOLIDAY_HISTORY.START_DAY).label("start_day_max")
+            #         D_HOLIDAY_HISTORY.STAFFID,
+            #         func.max(D_HOLIDAY_HISTORY.START_DAY).label("start_day_max"),
             #     )
             #     .filter(D_HOLIDAY_HISTORY.STAFFID == self.staff_id)
+            #     .group_by(D_HOLIDAY_HISTORY.STAFFID)
             #     .subquery()
             # )
             # related_holiday = (
             #     db.session.query(D_HOLIDAY_HISTORY)
             #     .filter(
             #         and_(
-            #             D_HOLIDAY_HISTORY.STAFFID == self.staff_id,
+            #             D_HOLIDAY_HISTORY.STAFFID == sub_q.c.STAFFID,
             #             D_HOLIDAY_HISTORY.START_DAY == sub_q.c.start_day_max,
             #         )
             #     )
@@ -248,16 +251,21 @@ class CalcTimeParent(metaclass=ABCMeta):
                     .filter(D_JOB_HISTORY.STAFFID == self.staff_id)
                     .first()
                 )
-                self.contract_work_time = contract.PART_WORKTIME
 
                 if related_holiday is not None:
+                    # print(f"{self.staff_id} in parent: {self.contract_work_time}")
+                    # self.contract_work_time = (
+                    #     contract.PART_WORKTIME
+                    #     if contract.PART_WORKTIME is not None
+                    #     else related_holiday.HOLIDAY_TIME
+                    # )
                     # self.contract_holiday_time = related_holiday.HOLIDAY_TIME
                     return self.contract_work_time, self.contract_holiday_time
                 else:
                     raise TypeError(
                         f"There is not in D_HOLIDAY_HISTORY: {self.staff_id}"
                     )
-                    # return self.contract_work_time, self.contract_holiday_time
+                    # return self.contract_work_time, -1
             else:
                 return self.contract_work_time, self.contract_holiday_time
 
@@ -373,6 +381,7 @@ class CalcTimeClass(CalcTimeParent):
                 approval_times.append(timedelta(hours=super().__post_init__()[0] / 2))
 
         if len(approval_times) == 0:
+            # print(f"{self.staff_id} in child: {super().__post_init__()[0]}")
             if working_time < timedelta(hours=super().__post_init__()[0]):
                 # raise ValueError("入力に誤りがあります。申請はありせんか？")
                 return timedelta(hours=super().__post_init__()[0]) - actual_time
