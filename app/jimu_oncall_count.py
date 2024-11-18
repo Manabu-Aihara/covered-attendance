@@ -398,7 +398,6 @@ def jimu_summary_fulltime(startday):
     else:
         users_without_condition = db.session.query(User).all()
         conditional_users = get_more_condition_users(users_without_condition, "OUTDAY")
-        # print(f"こっちのはず: {len(conditional_users)}")
 
     null_checked_users = []
     for conditional_user in users_without_condition:
@@ -580,12 +579,12 @@ def jimu_summary_fulltime(startday):
                 # syukkin_holiday_times_0.append(nurse_holiday_work_time)
                 nurse_holiday_append(nurse_holiday_work_time)
 
-            print(f"{Shin.WORKDAY.day} 日")
-            print(f"Real time: {calc_real_time}")
-            print(f"Actual time: {actual_work_time}")
-            print(f"In real time list: {real_time_sum}")
-            print(f"In over time list: {over_time_0}")
-            print(f"Nurse holiday: {syukkin_holiday_times_0}")
+            # print(f"{Shin.WORKDAY.day} 日")
+            # print(f"Real time: {calc_real_time}")
+            # print(f"Actual time: {actual_work_time}")
+            # print(f"In real time list: {real_time_sum}")
+            # print(f"In over time list: {over_time_0}")
+            # print(f"Nurse holiday: {syukkin_holiday_times_0}")
 
         ##### データベース貯蔵 #####
         ln_oncall = len(oncall)
@@ -719,19 +718,19 @@ def jimu_summary_fulltime(startday):
 
     today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
-    print(f"Totalling item count: {totalling_counter}")
+    syslog.syslog(f"Totalling item count: {totalling_counter}")
     if len(null_checked_users) == len(cfts):
-        print("Both length: True")
+        syslog.syslog("Both length: True")
     else:
-        print(f"Both length: False {len(null_checked_users)} {len(cfts)}")
-    c_profile.disable()
-    c_stats = pstats.Stats(c_profile)
-    c_stats.sort_stats("cumtime").print_stats(20)
+        syslog.syslog(f"Both length: False {len(null_checked_users)} {len(cfts)}")
+    # c_profile.disable()
+    # c_stats = pstats.Stats(c_profile)
+    # c_stats.sort_stats("cumtime").print_stats(20)
 
     end_time = time.perf_counter()
     run_time = end_time - start_time
     pref_result = f"'実行時間'{str(run_time)}'秒'"
-    print(pref_result)
+    syslog.syslog(pref_result)
 
     return render_template(
         "attendance/jimu_summary_fulltime_diff.html",

@@ -9,19 +9,30 @@ import pandas as pd
 
 from app import db
 from app.models import User, KinmuTaisei, Shinsei, D_JOB_HISTORY
-from app.calc_work_classes_diff import CalcTimeClass
+from app.calc_work_classes2 import CalcTimeClass
+
+id_for_contract: int = 188
 
 
 @pytest.fixture(name="contract")
 def get_contract_work_time(app_context):
-    user = db.session.get(User, 3)
-    contract = db.session.get(KinmuTaisei, user.CONTRACT_CODE)
-    return contract.WORKTIME
+    user = db.session.get(User, id_for_contract)
+    if user.CONTRACT_CODE != 2:
+        contract = db.session.get(KinmuTaisei, user.CONTRACT_CODE)
+        contract_time = contract.WORKTIME
+    else:
+        contract = (
+            db.session.query(D_JOB_HISTORY)
+            .filter(D_JOB_HISTORY.STAFFID == id_for_contract)
+            .first()
+        )
+        contract_time = contract.PART_WORKTIME
+    return contract_time
 
 
 @pytest.fixture(name="calc_work")
 def make_calc_work(app_context):
-    calc_work_object = CalcTimeClass(201, "12:41", "16:26", ("6"), "0", "0")
+    calc_work_object = CalcTimeClass(188, "08:30", "12:00", ("", "4"), "0", "0")
     return calc_work_object
 
 
@@ -29,17 +40,19 @@ def make_calc_work(app_context):
 def test_get_actual_work_time(calc_work):
     actual_time: timedelta = calc_work.get_actual_work_time()
     actual_second = actual_time.total_seconds()
-    result_time = actual_second / 3600
-    assert result_time == 6.75
+    result_actual = actual_second / 3600
+    assert result_actual == 6.75
 
 
 @pytest.mark.skip
 def test_check_over_work(contract, calc_work):
     actual_time = calc_work.calc_actual_work_time()
     print(f"timedalta: {actual_time}")
+    print(f"contract: {contract}")
     output_time: timedelta = calc_work.check_over_work()
     time_second = output_time.total_seconds()
-    assert time_second / 3600 == 5.5
+    result_time = time_second / 3600
+    assert result_time == 3.5
 
 
 @pytest.mark.skip
@@ -53,7 +66,7 @@ def test_get_over_time(calc_work):
 def test_get_real_time(calc_work):
     time_second = calc_work.get_real_time()
     result_real = time_second / 3600
-    assert result_real == 3.0
+    assert result_real == 3.5
 
 
 def get_month_attendance(staff_ids: list[int]) -> list[list[Shinsei]]:
@@ -78,7 +91,7 @@ def make_month_attend_info(app_context):
         .all()
     )
     part_list = [m.STAFFID for m in part_members]
-    attendances = get_month_attendance([201, 135])
+    attendances = get_month_attendance([201, 3, 20])
     return attendances
 
 

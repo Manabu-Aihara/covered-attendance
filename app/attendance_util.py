@@ -71,7 +71,7 @@ def convert_null_role(db_obj: T) -> T:
     例: 第2引数（退職日）が今日を過ぎていても、今月なら対象とする
     @Params:
         query_instances: list<T>
-        date_columns: tuple<str>
+        date_columns: str
     @Return
         result_data_list: list<T> 
     """
@@ -126,32 +126,3 @@ def check_table_member(staff_id: int, table_model: T):
 
 # Pythonの実行速度を測定(プロファイル)
 # https://zenn.dev/timoneko/articles/16f9ee7113f3cd
-def execution_speed_lib(func):
-    """
-    実行速度計測用のデコレータ
-    """
-
-    def wrapper(*args, **kwargs):
-        pr = cProfile.Profile()
-        # 実行処理の計測
-        pr.runcall(func, *args, **kwargs)
-
-        stats = pstats.Stats(pr)
-        stats.print_stats()
-
-    return wrapper
-
-
-def execution_speed(func):
-    """
-    実行速度計測用のデコレータ
-    """
-
-    def wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        func(*args, **kwargs)
-        end_time = time.perf_counter()
-        run_time = end_time - start_time
-        print("実行時間" + str(run_time) + "秒")
-
-    return wrapper
