@@ -206,9 +206,9 @@ class DataForTable:
 class CalcTimeParent(metaclass=ABCMeta):
     staff_id: int
 
-    # def __new__(cls, *args, **kwargs):
-    #     dataclass(cls)
-    #     return super().__new__(cls)
+    def __new__(cls, *args, **kwargs):
+        dataclass(cls)
+        return super().__new__(cls)
 
     def __post_init__(self) -> tuple[float, float]:
         if self.staff_id is not None:
@@ -221,29 +221,29 @@ class CalcTimeParent(metaclass=ABCMeta):
             contract = db.session.get(KinmuTaisei, you.CONTRACT_CODE)
 
             self.contract_work_time = contract.WORKTIME
-            # self.contract_holiday_time = contract.WORKTIME
+            self.contract_holiday_time = contract.WORKTIME
 
-            related_holiday = db.session.get(RecordPaidHoliday, self.staff_id)
-            self.contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
-            # sub_q = (
-            #     db.session.query(
-            #         D_HOLIDAY_HISTORY.STAFFID,
-            #         func.max(D_HOLIDAY_HISTORY.START_DAY).label("start_day_max"),
-            #     )
-            #     .filter(D_HOLIDAY_HISTORY.STAFFID == self.staff_id)
-            #     .group_by(D_HOLIDAY_HISTORY.STAFFID)
-            #     .subquery()
-            # )
-            # related_holiday = (
-            #     db.session.query(D_HOLIDAY_HISTORY)
-            #     .filter(
-            #         and_(
-            #             D_HOLIDAY_HISTORY.STAFFID == sub_q.c.STAFFID,
-            #             D_HOLIDAY_HISTORY.START_DAY == sub_q.c.start_day_max,
-            #         )
-            #     )
-            #     .first()
-            # )
+            # related_holiday = db.session.get(RecordPaidHoliday, self.staff_id)
+            # self.contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
+            sub_q = (
+                db.session.query(
+                    D_HOLIDAY_HISTORY.STAFFID,
+                    func.max(D_HOLIDAY_HISTORY.START_DAY).label("start_day_max"),
+                )
+                .filter(D_HOLIDAY_HISTORY.STAFFID == self.staff_id)
+                .group_by(D_HOLIDAY_HISTORY.STAFFID)
+                .subquery()
+            )
+            related_holiday = (
+                db.session.query(D_HOLIDAY_HISTORY)
+                .filter(
+                    and_(
+                        D_HOLIDAY_HISTORY.STAFFID == sub_q.c.STAFFID,
+                        D_HOLIDAY_HISTORY.START_DAY == sub_q.c.start_day_max,
+                    )
+                )
+                .first()
+            )
             if contract.CONTRACT_CODE == 2:
                 contract = (
                     db.session.query(D_JOB_HISTORY)
@@ -258,7 +258,7 @@ class CalcTimeParent(metaclass=ABCMeta):
                         if contract.PART_WORKTIME is not None
                         else related_holiday.HOLIDAY_TIME
                     )
-                    # self.contract_holiday_time = related_holiday.HOLIDAY_TIME
+                    self.contract_holiday_time = related_holiday.HOLIDAY_TIME
                     return self.contract_work_time, self.contract_holiday_time
                 else:
                     raise TypeError(
@@ -289,8 +289,10 @@ class CalcTimeClass(CalcTimeParent):
     # def __post_init__(self):
     #     self.n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
     #     self.n_half_list: List[str] = ["4", "9", "16"]
-    #     super().__post_init__()
-    #     print(f"Parent arg: {self.staff_id}")
+    #     if self.staff_id is not None:
+    #         print(f"Parent arg: {super().__post_init__()}")
+    #         self.contract_times = super().__post_init__()
+    #         print(f"Parent arg: {self.contract_times}")
 
     # 今のところお昼だけ採用
     @staticmethod
@@ -366,7 +368,7 @@ class CalcTimeClass(CalcTimeParent):
 
     # 半日出張、半休、生理休暇かつ打刻のある場合
     def provide_half_rest(self) -> timedelta:
-        print(f"Child func: {self.contract_holiday_time}")
+        # print(f"Child func: {self.contract_times}")
         actual_time = self.calc_actual_work_time()
         working_time = actual_time - self.calc_normal_rest(actual_time)
 
@@ -496,13 +498,12 @@ class CalcTimeClass(CalcTimeParent):
     def calc_nurse_holiday_work(self) -> float:
         # 祝日(2)、もしくはNSで土日(1)
         nurse_member = db.session.get(User, self.staff_id)
-        job_type = db.session.get(Jobtype, nurse_member.JOBTYPE_CODE)
         # if self.holiday == "2" or self.holiday == "1"
         # and self.jobtype == 1 and self.u_contract_code == 2:
         if (
             self.sh_holiday == "2"
             or self.sh_holiday == "1"
-            and job_type.JOBTYPE_CODE == 1
+            and nurse_member.JOBTYPE_CODE == 1
             and nurse_member.CONTRACT_CODE == 2
         ):
             return self.get_real_time()

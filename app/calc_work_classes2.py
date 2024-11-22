@@ -9,7 +9,8 @@ import os, math
 import syslog
 from functools import wraps
 from typing import Tuple, List, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
+from abc import ABCMeta
 from functools import lru_cache
 from datetime import datetime, timedelta, time
 from decimal import Decimal, ROUND_HALF_UP
@@ -204,67 +205,91 @@ class DataForTable:
 
 @dataclass
 class ContractTimeClass:
-    staff_id: Optional[int]
+    # staff_id: Optional[int]
+    # staff_id: InitVar[int]
 
-    # @lru_cache
-    def get_contract_times(self) -> tuple[float, float]:
-        if self.staff_id is None:
-            return
-
+    @staticmethod
+    @lru_cache
+    def get_contract_times(staff_id: int) -> tuple[float]:
+        # if staff_id is None:
+        #     print(f"---Parent func---: {staff_id}")
+        #     return
         # 必要なデータを一度のクエリで取得
-        you = db.session.get(User, self.staff_id)
+        you = db.session.get(User, staff_id)
         contract = db.session.get(KinmuTaisei, you.CONTRACT_CODE)
 
         # 基本の契約時間を設定
-        self.contract_work_time = contract.WORKTIME
-        self.contract_holiday_time = contract.WORKTIME
+        contract_work_time = contract.WORKTIME
+        # contract_holiday_time = contract.WORKTIME
 
-        related_holiday = db.session.get(RecordPaidHoliday, self.staff_id)
-        self.contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
+        related_holiday = db.session.get(RecordPaidHoliday, staff_id)
+        contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
 
         # パートタイム契約（CONTRACT_CODE == 2）の場合のみ追加処理
         if contract.CONTRACT_CODE != 2:
-            return self.contract_work_time, self.contract_holiday_time
+            return contract_work_time, contract_holiday_time
 
-        # 最新の契約休暇を1回のクエリで取得
+        # 最新の契約労働・休暇を1回のクエリで取得
+        related_work = (
+            db.session.query(D_JOB_HISTORY)
+            .filter(D_JOB_HISTORY.STAFFID == staff_id)
+            .order_by(D_JOB_HISTORY.START_DAY.desc())
+            .first()
+        )
         # related_holiday = (
         #     db.session.query(D_HOLIDAY_HISTORY)
-        #     .filter(D_HOLIDAY_HISTORY.STAFFID == self.staff_id)
+        #     .filter(D_HOLIDAY_HISTORY.STAFFID == staff_id)
         #     .order_by(D_HOLIDAY_HISTORY.START_DAY.desc())
         #     .first()
         # )
 
         if related_holiday is None:
-            raise TypeError(f"There is not in D_HOLIDAY_HISTORY: {self.staff_id}")
-
-        # パートタイム情報を取得
-        part_time_info = (
-            db.session.query(D_JOB_HISTORY)
-            .filter(D_JOB_HISTORY.STAFFID == self.staff_id)
-            .first()
-        )
-
+            # raise TypeError(f"There is not in D_HOLIDAY_HISTORY: {staff_id}")
+            return
         # 契約時間を更新
-        self.contract_work_time = (
-            part_time_info.PART_WORKTIME
-            if part_time_info.PART_WORKTIME is not None
+        contract_work_time = (
+            related_work.PART_WORKTIME
+            if related_work.PART_WORKTIME is not None
             else related_holiday.HOLIDAY_TIME
         )
-        # self.contract_holiday_time = related_holiday.HOLIDAY_TIME
+        # contract_holiday_time = related_holiday.HOLIDAY_TIME
 
-        return self.contract_work_time, self.contract_holiday_time
+        return contract_work_time, contract_holiday_time
+
+    # def __post_init__(self, staff_id: int):
+    #     if staff_id is None:
+    #         print(f"---Parent init---: {staff_id}")
+    #         return
+
+    #     return self.get_contract_times(staff_id=staff_id)
+    #         contract_times = self.get_contract_times(staff_id=staff_id)
+    #         self.half_work_time = timedelta(hours=contract_times[0] / 2)
+    #         self.half_holiday_time = timedelta(hours=contract_times[1] / 2)
+    #         self.full_work_time = timedelta(hours=contract_times[0])
+    #         self.full_holiday_time = timedelta(hours=contract_times[1])
+
+    # オブジェクトがハッシュ可能であるか判定する.
+    @staticmethod
+    def hashable(x):
+        try:
+            hash(x)
+            return True
+        except TypeError:
+            return False
 
 
 # ***** 常勤用各勤怠時間計算ひな形 *****#
 @dataclass
 class CalcTimeClass:
-    staff_id: Optional[int]
-    sh_starttime: str
-    sh_endtime: str
-    notifications: tuple[str]
-    sh_overtime: str
-    sh_holiday: str
+    # staff_id: Optional[int]  # = field(default=None, init=False)
+    sh_starttime: str  # = field(init=False)
+    sh_endtime: str  # = field(init=False)
+    notifications: tuple[str]  # = field(init=False)
+    sh_overtime: str  # = field(init=False)
+    sh_holiday: str  # = field(init=False)
+    staff_id: InitVar[int]
 
+    # contract_times: tuple[float] = field(default=(0.0, 0.0), init=False)
     # どっちでもいい
     n_code_list: List[str] = field(
         default_factory=lambda: ["10", "11", "12", "13", "14", "15"]
@@ -272,16 +297,23 @@ class CalcTimeClass:
     n_half_list: List[str] = field(default_factory=lambda: ["4", "9", "16"])
 
     # あるとすれば、これはどこのタイミング？
-    def __post_init__(self):
+    def __post_init__(self, staff_id: int):
+        # if staff_id is None:
+        #     return
+
         # self.n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
         # self.n_half_list: List[str] = ["4", "9", "16"]
-        self.contract_calculator = ContractTimeClass(self.staff_id)
-        contract_times = self.contract_calculator.get_contract_times()
+        # contract_times = super().__post_init__(staff_id)
+        # self.contract_obj = ContractTimeClass(self.staff_id)
+        # print(f"---Child init---: {staff_id}")
+        contract_times = ContractTimeClass.get_contract_times(staff_id)
+        # print(f"Hash target: {contract_times}")
 
         self.half_work_time = timedelta(hours=contract_times[0] / 2)
         self.half_holiday_time = timedelta(hours=contract_times[1] / 2)
         self.full_work_time = timedelta(hours=contract_times[0])
         self.full_holiday_time = timedelta(hours=contract_times[1])
+        self.staff_id = staff_id
 
     # 今のところお昼だけ採用
     @staticmethod
@@ -357,7 +389,7 @@ class CalcTimeClass:
 
     # 半日出張、半休、生理休暇かつ打刻のある場合
     def provide_half_rest(self) -> timedelta:
-        print(f"Child func: {self.full_work_time}")
+        # print(f"---Child func---: {self.get_contract_times()}")
         actual_time = self.calc_actual_work_time()
         working_time = actual_time - self.calc_normal_rest(actual_time)
 
@@ -484,13 +516,12 @@ class CalcTimeClass:
     def calc_nurse_holiday_work(self) -> float:
         # 祝日(2)、もしくはNSで土日(1)
         nurse_member = db.session.get(User, self.staff_id)
-        job_type = db.session.get(Jobtype, nurse_member.JOBTYPE_CODE)
         # if self.holiday == "2" or self.holiday == "1"
         # and self.jobtype == 1 and self.u_contract_code == 2:
         if (
             self.sh_holiday == "2"
             or self.sh_holiday == "1"
-            and job_type.JOBTYPE_CODE == 1
+            and nurse_member.JOBTYPE_CODE == 1
             and nurse_member.CONTRACT_CODE == 2
         ):
             return self.get_real_time()

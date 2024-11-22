@@ -23,7 +23,7 @@ from werkzeug.urls import url_parse
 
 from app import app, db, jimu_every_attendance, routes_attendance_option
 from app.attendance_admin_classes import AttendanceAdminAnalysys
-from app.calc_work_classes_diff import (
+from app.calc_work_classes2 import (
     CalcTimeClass,
     DataForTable,
     TimeOffClass,
@@ -408,7 +408,7 @@ def jimu_summary_fulltime(startday):
     # print(f"Totalling item length: {len(clerical_attendance_list)}")
     totalling_counter: int = 0
 
-    setting_time = CalcTimeClass(None, None, None, None, None, None)
+    # setting_time = CalcTimeClass(None, None, None, None, None, None)
     # for user in null_checked_users:
     for clerical_attendance in clerical_attendance_list:
         Shin = clerical_attendance[0]
@@ -540,44 +540,40 @@ def jimu_summary_fulltime(startday):
 
         over_time_append = over_time_0.append
         nurse_holiday_append = syukkin_holiday_times_0.append
-        # setting_time = CalcTimeClass(
-        #     Shin.STAFFID,
-        #     Shin.STARTTIME,
-        #     Shin.ENDTIME,
-        #     (Shin.NOTIFICATION, Shin.NOTIFICATION2),
-        #     Shin.OVERTIME,
-        #     Shin.HOLIDAY,
-        # )
-        setting_time.staff_id = Shin.STAFFID
-        setting_time.sh_starttime = Shin.STARTTIME
-        setting_time.sh_endtime = Shin.ENDTIME
-        setting_time.notifications = (
-            Shin.NOTIFICATION,
-            Shin.NOTIFICATION2,
+        setting_time = CalcTimeClass(
+            Shin.STARTTIME,
+            Shin.ENDTIME,
+            (Shin.NOTIFICATION, Shin.NOTIFICATION2),
+            Shin.OVERTIME,
+            Shin.HOLIDAY,
+            Shin.STAFFID,
         )
-        setting_time.sh_overtime = Shin.OVERTIME
-        setting_time.sh_holiday = Shin.HOLIDAY
+        # setting_time.staff_id = Shin.STAFFID
+        # setting_time.sh_starttime = Shin.STARTTIME
+        # setting_time.sh_endtime = Shin.ENDTIME
+        # setting_time.notifications = (
+        #     Shin.NOTIFICATION,
+        #     Shin.NOTIFICATION2,
+        # )
+        # setting_time.sh_overtime = Shin.OVERTIME
+        # setting_time.sh_holiday = Shin.HOLIDAY
 
         print(f"ID: {Shin.STAFFID}")
-        try:
-            actual_work_time = setting_time.get_actual_work_time()
-            calc_real_time = setting_time.get_real_time()
-            over_time = setting_time.get_over_time()
-            nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
-        except TypeError as e:
-            # err_message = f"{e}"
-            # syslog.syslog(err_message)
-            return render_template(
-                "error/403.html", title="Exception message", message=e
-            )
-        else:
-            real_time_sum.append(calc_real_time)
-            if Shin.OVERTIME == "1" and clerical_attendance.CONTRACT_CODE != 2:
-                # over_time_0.append(over_time)
-                over_time_append(over_time)
-            if nurse_holiday_work_time != 9.99:
-                # syukkin_holiday_times_0.append(nurse_holiday_work_time)
-                nurse_holiday_append(nurse_holiday_work_time)
+        actual_work_time = setting_time.get_actual_work_time()
+        calc_real_time = setting_time.get_real_time()
+        over_time = setting_time.get_over_time()
+        nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
+        # except TypeError as e:
+        # return render_template(
+        #     "error/403.html", title="Exception message", message=e
+        # )
+        real_time_sum.append(calc_real_time)
+        if Shin.OVERTIME == "1" and clerical_attendance.CONTRACT_CODE != 2:
+            # over_time_0.append(over_time)
+            over_time_append(over_time)
+        if nurse_holiday_work_time != 9.99:
+            # syukkin_holiday_times_0.append(nurse_holiday_work_time)
+            nurse_holiday_append(nurse_holiday_work_time)
 
             # print(f"{Shin.WORKDAY.day} 日")
             # print(f"Real time: {calc_real_time}")
