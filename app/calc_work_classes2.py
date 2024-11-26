@@ -220,7 +220,7 @@ class ContractTimeClass:
 
         # 基本の契約時間を設定
         contract_work_time = contract.WORKTIME
-        # contract_holiday_time = contract.WORKTIME
+        contract_holiday_time = contract.WORKTIME
 
         related_holiday = db.session.get(RecordPaidHoliday, staff_id)
         contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
@@ -244,8 +244,7 @@ class ContractTimeClass:
         # )
 
         if related_holiday is None:
-            # raise TypeError(f"There is not in D_HOLIDAY_HISTORY: {staff_id}")
-            return
+            raise TypeError("There is not in D_HOLIDAY_HISTORY")
         # 契約時間を更新
         contract_work_time = (
             related_work.PART_WORKTIME
@@ -287,7 +286,7 @@ class CalcTimeClass:
     notifications: tuple[str]  # = field(init=False)
     sh_overtime: str  # = field(init=False)
     sh_holiday: str  # = field(init=False)
-    staff_id: InitVar[int]
+    staff_id: InitVar[int]  # = None
 
     # contract_times: tuple[float] = field(default=(0.0, 0.0), init=False)
     # どっちでもいい
@@ -296,23 +295,28 @@ class CalcTimeClass:
     )
     n_half_list: List[str] = field(default_factory=lambda: ["4", "9", "16"])
 
+    def pre_method(self, staff_id: int):
+        return ContractTimeClass.get_contract_times(staff_id)
+
     # あるとすれば、これはどこのタイミング？
     def __post_init__(self, staff_id: int):
-        # if staff_id is None:
-        #     return
+        if staff_id is None:
+            return
 
         # self.n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
         # self.n_half_list: List[str] = ["4", "9", "16"]
         # contract_times = super().__post_init__(staff_id)
         # self.contract_obj = ContractTimeClass(self.staff_id)
-        # print(f"---Child init---: {staff_id}")
+        # print(f"---Child init---: {self.pre_method(staff_id=staff_id)}")
+        # contract_times = self.pre_method(staff_id=staff_id)
         contract_times = ContractTimeClass.get_contract_times(staff_id)
-        # print(f"Hash target: {contract_times}")
+        print(f"Hash target: {contract_times}")
 
         self.half_work_time = timedelta(hours=contract_times[0] / 2)
         self.half_holiday_time = timedelta(hours=contract_times[1] / 2)
         self.full_work_time = timedelta(hours=contract_times[0])
         self.full_holiday_time = timedelta(hours=contract_times[1])
+        print(f"Gone post init: {self.full_work_time}")
         self.staff_id = staff_id
 
     # 今のところお昼だけ採用
@@ -389,7 +393,9 @@ class CalcTimeClass:
 
     # 半日出張、半休、生理休暇かつ打刻のある場合
     def provide_half_rest(self) -> timedelta:
-        # print(f"---Child func---: {self.get_contract_times()}")
+        # print(
+        #     f"---Child func---: {ContractTimeClass.get_contract_times(self.staff_id)}"
+        # )
         actual_time = self.calc_actual_work_time()
         working_time = actual_time - self.calc_normal_rest(actual_time)
 

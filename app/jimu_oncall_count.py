@@ -6,7 +6,7 @@ import cProfile
 import pstats
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
-from typing import List, TypeVar
+from typing import List, Dict
 import jpholiday
 
 from dateutil.relativedelta import relativedelta
@@ -74,19 +74,39 @@ app.permanent_session_lifetime = timedelta(minutes=360)
 """######################################## 特別ページの最初の画面 ################################################"""
 
 
+def pulldown_select_page(option_value: str, current_user_id: int):
+    to_page: Dict[int, str] = {
+        0: "jimu_select_page",
+        1: "jimu_oncall_count_26",
+        2: "jimu_users_list",
+        3: "jimu_summary_fulltime",
+    }
+    option_value_pattern = [(1, 1), (1, 2), (26, 1), (26, 2)]
+    if option_value in ["1", "2"]:
+        return redirect(url_for(to_page[int(option_value)], STAFFID=current_user_id))
+
+
 @app.route("/jimu_select_page", methods=["GET", "POST"])
 @login_required
 def jimu_select_page():
     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
     STAFFID = current_user.STAFFID
     typ = ["submit", "text", "time", "checkbox", "number", "month"]
-    select_page = [
-        "オンコールチェック",
-        "所属スタッフ出退勤確認",
-        "出退勤集計(1日～末日）",
-        "出退勤集計(26日～25日)",
-    ]
-    dat = ["0", "1", "2", "3"]
+    # select_page = [
+    #     "オンコールチェック",
+    #     "所属スタッフ出退勤確認",
+    #     "出退勤集計(1日～末日）",
+    #     "出退勤集計(26日～25日)",
+    # ]
+    # dat = ["0", "1", "2", "3"]
+    select_page: Dict[int, str] = {
+        1: "オンコールチェック",
+        2: "所属スタッフ出退勤確認",
+        3: "常勤: 出退勤集計(1日～末日）",  # /1/1
+        4: "パート: 出退勤集計(1日～末日）",  # /1/2
+        5: "常勤: 出退勤集計(26日～25日)",  # /26/1
+        6: "パート: 出退勤集計(26日～25日)",  # /26/2
+    }
 
     if request.method == "POST":
         dat = request.form.get("select_page")
@@ -106,7 +126,7 @@ def jimu_select_page():
         STAFFID=STAFFID,
         typ=typ,
         select_page=select_page,
-        dat=dat,
+        # dat=dat,
         stf_login=stf_login,
     )
 
@@ -540,40 +560,43 @@ def jimu_summary_fulltime(startday):
 
         over_time_append = over_time_0.append
         nurse_holiday_append = syukkin_holiday_times_0.append
-        setting_time = CalcTimeClass(
-            Shin.STARTTIME,
-            Shin.ENDTIME,
-            (Shin.NOTIFICATION, Shin.NOTIFICATION2),
-            Shin.OVERTIME,
-            Shin.HOLIDAY,
-            Shin.STAFFID,
-        )
-        # setting_time.staff_id = Shin.STAFFID
-        # setting_time.sh_starttime = Shin.STARTTIME
-        # setting_time.sh_endtime = Shin.ENDTIME
-        # setting_time.notifications = (
-        #     Shin.NOTIFICATION,
-        #     Shin.NOTIFICATION2,
-        # )
-        # setting_time.sh_overtime = Shin.OVERTIME
-        # setting_time.sh_holiday = Shin.HOLIDAY
+        try:
+            setting_time = CalcTimeClass(
+                Shin.STARTTIME,
+                Shin.ENDTIME,
+                (Shin.NOTIFICATION, Shin.NOTIFICATION2),
+                Shin.OVERTIME,
+                Shin.HOLIDAY,
+                Shin.STAFFID,
+            )
+            # setting_time.staff_id = Shin.STAFFID
+            # setting_time.sh_starttime = Shin.STARTTIME
+            # setting_time.sh_endtime = Shin.ENDTIME
+            # setting_time.notifications = (
+            #     Shin.NOTIFICATION,
+            #     Shin.NOTIFICATION2,
+            # )
+            # setting_time.sh_overtime = Shin.OVERTIME
+            # setting_time.sh_holiday = Shin.HOLIDAY
 
-        print(f"ID: {Shin.STAFFID}")
-        actual_work_time = setting_time.get_actual_work_time()
-        calc_real_time = setting_time.get_real_time()
-        over_time = setting_time.get_over_time()
-        nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
-        # except TypeError as e:
-        # return render_template(
-        #     "error/403.html", title="Exception message", message=e
-        # )
-        real_time_sum.append(calc_real_time)
-        if Shin.OVERTIME == "1" and clerical_attendance.CONTRACT_CODE != 2:
-            # over_time_0.append(over_time)
-            over_time_append(over_time)
-        if nurse_holiday_work_time != 9.99:
-            # syukkin_holiday_times_0.append(nurse_holiday_work_time)
-            nurse_holiday_append(nurse_holiday_work_time)
+            print(f"ID: {Shin.STAFFID}")
+            actual_work_time = setting_time.get_actual_work_time()
+            calc_real_time = setting_time.get_real_time()
+            over_time = setting_time.get_over_time()
+            nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
+        except TypeError as e:
+            msg = f"{e}: {Shin.STAFFID}"
+            return render_template(
+                "error/403.html", title="Exception message", message=msg
+            )
+        else:
+            real_time_sum.append(calc_real_time)
+            if Shin.OVERTIME == "1" and clerical_attendance.CONTRACT_CODE != 2:
+                # over_time_0.append(over_time)
+                over_time_append(over_time)
+            if nurse_holiday_work_time != 9.99:
+                # syukkin_holiday_times_0.append(nurse_holiday_work_time)
+                nurse_holiday_append(nurse_holiday_work_time)
 
             # print(f"{Shin.WORKDAY.day} 日")
             # print(f"Real time: {calc_real_time}")

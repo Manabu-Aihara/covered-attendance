@@ -74,11 +74,11 @@ def post_access_token():
     print(f"First group number: {group_num}")
     token_dict = issue_token(user_num, group_num)
     # resp = make_response(jsonify(token_data))
-    # return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
+    return redirect(f"http://localhost:5173/auth?token={token_dict['data']}")
     # github_page = os.getenv("GIT_PROVIDE")
     # return redirect(f"{github_page}/auth?token={token_dict['data']}")
-    cloud_site = os.getenv("CLOUD_TIMETABLE")
-    return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
+    # cloud_site = os.getenv("CLOUD_TIMETABLE")
+    # return redirect(f"{cloud_site}/auth?token={token_dict['data']}")
 
 
 @app.route("/refresh", methods=["GET", "POST"])
@@ -118,15 +118,24 @@ def print_user_inquiry(auth_user, extension):
 def get_all_event(auth_user, extension):
     event_dict_list = []
     event_list = db.session.query(EventORM).all()
-    for event_item in event_list:
-        # なぜこっちでインスタンスができない!?
-        # group = Team(event_item.group_id)
-        # group = db.session.get(Team, event_item.group_id)
-        # print(f"Team name: {group.NAME}")
-        # event_dict_list.append(event_item.to_dict(group.SHORTNAME))
-        event_dict_list.append(event_item.to_dict())
+    return [event_item.to_dict() for event_item in event_list]
+    # なぜこっちでインスタンスができない!?
+    # group = Team(event_item.group_id)
+    # group = db.session.get(Team, event_item.group_id)
+    # print(f"Team name: {group.NAME}")
+    # event_dict_list.append(event_item.to_dict(group.SHORTNAME))
+    #     event_dict_list.append()
 
-    return event_dict_list
+    # return event_dict_list
+
+
+@app.route("/event/user/<id>", methods=["GET", "POST"])
+@token_required
+def get_user_event(auth_user, extension, id):
+    user_events = (
+        db.session.query(EventORM).filter(EventORM.staff_id == auth_user.STAFFID).all()
+    )
+    return [user_event.to_dict() for user_event in user_events]
 
 
 def convert_strToDate(str_date: str):
@@ -151,8 +160,8 @@ def append_event_item(auth_user, extension):
     event_item.title = request.json["title"]
     db.session.add(event_item)
     db.session.commit()
-
-    return redirect("/event/all")
+    # これが絶対必要だった
+    return redirect(f"/event/user/{auth_user.STAFFID}")
 
 
 @app.route("/event/update/<id>", methods=["POST"])
@@ -163,8 +172,8 @@ def update_event_item(auth_user, extension, id: str):
     target_item.progress = request.json["progress"]
     db.session.merge(target_item)
     db.session.commit()
-
-    return redirect("/event/all")
+    # これが絶対必要だった
+    return redirect(f"/event/user/{auth_user.STAFFID}")
 
 
 @app.route("/event/remove/<id>", methods=["DELETE"])
@@ -180,8 +189,8 @@ def remove_event_item(auth_user, extension, id: str):
         db.session.rollback()
     else:
         db.session.commit()
-
-    return redirect("/event/all")
+    # これが絶対必要だった
+    return redirect(f"/event/user/{auth_user.STAFFID}")
 
 
 # 使わないかもAPI

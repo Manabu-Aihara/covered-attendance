@@ -132,32 +132,32 @@ def test_output_month_log(month_attends):
             # print(f"Real time list: {ct_obj.real_time_list}")
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_print_list_type(month_attends):
-    # ct_obj = CalcTimeClass(None, None, None, None, None, None)
+    ct_obj = CalcTimeClass(None, None, None, None, None, None)
     # ct_obj = CalcTimeClass()
     actual_list = []
     real_list = []
     over_list = []
     for month_attend in month_attends:
         for target_attend in month_attend:
-            ct_obj = CalcTimeClass(
-                target_attend.STARTTIME,
-                target_attend.ENDTIME,
-                (target_attend.NOTIFICATION, target_attend.NOTIFICATION2),
-                target_attend.OVERTIME,
-                target_attend.HOLIDAY,
-                target_attend.STAFFID,
-            )
-            # ct_obj.staff_id = target_attend.STAFFID
-            # ct_obj.sh_starttime = target_attend.STARTTIME
-            # ct_obj.sh_endtime = target_attend.ENDTIME
-            # ct_obj.notifications = (
-            #     target_attend.NOTIFICATION,
-            #     target_attend.NOTIFICATION2,
+            # ct_obj = CalcTimeClass(
+            #     target_attend.STARTTIME,
+            #     target_attend.ENDTIME,
+            #     (target_attend.NOTIFICATION, target_attend.NOTIFICATION2),
+            #     target_attend.OVERTIME,
+            #     target_attend.HOLIDAY,
+            #     target_attend.STAFFID,
             # )
-            # ct_obj.sh_overtime = target_attend.OVERTIME
-            # ct_obj.sh_holiday = target_attend.HOLIDAY
+            ct_obj.staff_id = target_attend.STAFFID
+            ct_obj.sh_starttime = target_attend.STARTTIME
+            ct_obj.sh_endtime = target_attend.ENDTIME
+            ct_obj.notifications = (
+                target_attend.NOTIFICATION,
+                target_attend.NOTIFICATION2,
+            )
+            ct_obj.sh_overtime = target_attend.OVERTIME
+            ct_obj.sh_holiday = target_attend.HOLIDAY
             # if isinstance(ct_obj, CalcTimeClass):
             actual_list.append(ct_obj.get_actual_work_time().total_seconds())
             real_list.append(ct_obj.get_real_time())
@@ -175,7 +175,7 @@ def test_print_list_type(month_attends):
         print(f"Test over sum: {over_sum}")
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_run_perf(month_attends):
     pr = cProfile.Profile()
     pr.runcall(test_print_list_type, month_attends)

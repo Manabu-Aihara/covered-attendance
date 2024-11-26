@@ -1,0 +1,36 @@
+{% extends 'home.html' %}
+
+{% block child_content %}
+<h3>所属スタッフ出退勤</h3>
+<br /><br>
+<br><br>
+
+<a href="{{ url_for('select_links') }}" class="btn btn-success">　戻　る　</a>
+
+<br><br>
+<br><br>
+
+<div class="form-group">
+  <form method="POST" action="{{ url_for('jimu_select_page') }}">
+    <div class="w-25">
+      <select class="form-control form-control-sm" name="select_page">
+        <option value="">選択してください</option>
+        {% for k, v in select_page.items() %}
+        <option value="{{ k }}">{{ v }}</option>
+        {% endfor %}
+        <!-- <option value="{{ dat[0] }}">{{ select_page[0] }}</option>
+                <option value="{{ dat[1] }}">{{ select_page[1] }}</option>
+                <option value="{{ dat[2] }}">{{ select_page[2] }}</option>
+                <option value="{{ dat[3] }}">{{ select_page[3] }}</option>                  -->
+      </select>
+    </div>
+    <br>
+    <div class="w-25">
+      {% if current_user.STAFFID != 10000 %}
+      <input class="form-control btn btn-primary" type="{{ typ[0] }}" value="選　択">
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+{% endblock %}
