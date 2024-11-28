@@ -6,7 +6,8 @@ import cProfile
 import pstats
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
-from typing import List, Dict
+from collections import namedtuple
+from typing import List, Dict, Optional
 import jpholiday
 
 from dateutil.relativedelta import relativedelta
@@ -74,23 +75,32 @@ app.permanent_session_lifetime = timedelta(minutes=360)
 """######################################## 特別ページの最初の画面 ################################################"""
 
 
-def pulldown_select_page(option_value: str, current_user_id: int):
-    to_page: Dict[int, str] = {
-        0: "jimu_select_page",
-        1: "jimu_oncall_count_26",
-        2: "jimu_users_list",
-        3: "jimu_summary_fulltime",
+def pulldown_select_page(
+    option_value: str, current_id: Optional[int], *args_pattern: int
+):
+    # To_page = namedtuple("To_page", ["url", "post_user_id", "start_day", "work_type"])
+    # To_page.__new__.__defaults__ = (option_value, None, None, None)
+    url_dict: Dict[int, str] = {
+        "0": "jimu_select_page",
+        "1": "jimu_oncall_count_26",
+        "2": "jimu_users_list",
+        "3": "jimu_summary_fulltime",
     }
-    option_value_pattern = [(1, 1), (1, 2), (26, 1), (26, 2)]
-    if option_value in ["1", "2"]:
-        return redirect(url_for(to_page[int(option_value)], STAFFID=current_user_id))
+    if option_value in ["0", "1", "2"]:
+        return redirect(url_for(url_dict.get(option_value), STAFFID=current_id))
+    else:
+        print(f"Page args: {args_pattern[0]} {args_pattern[1]}")
+        return redirect(
+            url_for(
+                url_dict.get("3"), startday=args_pattern[0], worktype=args_pattern[1]
+            )
+        )
 
 
 @app.route("/jimu_select_page", methods=["GET", "POST"])
 @login_required
 def jimu_select_page():
     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
-    STAFFID = current_user.STAFFID
     typ = ["submit", "text", "time", "checkbox", "number", "month"]
     # select_page = [
     #     "オンコールチェック",
@@ -110,20 +120,27 @@ def jimu_select_page():
 
     if request.method == "POST":
         dat = request.form.get("select_page")
-        if dat == "":
-            return redirect(url_for("jimu_select_page", STAFFID=STAFFID))
-        elif dat == "0":
-            return redirect(url_for("jimu_oncall_count_26", STAFFID=STAFFID))
-        elif dat == "1":
-            return redirect(url_for("jimu_users_list", STAFFID=STAFFID))
-        elif dat == "2":
-            return redirect(url_for("jimu_summary_fulltime", startday=1))
+        if dat == "0" or dat == "1" or dat == "2":
+            # return redirect(url_for("jimu_select_page", STAFFID=STAFFID))
+            return pulldown_select_page(dat, current_id=current_user.STAFFID)
+        # elif dat == "0":
+        #     return redirect(url_for("jimu_oncall_count_26", STAFFID=STAFFID))
+        # elif dat == "1":
+        #     return redirect(url_for("jimu_users_list", STAFFID=STAFFID))
+        # elif dat == "2":
+        #     return redirect(url_for("jimu_summary_fulltime", startday=1))
         elif dat == "3":
-            return redirect(url_for("jimu_summary_fulltime", startday=26))
+            return pulldown_select_page(dat, None, 1, 1)
+        elif dat == "4":
+            return pulldown_select_page(dat, None, 1, 2)
+        elif dat == "5":
+            return pulldown_select_page(dat, None, 26, 1)
+        elif dat == "6":
+            return pulldown_select_page(dat, None, 26, 2)
 
     return render_template(
-        "attendance/jimu_select_page.html",
-        STAFFID=STAFFID,
+        "attendance/jimu_select_page_diff.html",
+        STAFFID=current_user.STAFFID,
         typ=typ,
         select_page=select_page,
         # dat=dat,
@@ -306,9 +323,9 @@ def jimu_oncall_count_26(STAFFID):
 
 
 ##### 常勤1日基準 ######
-@app.route("/jimu_summary_fulltime/<startday>", methods=["GET", "POST"])
+@app.route("/jimu_summary_fulltime/<startday>/<worktype>", methods=["GET", "POST"])
 @login_required
-def jimu_summary_fulltime(startday):
+def jimu_summary_fulltime(startday, worktype):
     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
     typ = ["submit", "text", "time", "checkbox", "number", "date"]
     form_month = SelectMonthForm()
@@ -754,6 +771,7 @@ def jimu_summary_fulltime(startday):
     return render_template(
         "attendance/jimu_summary_fulltime_diff.html",
         startday=startday,
+        worktype=worktype,
         typ=typ,
         form_month=form_month,
         workday_data=workday_data,

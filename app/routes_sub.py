@@ -91,11 +91,11 @@ def refresh_token(auth_user, extension):
     return new_token["data"]
 
 
-@app.route("/group-name", methods=["GET", "POST"])
+@app.route("/group-names", methods=["GET", "POST"])
 @token_required
-def get_team_name(auth_user, extension) -> str:
-    belong_team = get_user_group(extension)
-    return belong_team.SHORTNAME
+def get_team_name(auth_user, extension):
+    team_query = db.session.query(Team).all()
+    return [t.SHORTNAME for t in team_query]
 
 
 @app.route("/timetable/inquiry", methods=["GET", "POST"])
@@ -129,9 +129,9 @@ def get_all_event(auth_user, extension):
     # return event_dict_list
 
 
-@app.route("/event/user/<id>", methods=["GET", "POST"])
+@app.route("/event/user", methods=["GET", "POST"])
 @token_required
-def get_user_event(auth_user, extension, id):
+def get_user_event(auth_user, extension):
     user_events = (
         db.session.query(EventORM).filter(EventORM.staff_id == auth_user.STAFFID).all()
     )
@@ -161,7 +161,7 @@ def append_event_item(auth_user, extension):
     db.session.add(event_item)
     db.session.commit()
     # これが絶対必要だった
-    return redirect(f"/event/user/{auth_user.STAFFID}")
+    return redirect("/event/user")
 
 
 @app.route("/event/update/<id>", methods=["POST"])
@@ -173,7 +173,7 @@ def update_event_item(auth_user, extension, id: str):
     db.session.merge(target_item)
     db.session.commit()
     # これが絶対必要だった
-    return redirect(f"/event/user/{auth_user.STAFFID}")
+    return redirect("/event/user")
 
 
 @app.route("/event/remove/<id>", methods=["DELETE"])
@@ -190,7 +190,7 @@ def remove_event_item(auth_user, extension, id: str):
     else:
         db.session.commit()
     # これが絶対必要だった
-    return redirect(f"/event/user/{auth_user.STAFFID}")
+    return redirect("/event/user")
 
 
 # 使わないかもAPI
@@ -227,6 +227,8 @@ def commit_date_item(auth_user, extension):
             db.session.rollback()
         else:
             db.session.commit()
+
+    return redirect("/event/user")
 
 
 def get_target_user_list(base_month: str) -> List[RecordPaidHoliday]:
