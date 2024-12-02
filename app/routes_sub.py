@@ -161,7 +161,7 @@ def append_event_item(auth_user, extension):
     db.session.add(event_item)
     db.session.commit()
     # これが絶対必要だった
-    return redirect("/event/user")
+    return redirect("/event/all")
 
 
 @app.route("/event/update/<id>", methods=["POST"])
@@ -173,7 +173,7 @@ def update_event_item(auth_user, extension, id: str):
     db.session.merge(target_item)
     db.session.commit()
     # これが絶対必要だった
-    return redirect("/event/user")
+    return redirect("/event/all")
 
 
 @app.route("/event/remove/<id>", methods=["DELETE"])
@@ -190,7 +190,7 @@ def remove_event_item(auth_user, extension, id: str):
     else:
         db.session.commit()
     # これが絶対必要だった
-    return redirect("/event/user")
+    return redirect("/event/all")
 
 
 # 使わないかもAPI
@@ -228,7 +228,7 @@ def commit_date_item(auth_user, extension):
         else:
             db.session.commit()
 
-    return redirect("/event/user")
+    return redirect("/event/all")
 
 
 def get_target_user_list(base_month: str) -> List[RecordPaidHoliday]:

@@ -9,7 +9,7 @@ import pandas as pd
 
 from app import db
 from app.models import User, KinmuTaisei, Shinsei, D_JOB_HISTORY
-from app.calc_work_classes2 import CalcTimeClass
+from app.calc_work_classes2 import CalcTimeClass, CalcTimeFactory
 
 id_for_contract: int = 188
 
@@ -90,8 +90,8 @@ def make_month_attend_info(app_context):
         .filter(D_JOB_HISTORY.CONTRACT_CODE == 2)
         .all()
     )
-    part_list = [m.STAFFID for m in part_members]
-    attendances = get_month_attendance([201, 3])
+    # part_list = [m.STAFFID for m in part_members]
+    attendances = get_month_attendance([201, 20, 3])
     return attendances
 
 
@@ -132,33 +132,32 @@ def test_output_month_log(month_attends):
             # print(f"Real time list: {ct_obj.real_time_list}")
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_print_list_type(month_attends):
-    ct_obj = CalcTimeClass(None, None, None, None, None, None)
+    # ct_obj = CalcTimeClass(None, None, None, None, None, None)
     # ct_obj = CalcTimeClass()
     actual_list = []
     real_list = []
     over_list = []
     for month_attend in month_attends:
         for target_attend in month_attend:
-            # ct_obj = CalcTimeClass(
-            #     target_attend.STARTTIME,
-            #     target_attend.ENDTIME,
-            #     (target_attend.NOTIFICATION, target_attend.NOTIFICATION2),
-            #     target_attend.OVERTIME,
-            #     target_attend.HOLIDAY,
-            #     target_attend.STAFFID,
-            # )
-            ct_obj.staff_id = target_attend.STAFFID
-            ct_obj.sh_starttime = target_attend.STARTTIME
-            ct_obj.sh_endtime = target_attend.ENDTIME
-            ct_obj.notifications = (
-                target_attend.NOTIFICATION,
-                target_attend.NOTIFICATION2,
+            ct_obj = CalcTimeClass(
+                target_attend.STARTTIME,
+                target_attend.ENDTIME,
+                (target_attend.NOTIFICATION, target_attend.NOTIFICATION2),
+                target_attend.OVERTIME,
+                target_attend.HOLIDAY,
+                target_attend.STAFFID,
             )
-            ct_obj.sh_overtime = target_attend.OVERTIME
-            ct_obj.sh_holiday = target_attend.HOLIDAY
-            # if isinstance(ct_obj, CalcTimeClass):
+            # ct_obj.staff_id = target_attend.STAFFID
+            # ct_obj.sh_starttime = target_attend.STARTTIME
+            # ct_obj.sh_endtime = target_attend.ENDTIME
+            # ct_obj.notifications = (
+            #     target_attend.NOTIFICATION,
+            #     target_attend.NOTIFICATION2,
+            # )
+            # ct_obj.sh_overtime = target_attend.OVERTIME
+            # ct_obj.sh_holiday = target_attend.HOLIDAY
             actual_list.append(ct_obj.get_actual_work_time().total_seconds())
             real_list.append(ct_obj.get_real_time())
             if target_attend.OVERTIME == "1":
@@ -175,10 +174,42 @@ def test_print_list_type(month_attends):
         print(f"Test over sum: {over_sum}")
 
 
-@pytest.mark.skip
+def test_print_list_factory(month_attends):
+    calc_time_factory = CalcTimeFactory()
+    actual_list = []
+    real_list = []
+    over_list = []
+    for month_attend in month_attends:
+        for target_attend in month_attend:
+            time_calcurator = calc_time_factory.get_instance(target_attend.STAFFID)
+            time_calcurator.set_data(
+                target_attend.STARTTIME,
+                target_attend.ENDTIME,
+                (target_attend.NOTIFICATION, target_attend.NOTIFICATION2),
+                target_attend.OVERTIME,
+                target_attend.HOLIDAY,
+            )
+
+            actual_list.append(time_calcurator.get_actual_work_time().total_seconds())
+            real_list.append(time_calcurator.get_real_time())
+            if target_attend.OVERTIME == "1":
+                over_list.append(time_calcurator.get_over_time())
+
+        actual_sum = math.fsum(actual_list)
+        real_sum = math.fsum(real_list)
+        over_sum = math.fsum(over_list)
+        # actual_sum = pd.Series(actual_list).sum()
+        # real_sum = pd.Series(real_list).sum()
+        # over_sum = pd.Series(over_list).sum()
+        print(f"Test actual sum: {actual_sum}")
+        print(f"Test real sum: {real_sum}")
+        print(f"Test over sum: {over_sum}")
+
+
+# @pytest.mark.skip
 def test_run_perf(month_attends):
     pr = cProfile.Profile()
-    pr.runcall(test_print_list_type, month_attends)
+    pr.runcall(test_print_list_factory, month_attends)
     # pr.print_stats()
     status = pstats.Stats(pr)
     status.sort_stats("cumtime").print_stats(10)

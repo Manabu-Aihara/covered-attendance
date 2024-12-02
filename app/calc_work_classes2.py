@@ -8,7 +8,7 @@
 import os, math
 import syslog
 from functools import wraps
-from typing import Tuple, List, Optional
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field, InitVar
 from abc import ABCMeta
 from functools import lru_cache
@@ -255,18 +255,6 @@ class ContractTimeClass:
 
         return contract_work_time, contract_holiday_time
 
-    # def __post_init__(self, staff_id: int):
-    #     if staff_id is None:
-    #         print(f"---Parent init---: {staff_id}")
-    #         return
-
-    #     return self.get_contract_times(staff_id=staff_id)
-    #         contract_times = self.get_contract_times(staff_id=staff_id)
-    #         self.half_work_time = timedelta(hours=contract_times[0] / 2)
-    #         self.half_holiday_time = timedelta(hours=contract_times[1] / 2)
-    #         self.full_work_time = timedelta(hours=contract_times[0])
-    #         self.full_holiday_time = timedelta(hours=contract_times[1])
-
     # オブジェクトがハッシュ可能であるか判定する.
     @staticmethod
     def hashable(x):
@@ -281,22 +269,21 @@ class ContractTimeClass:
 @dataclass
 class CalcTimeClass:
     # staff_id: Optional[int]  # = field(default=None, init=False)
-    sh_starttime: str  # = field(init=False)
-    sh_endtime: str  # = field(init=False)
-    notifications: tuple[str]  # = field(init=False)
-    sh_overtime: str  # = field(init=False)
-    sh_holiday: str  # = field(init=False)
+    # sh_starttime: str  # = field(init=False)
+    # sh_endtime: str  # = field(init=False)
+    # notifications: tuple[str]  # = field(init=False)
+    # sh_overtime: str  # = field(init=False)
+    # sh_holiday: str  # = field(init=False)
     staff_id: InitVar[int]  # = None
 
-    # contract_times: tuple[float] = field(default=(0.0, 0.0), init=False)
     # どっちでもいい
     n_code_list: List[str] = field(
         default_factory=lambda: ["10", "11", "12", "13", "14", "15"]
     )
     n_half_list: List[str] = field(default_factory=lambda: ["4", "9", "16"])
 
-    def pre_method(self, staff_id: int):
-        return ContractTimeClass.get_contract_times(staff_id)
+    # def pre_method(self, staff_id: int):
+    #     return ContractTimeClass.get_contract_times(staff_id)
 
     # あるとすれば、これはどこのタイミング？
     def __post_init__(self, staff_id: int):
@@ -305,19 +292,28 @@ class CalcTimeClass:
 
         # self.n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
         # self.n_half_list: List[str] = ["4", "9", "16"]
-        # contract_times = super().__post_init__(staff_id)
-        # self.contract_obj = ContractTimeClass(self.staff_id)
         # print(f"---Child init---: {self.pre_method(staff_id=staff_id)}")
-        # contract_times = self.pre_method(staff_id=staff_id)
         contract_times = ContractTimeClass.get_contract_times(staff_id)
-        print(f"Hash target: {contract_times}")
 
         self.half_work_time = timedelta(hours=contract_times[0] / 2)
         self.half_holiday_time = timedelta(hours=contract_times[1] / 2)
         self.full_work_time = timedelta(hours=contract_times[0])
         self.full_holiday_time = timedelta(hours=contract_times[1])
-        print(f"Gone post init: {self.full_work_time}")
         self.staff_id = staff_id
+
+    def set_data(
+        self,
+        sh_starttime: str,
+        sh_endtime: str,
+        notifications: tuple[str],
+        sh_overtime: str,
+        sh_holiday: str,
+    ):
+        self.sh_starttime = sh_starttime
+        self.sh_endtime = sh_endtime
+        self.notifications = notifications
+        self.sh_overtime = sh_overtime
+        self.sh_holiday = sh_holiday
 
     # 今のところお昼だけ採用
     @staticmethod
@@ -544,6 +540,16 @@ class CalcTimeClass:
     #             return contract_work_time
     #         else:
     #             raise ValueError("入力に誤りがあります。申請はありせんか？")
+
+
+@dataclass
+class CalcTimeFactory:
+    _instances: Dict[int, "CalcTimeClass"] = field(default_factory=dict)
+
+    def get_instance(self, staff_id: int) -> "CalcTimeClass":
+        if staff_id not in self._instances:
+            self._instances[staff_id] = CalcTimeClass(staff_id)
+        return self._instances[staff_id]
 
 
 # ************************************** 時間休カウント ********************************************#

@@ -102,13 +102,6 @@ def pulldown_select_page(
 def jimu_select_page():
     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
     typ = ["submit", "text", "time", "checkbox", "number", "month"]
-    # select_page = [
-    #     "オンコールチェック",
-    #     "所属スタッフ出退勤確認",
-    #     "出退勤集計(1日～末日）",
-    #     "出退勤集計(26日～25日)",
-    # ]
-    # dat = ["0", "1", "2", "3"]
     select_page: Dict[int, str] = {
         1: "オンコールチェック",
         2: "所属スタッフ出退勤確認",
@@ -121,14 +114,7 @@ def jimu_select_page():
     if request.method == "POST":
         dat = request.form.get("select_page")
         if dat == "0" or dat == "1" or dat == "2":
-            # return redirect(url_for("jimu_select_page", STAFFID=STAFFID))
             return pulldown_select_page(dat, current_id=current_user.STAFFID)
-        # elif dat == "0":
-        #     return redirect(url_for("jimu_oncall_count_26", STAFFID=STAFFID))
-        # elif dat == "1":
-        #     return redirect(url_for("jimu_users_list", STAFFID=STAFFID))
-        # elif dat == "2":
-        #     return redirect(url_for("jimu_summary_fulltime", startday=1))
         elif dat == "3":
             return pulldown_select_page(dat, None, 1, 1)
         elif dat == "4":
