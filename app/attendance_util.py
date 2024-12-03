@@ -63,49 +63,6 @@ def convert_null_role(db_obj: T) -> T:
     return db_obj
 
 
-"""
-    CalcTimeClass専用
-    例: 第2引数（退職日）が今日を過ぎていても、今月なら対象とする
-    @Params:
-        query_instances: list<T>
-        date_columns: str
-    @Return
-        result_data_list: list<T> 
-    """
-
-
-def get_more_condition_users(query_instances: list[T], date_columun: str) -> list[T]:
-    today = datetime.today()
-    result_data_list = []
-    for query_instance in query_instances:
-        # 退職日
-        date_c_name1: datetime = getattr(query_instance, date_columun)
-        # if date_c_name0 is None:
-        #     TypeError出してくれる
-        if (
-            date_c_name1 is None
-            or date_c_name1 > today
-            or (
-                date_c_name1.year == today.year
-                # ここの == だね
-                and date_c_name1.month == today.month
-            )
-        ):
-            result_data_list.append(query_instance)
-        # except TypeError:
-        #     (
-        #         print(f"{query_instance.STAFFID}: 入職日の入力がありません")
-        #         if query_instance.STAFFID
-        #         else print("入職日の入力がありません")
-        #     )
-        #     result_data_list.append(query_instance)
-
-    return result_data_list
-
-
-# date_c_name0.year == today.year and date_c_name0.month <= today.month
-
-
 def check_table_member(staff_id: int, table_model: T):
     neccesary_object = db.session.get(table_model, staff_id)
     object_attributes = [n for n in neccesary_object.__dict__]

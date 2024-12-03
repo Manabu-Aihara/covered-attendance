@@ -206,9 +206,9 @@ class DataForTable:
 class CalcTimeParent(metaclass=ABCMeta):
     staff_id: int
 
-    def __new__(cls, *args, **kwargs):
-        dataclass(cls)
-        return super().__new__(cls)
+    # def __new__(cls, *args, **kwargs):
+    #     dataclass(cls)
+    #     return super().__new__(cls)
 
     def __post_init__(self) -> tuple[float, float]:
         if self.staff_id is not None:
@@ -223,27 +223,27 @@ class CalcTimeParent(metaclass=ABCMeta):
             self.contract_work_time = contract.WORKTIME
             self.contract_holiday_time = contract.WORKTIME
 
-            # related_holiday = db.session.get(RecordPaidHoliday, self.staff_id)
-            # self.contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
-            sub_q = (
-                db.session.query(
-                    D_HOLIDAY_HISTORY.STAFFID,
-                    func.max(D_HOLIDAY_HISTORY.START_DAY).label("start_day_max"),
-                )
-                .filter(D_HOLIDAY_HISTORY.STAFFID == self.staff_id)
-                .group_by(D_HOLIDAY_HISTORY.STAFFID)
-                .subquery()
-            )
-            related_holiday = (
-                db.session.query(D_HOLIDAY_HISTORY)
-                .filter(
-                    and_(
-                        D_HOLIDAY_HISTORY.STAFFID == sub_q.c.STAFFID,
-                        D_HOLIDAY_HISTORY.START_DAY == sub_q.c.start_day_max,
-                    )
-                )
-                .first()
-            )
+            related_holiday = db.session.get(RecordPaidHoliday, self.staff_id)
+            self.contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
+            # sub_q = (
+            #     db.session.query(
+            #         D_HOLIDAY_HISTORY.STAFFID,
+            #         func.max(D_HOLIDAY_HISTORY.START_DAY).label("start_day_max"),
+            #     )
+            #     .filter(D_HOLIDAY_HISTORY.STAFFID == self.staff_id)
+            #     .group_by(D_HOLIDAY_HISTORY.STAFFID)
+            #     .subquery()
+            # )
+            # related_holiday = (
+            #     db.session.query(D_HOLIDAY_HISTORY)
+            #     .filter(
+            #         and_(
+            #             D_HOLIDAY_HISTORY.STAFFID == sub_q.c.STAFFID,
+            #             D_HOLIDAY_HISTORY.START_DAY == sub_q.c.start_day_max,
+            #         )
+            #     )
+            #     .first()
+            # )
             if contract.CONTRACT_CODE == 2:
                 contract = (
                     db.session.query(D_JOB_HISTORY)
@@ -258,7 +258,7 @@ class CalcTimeParent(metaclass=ABCMeta):
                         if contract.PART_WORKTIME is not None
                         else related_holiday.HOLIDAY_TIME
                     )
-                    self.contract_holiday_time = related_holiday.HOLIDAY_TIME
+                    # self.contract_holiday_time = related_holiday.HOLIDAY_TIME
                     return self.contract_work_time, self.contract_holiday_time
                 else:
                     raise TypeError(

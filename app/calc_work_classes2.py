@@ -222,36 +222,40 @@ class ContractTimeClass:
         contract_work_time = contract.WORKTIME
         contract_holiday_time = contract.WORKTIME
 
-        related_holiday = db.session.get(RecordPaidHoliday, staff_id)
-        contract_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
-
-        # パートタイム契約（CONTRACT_CODE == 2）の場合のみ追加処理
         if contract.CONTRACT_CODE != 2:
             return contract_work_time, contract_holiday_time
 
+        # パートタイム契約（CONTRACT_CODE == 2）の場合のみ追加処理
+        related_holiday = db.session.get(RecordPaidHoliday, staff_id)
+        paid_holiday_time = related_holiday.BASETIMES_PAIDHOLIDAY
+
         # 最新の契約労働・休暇を1回のクエリで取得
-        related_work = (
+        part_contract_work = (
             db.session.query(D_JOB_HISTORY)
             .filter(D_JOB_HISTORY.STAFFID == staff_id)
             .order_by(D_JOB_HISTORY.START_DAY.desc())
             .first()
         )
-        # related_holiday = (
-        #     db.session.query(D_HOLIDAY_HISTORY)
-        #     .filter(D_HOLIDAY_HISTORY.STAFFID == staff_id)
-        #     .order_by(D_HOLIDAY_HISTORY.START_DAY.desc())
-        #     .first()
-        # )
+        part_contract_holiday = (
+            db.session.query(D_HOLIDAY_HISTORY)
+            .filter(D_HOLIDAY_HISTORY.STAFFID == staff_id)
+            .order_by(D_HOLIDAY_HISTORY.START_DAY.desc())
+            .first()
+        )
 
-        if related_holiday is None:
-            raise TypeError("There is not in D_HOLIDAY_HISTORY")
+        # if related_holiday is None:
+        #     raise TypeError("There is not in D_HOLIDAY_HISTORY")
         # 契約時間を更新
         contract_work_time = (
-            related_work.PART_WORKTIME
-            if related_work.PART_WORKTIME is not None
-            else related_holiday.HOLIDAY_TIME
+            part_contract_work.PART_WORKTIME
+            if part_contract_work.PART_WORKTIME is not None
+            else part_contract_holiday.HOLIDAY_TIME
         )
-        # contract_holiday_time = related_holiday.HOLIDAY_TIME
+        contract_holiday_time = (
+            part_contract_holiday.HOLIDAY_TIME
+            if part_contract_holiday is not None
+            else paid_holiday_time
+        )
 
         return contract_work_time, contract_holiday_time
 
@@ -276,7 +280,6 @@ class CalcTimeClass:
     # sh_holiday: str  # = field(init=False)
     staff_id: InitVar[int]  # = None
 
-    # どっちでもいい
     n_code_list: List[str] = field(
         default_factory=lambda: ["10", "11", "12", "13", "14", "15"]
     )
@@ -290,6 +293,7 @@ class CalcTimeClass:
         if staff_id is None:
             return
 
+        # どっちでもいい
         # self.n_code_list: List[str] = ["10", "11", "12", "13", "14", "15"]
         # self.n_half_list: List[str] = ["4", "9", "16"]
         # print(f"---Child init---: {self.pre_method(staff_id=staff_id)}")

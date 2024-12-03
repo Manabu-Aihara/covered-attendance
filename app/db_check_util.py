@@ -21,6 +21,7 @@ def check_contract_value(target_id: int) -> Optional[int]:
     target_contract_info = (
         db.session.query(D_JOB_HISTORY.CONTRACT_CODE, D_JOB_HISTORY.JOBTYPE_CODE)
         .filter(D_JOB_HISTORY.STAFFID == target_id)
+        .order_by(D_JOB_HISTORY.START_DAY.desc())
         .first()
     )
     if target_contract_info is None:

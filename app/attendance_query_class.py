@@ -32,12 +32,19 @@ class AttendanceQuery:
         return attendance_filters
 
     @staticmethod
-    def _get_job_filter():
+    def _get_job_filter(part_timer_flag: bool = False):
         attendance_filters = []
         attendance_filters.append(Shinsei.STAFFID == D_JOB_HISTORY.STAFFID)
         attendance_filters.append(D_JOB_HISTORY.START_DAY <= Shinsei.WORKDAY)
         attendance_filters.append(D_JOB_HISTORY.END_DAY >= Shinsei.WORKDAY)
-        # attendance_filters.append(D_JOB_HISTORY.CONTRACT_CODE != 2)
+        # print(f"Flag state: {part_timer_flag}")
+        # if part_timer_flag is False:
+        #     print("Passing filter")
+        (
+            attendance_filters.append(D_JOB_HISTORY.CONTRACT_CODE != 2)
+            if part_timer_flag is False
+            else attendance_filters.append(D_JOB_HISTORY.CONTRACT_CODE == 2)
+        )
         return attendance_filters
 
     @staticmethod
@@ -103,7 +110,7 @@ class AttendanceQuery:
     def get_attendance_query(self):
         attendance_filters = (
             self._get_filter()
-            + self._get_job_filter()
+            + self._get_job_filter()[0:3]
             + self._get_template_filter()[-2:]
         )
 
@@ -142,8 +149,8 @@ class AttendanceQuery:
         )
 
     @db_error_handler
-    def get_clerical_attendance(self):
-        clerk_filters = self._get_filter()[1:] + self._get_job_filter()
+    def get_clerical_attendance(self, part_timer_flag: bool):
+        clerk_filters = self._get_filter()[1:] + self._get_job_filter(part_timer_flag)
 
         sub_clerk_query = self._get_sub_clerk_query()
         return (
