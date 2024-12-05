@@ -444,13 +444,16 @@ def jimu_summary_fulltime(startday, worktype):
 
         db.session.commit()
 
-    print(f"Date type: {type(User.INDAY)}")
+    # print(f"Date type: {type(User.INDAY)}")
 
+    job_form: str
     attendace_qry_obj = AttendanceQuery(jimu_usr.STAFFID, FromDay, ToDay)
     if worktype == "1":
+        job_form = "常勤"
         users_without_condition = db.session.query(User).filter(User.CONTRACT_CODE != 2)
         clerical_attendance_query = attendace_qry_obj.get_clerical_attendance(False)
     elif worktype == "2":
+        job_form = "パート"
         users_without_condition = db.session.query(User).filter(User.CONTRACT_CODE == 2)
         clerical_attendance_query = attendace_qry_obj.get_clerical_attendance(True)
 
@@ -468,7 +471,7 @@ def jimu_summary_fulltime(startday, worktype):
         conditional_users = get_more_condition_users(users_without_condition, "OUTDAY")
 
     null_checked_users = []
-    for conditional_user in users_without_condition:
+    for conditional_user in conditional_users:
         null_checked_users.append(convert_null_role(conditional_user))
 
     totalling_counter: int = 0
@@ -790,18 +793,15 @@ def jimu_summary_fulltime(startday, worktype):
     today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
     print(f"Totalling item count: {totalling_counter}")
-    if len(null_checked_users) == len(cfts):
-        print("Both length: True")
-    else:
-        print(f"Both length: False {len(null_checked_users)} {len(cfts)}")
-    c_profile.disable()
-    c_stats = pstats.Stats(c_profile)
-    c_stats.sort_stats("cumtime").print_stats(20)
+    print(f"Both length: {len(null_checked_users)} {len(cfts)}")
+    # c_profile.disable()
+    # c_stats = pstats.Stats(c_profile)
+    # c_stats.sort_stats("cumtime").print_stats(20)
 
     end_time = time.perf_counter()
     run_time = end_time - start_time
-    pref_result = f"'実行時間'{str(run_time)}'秒'"
-    print(pref_result)
+    pref_result = f"{today}'| 実行時間'{str(run_time)}'秒'"
+    syslog.syslog(pref_result)
 
     return render_template(
         "attendance/jimu_summary_fulltime_diff.html",
@@ -830,6 +830,7 @@ def jimu_summary_fulltime(startday, worktype):
         FromDay=FromDay,
         ToDay=ToDay,
         today=today,
+        job_form=job_form,
     )
 
 

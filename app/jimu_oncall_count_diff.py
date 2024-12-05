@@ -708,14 +708,16 @@ def jimu_summary_fulltime(startday):
         conv_obj = convert_null_role(user)
         null_checked_users.append(conv_obj)
 
+    today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+
     # c_profile.disable()
     # c_stats = pstats.Stats(c_profile)
     # c_stats.sort_stats("cumtime").print_stats(20)
 
     end_time = time.perf_counter()
     run_time = end_time - start_time
-    pref_result = f"'実行時間'{str(run_time)}'秒'"
-    print(pref_result)
+    pref_result = f"{today}'| 実行時間'{str(run_time)}'秒'"
+    syslog.syslog(pref_result)
     ##### 退職者表示設定
 
     return render_template(

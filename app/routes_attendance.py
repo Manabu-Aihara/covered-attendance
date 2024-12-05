@@ -43,7 +43,7 @@ from app.models import (
 )
 from app.attendance_classes import AttendanceAnalysys
 from app.calender_classes import MakeCalender
-from app.calc_work_classes_diff import DataForTable, CalcTimeClass, get_last_date
+from app.calc_work_classes2 import DataForTable, CalcTimeFactory, get_last_date
 from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
 from app.attendance_query_class import AttendanceQuery
 
@@ -472,6 +472,7 @@ def indextime(STAFFID, intFlg):
 
     workday_count: int = 0
     work_time_sum: timedelta = timedelta(0)
+    calc_time_factory = CalcTimeFactory()
     for attendace_query in attendance_query_list:
         Shin = attendace_query[0]
         # 日付
@@ -528,8 +529,8 @@ def indextime(STAFFID, intFlg):
         # )
         # settime.calc_time()
         # if Shin.STARTTIME != "00:00" and Shin.ENDTIME != "00:00":
-        setting_time = CalcTimeClass(
-            Shin.STAFFID,
+        setting_time = calc_time_factory.get_instance(Shin.STAFFID)
+        setting_time.set_data(
             Shin.STARTTIME,
             Shin.ENDTIME,
             (Shin.NOTIFICATION, Shin.NOTIFICATION2),
@@ -537,22 +538,15 @@ def indextime(STAFFID, intFlg):
             Shin.HOLIDAY,
         )
         print(f"ID: {Shin.STAFFID}")
-        try:
-            actual_work_time = setting_time.get_actual_work_time()
-            calc_real_time = setting_time.get_real_time()
-            over_time = setting_time.get_over_time()
-            nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
-        except TypeError as e:
-            print(e)
-            # return render_template(
-            #     "error/403.html", title="Exception message", message=e
-            # )
-        else:
-            real_time_sum.append(calc_real_time)
-            if Shin.OVERTIME == "1" and attendace_query.CONTRACT_CODE != 2:
-                over_time_0.append(over_time)
-            if nurse_holiday_work_time != 9.99:
-                syukkin_holiday_times_0.append(nurse_holiday_work_time)
+        actual_work_time = setting_time.get_actual_work_time()
+        calc_real_time = setting_time.get_real_time()
+        over_time = setting_time.get_over_time()
+        nurse_holiday_work_time = setting_time.calc_nurse_holiday_work()
+        real_time_sum.append(calc_real_time)
+        if Shin.OVERTIME == "1" and attendace_query.CONTRACT_CODE != 2:
+            over_time_0.append(over_time)
+        if nurse_holiday_work_time != 9.99:
+            syukkin_holiday_times_0.append(nurse_holiday_work_time)
 
         print(f"{Shin.WORKDAY.day} 日")
         print(f"Real time: {calc_real_time}")

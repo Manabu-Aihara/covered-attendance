@@ -70,8 +70,8 @@ def test_get_real_time(calc_work):
 
 
 def get_month_attendance(staff_ids: list[int]) -> list[list[Shinsei]]:
-    from_day = datetime(year=2024, month=10, day=1)
-    to_day = datetime(year=2024, month=10, day=31)
+    from_day = datetime(year=2024, month=11, day=1)
+    to_day = datetime(year=2024, month=11, day=30)
     attendances: list[list[Shinsei]] = []
     for staff_id in staff_ids:
         filters = []
@@ -91,7 +91,7 @@ def make_month_attend_info(app_context):
         .all()
     )
     # part_list = [m.STAFFID for m in part_members]
-    attendances = get_month_attendance([201, 20, 3])
+    attendances = get_month_attendance([79])
     return attendances
 
 
@@ -206,7 +206,7 @@ def test_print_list_factory(month_attends):
         print(f"Test over sum: {over_sum}")
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_run_perf(month_attends):
     pr = cProfile.Profile()
     pr.runcall(test_print_list_factory, month_attends)

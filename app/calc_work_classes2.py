@@ -249,7 +249,7 @@ class ContractTimeClass:
         contract_work_time = (
             part_contract_work.PART_WORKTIME
             if part_contract_work.PART_WORKTIME is not None
-            else part_contract_holiday.HOLIDAY_TIME
+            else paid_holiday_time
         )
         contract_holiday_time = (
             part_contract_holiday.HOLIDAY_TIME
@@ -386,16 +386,14 @@ class CalcTimeClass:
 
     """
         - 契約時間 / 2 or 0
-        if irregular:
+        if irregular（契約時間未満のとき）:
             契約時間 - 入力時間
         @Return: timedelta
         """
 
     # 半日出張、半休、生理休暇かつ打刻のある場合
     def provide_half_rest(self) -> timedelta:
-        # print(
-        #     f"---Child func---: {ContractTimeClass.get_contract_times(self.staff_id)}"
-        # )
+        # print(f"Start inner method: {self.full_work_time}")
         actual_time = self.calc_actual_work_time()
         working_time = actual_time - self.calc_normal_rest(actual_time)
 
@@ -406,13 +404,15 @@ class CalcTimeClass:
 
         if approval_count == 0:
             return (
-                self.full_work_time - actual_time
+                self.full_work_time - working_time
+                # irregular
                 if working_time < self.full_work_time
                 else timedelta(0)
             )
         elif approval_count == 1:
             return (
                 self.full_work_time - actual_time
+                # irregular
                 if actual_time < self.half_work_time
                 else (
                     self.half_work_time
@@ -425,21 +425,19 @@ class CalcTimeClass:
 
     """
         @Return: timedelta
-            1.残業あり → 終業時間 - 開始時間
+            1.残業あり → 終業時間 - 開始時間 - 通常の休憩時間
             2.残業なし → 契約時間
-            3.残業なしで半日申請あり → 契約時間 / 2
-            4.irregular → 終業時間 - 開始時間
+            3.残業なしで半日申請あり → 契約時間 - (契約休み時間 / 2)
+            4.irregular → 契約時間or入力時間 - (契約時間 - 入力時間)
         """
 
     def check_over_work(self) -> timedelta:
         actual_work_time = self.calc_actual_work_time()
-        # 1.残業あり → 終業時間 - 開始時間
-        # 2.残業なし → 契約時間
-        # 3.残業なしで半日申請あり → 契約時間 / 2
         if self.sh_overtime == "0":
-            # print(f"{self.staff_id} in child: {self.full_work_time}")
             working_time = (
-                self.full_work_time - self.provide_half_rest()  # 契約時間 / 2 or 0
+                self.full_work_time
+                - self.provide_half_rest()
+                # - self.calc_normal_rest(actual_work_time)  # 契約時間 / 2 or 0
             )
             # 契約時間 / 2 or 契約時間
             return working_time
@@ -447,7 +445,7 @@ class CalcTimeClass:
             work_without_time_rest = actual_work_time - self.calc_normal_rest(
                 actual_work_time
             )
-            print(f"Over in class: {work_without_time_rest}")
+            print(f"Over without rest: {work_without_time_rest}")
             return work_without_time_rest
 
     """
@@ -460,11 +458,7 @@ class CalcTimeClass:
     # 9: 慶弔 congratulations and condolences
     def get_actual_work_time(self) -> timedelta:
         actual_work_time = self.calc_actual_work_time()
-        correct_actual_time = (
-            actual_work_time
-            + self.provide_half_rest()
-            - self.calc_normal_rest(actual_work_time)
-        )
+        print(f"Actual second: {actual_work_time.total_seconds()}")
         for notification in self.notifications:
             if notification == "5":
                 return self.full_work_time
@@ -475,7 +469,17 @@ class CalcTimeClass:
             elif notification == "8":
                 return timedelta(0)
             else:
-                return correct_actual_time
+                print(f"Caution '-': {self.provide_half_rest()}")
+                return (
+                    actual_work_time
+                    + (
+                        self.provide_half_rest()
+                        if notification in self.n_half_list + ["6"]
+                        # irregular
+                        else timedelta(0)
+                    )
+                    - self.calc_normal_rest(actual_work_time)
+                )
 
     """
         残業分
@@ -483,20 +487,11 @@ class CalcTimeClass:
         """
 
     def get_over_time(self) -> float:
-        # contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
         working_time = self.check_over_work()
         # パートはありません
         over_time_in_work = working_time - (
             self.full_work_time - self.provide_half_rest()
         )
-        # # 半休 provide_half_rest → 3.75h
-        # over_time_in_holiday = working_time - (
-        #     timedelta(hours=self.contract_holiday_time) - self.provide_half_rest()
-        # )
-        # if self.provide_half_rest() != timedelta(0):
-        #     over_time = working_time - timedelta(hours=self.contract_work_time / 2)
-        # else:
-        #     over_time = working_time - timedelta(hours=self.contract_work_time)
         return over_time_in_work.total_seconds()
 
     """

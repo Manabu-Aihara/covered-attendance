@@ -1,7 +1,7 @@
 {% extends 'home.html' %}
 
 {% block child_content %}
-<h3>常勤職員一覧画面（{{ startday }}日基準）　　　対象期間：　{{ FromDay }}　～　{{ ToDay }}</span></h3>
+<h3>{{ job_form }}職員一覧画面（{{ startday }}日基準）　　　対象期間：　{{ FromDay }}　～　{{ ToDay }}</span></h3>
 <hr>
 <div>
   <form method="POST" action="{{ url_for('jimu_summary_fulltime', startday=startday, worktype=worktype) }}">
