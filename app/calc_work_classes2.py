@@ -437,9 +437,9 @@ class CalcTimeClass:
             working_time = (
                 self.full_work_time
                 - self.provide_half_rest()
-                # - self.calc_normal_rest(actual_work_time)  # 契約時間 / 2 or 0
+                # - self.calc_normal_rest(actual_work_time)
             )
-            # 契約時間 / 2 or 契約時間
+            # 契約時間 / 2 or 契約時間 or irregular
             return working_time
         elif self.sh_overtime == "1":  # 残業した場合
             work_without_time_rest = actual_work_time - self.calc_normal_rest(
@@ -469,13 +469,13 @@ class CalcTimeClass:
             elif notification == "8":
                 return timedelta(0)
             else:
-                print(f"Caution '-': {self.provide_half_rest()}")
+                print(f"'-'check!: {self.provide_half_rest()}")
                 return (
                     actual_work_time
                     + (
+                        # 申請貼れば、irregular数値は返さない
                         self.provide_half_rest()
                         if notification in self.n_half_list + ["6"]
-                        # irregular
                         else timedelta(0)
                     )
                     - self.calc_normal_rest(actual_work_time)
@@ -529,17 +529,6 @@ class CalcTimeClass:
         else:
             return 9.99
 
-    # なくても機能するみたいだ
-    # 打刻は00:00で
-    # def get_zero_time_notification(self, notification: str) -> float:
-    #     contract_work_time, contract_holiday_time = self.get_work_and_holiday_time()
-    #     if self.sh_starttime == "00:00" and self.sh_endtime == "00:00":
-    #         # 全日年休、出張全日の場合
-    #         if notification == "3" or notification == "5" or notification == "9":
-    #             return contract_work_time
-    #         else:
-    #             raise ValueError("入力に誤りがあります。申請はありせんか？")
-
 
 @dataclass
 class CalcTimeFactory:
@@ -552,50 +541,83 @@ class CalcTimeFactory:
 
 
 # ************************************** 時間休カウント ********************************************#
-class TimeOffClass:
-    def __init__(
-        self,
-        y,
-        m,
-        d,
-        sh_workday,
-        sh_notification,
-        sh_notification_pm,
-        timeoff1,
-        timeoff2,
-        timeoff3,
-        halfway_through1,
-        halfway_through2,
-        halfway_through3,
-        FromDay,
-        ToDay,
-    ):
-        self.y = y
-        self.m = m
-        self.d = d
-        self.sh_workday = sh_workday
-        self.sh_notification = sh_notification
-        self.sh_notification_pm = sh_notification_pm
-        self.timeoff1 = timeoff1
-        self.timeoff2 = timeoff2
-        self.timeoff3 = timeoff3
-        self.halfway_through1 = halfway_through1
-        self.halfway_through2 = halfway_through2
-        self.halfway_through3 = halfway_through3
-        self.FromDay = FromDay
-        self.ToDay = ToDay
+# class TimeOffClass:
+#     def __init__(
+#         self,
+#         y,
+#         m,
+#         d,
+#         sh_workday,
+#         sh_notification,
+#         sh_notification_pm,
+#         timeoff1,
+#         timeoff2,
+#         timeoff3,
+#         halfway_through1,
+#         halfway_through2,
+#         halfway_through3,
+#         FromDay,
+#         ToDay,
+#     ):
+#         self.y = y
+#         self.m = m
+#         self.d = d
+#         self.sh_workday = sh_workday
+#         self.sh_notification = sh_notification
+#         self.sh_notification_pm = sh_notification_pm
+#         self.timeoff1 = timeoff1
+#         self.timeoff2 = timeoff2
+#         self.timeoff3 = timeoff3
+#         self.halfway_through1 = halfway_through1
+#         self.halfway_through2 = halfway_through2
+#         self.halfway_through3 = halfway_through3
+#         self.FromDay = FromDay
+#         self.ToDay = ToDay
 
-    def cnt_time_off(self):
-        if self.FromDay <= self.sh_workday and self.ToDay >= self.sh_workday:
-            if self.sh_notification == "10" or self.sh_notification_pm == "10":
-                self.timeoff1.append("cnt1")
-            if self.sh_notification == "11" or self.sh_notification_pm == "11":
-                self.timeoff2.append("cnt2")
-            if self.sh_notification == "12" or self.sh_notification_pm == "12":
-                self.timeoff3.append("cnt3")
-            if self.sh_notification == "13" or self.sh_notification_pm == "13":
-                self.halfway_through1.append("cnt01")
-            if self.sh_notification == "14" or self.sh_notification_pm == "14":
-                self.halfway_through2.append("cnt02")
-            if self.sh_notification == "15" or self.sh_notification_pm == "15":
-                self.halfway_through3.append("cnt03")
+#     def cnt_time_off(self):
+#         if self.FromDay <= self.sh_workday and self.ToDay >= self.sh_workday:
+#             if self.sh_notification == "10" or self.sh_notification_pm == "10":
+#                 self.timeoff1.append("cnt1")
+#             if self.sh_notification == "11" or self.sh_notification_pm == "11":
+#                 self.timeoff2.append("cnt2")
+#             if self.sh_notification == "12" or self.sh_notification_pm == "12":
+#                 self.timeoff3.append("cnt3")
+#             if self.sh_notification == "13" or self.sh_notification_pm == "13":
+#                 self.halfway_through1.append("cnt01")
+#             if self.sh_notification == "14" or self.sh_notification_pm == "14":
+#                 self.halfway_through2.append("cnt02")
+#             if self.sh_notification == "15" or self.sh_notification_pm == "15":
+#                 self.halfway_through3.append("cnt03")
+
+
+def output_rest_time(notification_am: Optional[str], notification_pm: Optional[str]):
+    # def output_rest_time(*notifications: str) -> Dict[str, int]:
+    n_time_list: List[int] = [1, 2, 3]
+    n_off_list: List[str] = ["10", "11", "12"]
+    n_through_list: List[str] = ["13", "14", "15"]
+
+    # example: output_rest_time("13", "12")
+    # リストのなかのリストは、最後のしか残らない
+    # for n in notifications:
+    #     off_time_list = [
+    #         n_time for n_time, n_off in zip(n_time_list, n_off_list) if n == n_off
+    #     ]
+    #     through_time_list = [
+    #         n_time
+    #         for n_time, n_through in zip(n_time_list, n_through_list)
+    #         if n == n_through
+    #     ]
+    #     print(f"Throuth: {through_time_list}")
+    # Result: {'Off': 3, 'Through': 0}
+    off_time_list = [
+        n_time
+        for n_time, n_off in zip(n_time_list, n_off_list)
+        if notification_am == n_off or notification_pm == n_off
+    ]
+    through_time_list = [
+        n_time
+        for n_time, n_through in zip(n_time_list, n_through_list)
+        if notification_am == n_through or notification_pm == n_through
+    ]
+
+    return {"Off": sum(off_time_list), "Through": sum(through_time_list)}

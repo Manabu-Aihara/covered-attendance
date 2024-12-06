@@ -25,7 +25,7 @@
 <div id="adm-tbl" class="col-12 center-block">
   <div class="sort-table">
     <a href="javascript:void(0)"
-      onclick="onCSVDownload(this, document.querySelector('#fv-table'), '{{ y|tojson }}-{{ m|tojson }}常勤職員一覧画面（１日基準）download_({{ dwl_today.strftime('%Y-%m-%d') }}).csv');"
+      onclick="onCSVDownload(this, document.querySelector('#fv-table'), '{{ y|tojson }}-{{ m|tojson }}{{ job_form }}職員一覧画面（１日基準）download_({{ dwl_today.strftime('%Y-%m-%d') }}).csv');"
       type="button" class="btn btn-warning">CSVダウンロード</a>
     <br><br><br>
     <table id="fv-table" class="table table-striped table-hover">

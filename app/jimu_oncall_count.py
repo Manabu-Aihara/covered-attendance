@@ -31,6 +31,7 @@ from app.calc_work_classes2 import (
     DataForTable,
     TimeOffClass,
     get_last_date,
+    output_rest_time,
 )
 from app.calender_classes import MakeCalender
 from app.forms import (
@@ -377,7 +378,6 @@ def jimu_summary_fulltime(startday, worktype):
     c_profile = cProfile.Profile()
     c_profile.enable()
 
-    outer_display = 0
     jimu_usr = User.query.get(current_user.STAFFID)
     # users = User.query.all()
     # 後述
@@ -471,7 +471,7 @@ def jimu_summary_fulltime(startday, worktype):
         conditional_users = get_more_condition_users(users_without_condition, "OUTDAY")
 
     null_checked_users = []
-    for conditional_user in conditional_users:
+    for conditional_user in users_without_condition:
         null_checked_users.append(convert_null_role(conditional_user))
 
     totalling_counter: int = 0
@@ -485,10 +485,9 @@ def jimu_summary_fulltime(startday, worktype):
         # ここあまり好きじゃない、Unbound変数
         if UserID != Shin.STAFFID:
             UserID = Shin.STAFFID
-            u = User.query.get(Shin.STAFFID)
             cnt_for_tbl = CounterForTable.query.get(Shin.STAFFID)
-            rp_holiday = RecordPaidHoliday.query.get(Shin.STAFFID)
-            AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
+            # rp_holiday = RecordPaidHoliday.query.get(Shin.STAFFID)
+            # AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
             # 各スタッフのカウントになる、不思議
             workday_count = 0
             # sum_0 = 0
@@ -556,66 +555,34 @@ def jimu_summary_fulltime(startday, worktype):
         )
         dft.other_data()
 
-        tm_off = TimeOffClass(
-            y,
-            m,
-            d,
-            Shin.WORKDAY,
-            Shin.NOTIFICATION,
-            Shin.NOTIFICATION2,
-            timeoff1,
-            timeoff2,
-            timeoff3,
-            halfway_through1,
-            halfway_through2,
-            halfway_through3,
-            FromDay,
-            ToDay,
-        )
-        tm_off.cnt_time_off()
+        # tm_off = TimeOffClass(
+        #     y,
+        #     m,
+        #     d,
+        #     Shin.WORKDAY,
+        #     Shin.NOTIFICATION,
+        #     Shin.NOTIFICATION2,
+        #     timeoff1,
+        #     timeoff2,
+        #     timeoff3,
+        #     halfway_through1,
+        #     halfway_through2,
+        #     halfway_through3,
+        #     FromDay,
+        #     ToDay,
+        # )
+        # tm_off.cnt_time_off()
 
         dtm = datetime.strptime(Shin.ENDTIME, "%H:%M") - datetime.strptime(
             Shin.STARTTIME, "%H:%M"
         )
         # リアル実働時間
         real_time = dtm
-
-        # あくまで暫定的に使う変数
-        related_holiday = db.session.get(RecordPaidHoliday, Shin.STAFFID)
         # これを抹殺する
         # AttendanceDada[Shin.WORKDAY.day][14] = 0
-        # settime = CalcTimeClass(
-        #     dtm,
-        #     Shin.NOTIFICATION,
-        #     Shin.NOTIFICATION2,
-        #     Shin.STARTTIME,
-        #     Shin.ENDTIME,
-        #     Shin.OVERTIME,
-        #     clerical_attendance.CONTRACT_CODE,
-        #     AttendanceDada,
-        #     over_time_0,
-        #     real_time,
-        #     real_time_sum,
-        #     syukkin_holiday_times_0,
-        #     Shin.HOLIDAY,
-        #     clerical_attendance.JOBTYPE_CODE,
-        #     Shin.STAFFID,
-        #     Shin.WORKDAY,
-        #     # clerical_attendance.HOLIDAY_TIME,
-        #     related_holiday.BASETIMES_PAIDHOLIDAY,
-        # )
-        # settime.calc_time()
 
         over_time_append = over_time_0.append
         nurse_holiday_append = syukkin_holiday_times_0.append
-        # setting_time = CalcTimeClass(
-        #     Shin.STARTTIME,
-        #     Shin.ENDTIME,
-        #     (Shin.NOTIFICATION, Shin.NOTIFICATION2),
-        #     Shin.OVERTIME,
-        #     Shin.HOLIDAY,
-        #     Shin.STAFFID,
-        # )
         # setting_time.staff_id = Shin.STAFFID
         # setting_time.sh_starttime = Shin.STARTTIME
         # setting_time.sh_endtime = Shin.ENDTIME
@@ -695,26 +662,24 @@ def jimu_summary_fulltime(startday, worktype):
         #         print(f"出勤: {syukkin_times_0[n]}")
         #         sum_0 += syukkin_times_0[n]
 
-        """ 24/8/22 変更分 """
         # ここで宣言された変数は“+=”不可
         # work_time_sum_60: float = 0.0
         # 🙅 work_time_sum_60 += AttendanceDada[Shin.WORKDAY.day][14]
 
-        # time_sum += AttendanceDada[Shin.WORKDAY.day][14]
         time_sum += actual_work_time
         workday_count += 1 if time_sum != timedelta(0) else workday_count
-        # print(f"{Shin.STAFFID} aDd: {AttendanceDada[Shin.WORKDAY.day][14]}")
+
         w_h = time_sum.total_seconds() // (60 * 60)
-        w_m = (time_sum.total_seconds() - w_h * 60 * 60) / (60 * 60)
-        # 実働時間計（１０進法）：10進数
-        time_sum10 = w_h + w_m
+        w_m = (time_sum.total_seconds() - w_h * 60 * 60) // 60
+
+        # 実働時間計：10進数
+        time_sum10 = w_h + w_m / (60 * 60)
         sum10_rnd = Decimal(time_sum10).quantize(Decimal("0.01"), ROUND_HALF_UP)
 
-        w_m_60 = w_m * 60 / 100
+        # w_m_60 = w_m * 60 / 100
         # 実労働時間計：60進数
-        time_sum60 = w_h + w_m_60
-        sum60_rnd = Decimal(time_sum60).quantize(Decimal("0.01"), ROUND_HALF_UP)
-        # print(f"{Shin.STAFFID} Sum: {time_sum10} {time_sum60}")
+        time_sum60 = w_h + w_m / 100
+        # sum60_rnd = Decimal(time_sum60).quantize(Decimal("0.01"), ROUND_HALF_UP)
 
         real_sum = 0
         for n in range(len(real_time_sum)):
@@ -736,32 +701,49 @@ def jimu_summary_fulltime(startday, worktype):
                 sum_over_0 += over_time_0[n]
         o_h = sum_over_0 // (60 * 60)
         o_m = (sum_over_0 - o_h * 60 * 60) // 60
-        over = o_h + o_m / 100
+        over_60 = o_h + o_m / 100
         over_10 = sum_over_0 / (60 * 60)
+        over10_rnd = Decimal(over_10).quantize(Decimal("0.01"), ROUND_HALF_UP)
 
         sum_hol_0 = 0
         for t in syukkin_holiday_times_0:
             sum_hol_0 += t
         h_h = sum_hol_0 // (60 * 60)
         h_m = (sum_hol_0 - h_h * 60 * 60) // 60
-        holiday_work = h_h + h_m / 100
+        holiday_work_60 = h_h + h_m / 100
         holiday_work_10 = sum_hol_0 / (60 * 60)
+        holiday_work10_rnd = Decimal(holiday_work_10).quantize(
+            Decimal("0.01"), ROUND_HALF_UP
+        )
 
         # workday_count = len(syukkin_times_0)
 
-        sum_timeoff1 = len(timeoff1)
-        sum_timeoff2 = len(timeoff2)
-        sum_timeoff3 = len(timeoff3)
-        timeoff = sum_timeoff1 + sum_timeoff2 * 2 + sum_timeoff3 * 3
+        # sum_timeoff1 = len(timeoff1)
+        # sum_timeoff2 = len(timeoff2)
+        # sum_timeoff3 = len(timeoff3)
+        # timeoff = sum_timeoff1 + sum_timeoff2 * 2 + sum_timeoff3 * 3
 
-        sum_halfway_through1 = len(halfway_through1)
-        sum_halfway_through2 = len(halfway_through2)
-        sum_halfway_through3 = len(halfway_through3)
-        halfway_through = (
-            sum_halfway_through1 + sum_halfway_through2 * 2 + sum_halfway_through3 * 3
+        # sum_halfway_through1 = len(halfway_through1)
+        # sum_halfway_through2 = len(halfway_through2)
+        # sum_halfway_through3 = len(halfway_through3)
+        # halfway_through = (
+        #     sum_halfway_through1 + sum_halfway_through2 * 2 + sum_halfway_through3 * 3
+        # )
+        sum_dict: Dict[str, int] = output_rest_time(
+            Shin.NOTIFICATION, Shin.NOTIFICATION2
         )
+        timeoff += sum_dict.get("Off")
+        halfway_through += sum_dict.get("Through")
 
         if cnt_for_tbl:
+            cnt_for_tbl.SUM_WORKTIME = time_sum60
+            cnt_for_tbl.SUM_WORKTIME_10 = sum10_rnd
+            cnt_for_tbl.OVERTIME = over_60
+            cnt_for_tbl.SUM_REAL_WORKTIME = real_time
+            cnt_for_tbl.WORKDAY_COUNT = workday_count
+            cnt_for_tbl.OVERTIME_10 = over10_rnd
+            cnt_for_tbl.HOLIDAY_WORK = holiday_work_60
+            cnt_for_tbl.HOLIDAY_WORK_10 = holiday_work10_rnd
             cnt_for_tbl.ONCALL = ln_oncall
             cnt_for_tbl.ONCALL_HOLIDAY = ln_oncall_holiday
             cnt_for_tbl.ONCALL_COUNT = ln_oncall_cnt
@@ -775,28 +757,21 @@ def jimu_summary_fulltime(startday, worktype):
             cnt_for_tbl.SYUTTYOU_HALF = ln_syuttyou_half
             cnt_for_tbl.REFLESH = ln_reflesh
             cnt_for_tbl.MILEAGE = ln_s_kyori
-            cnt_for_tbl.SUM_WORKTIME = sum60_rnd
-            cnt_for_tbl.SUM_REAL_WORKTIME = real_time
-            cnt_for_tbl.OVERTIME = over
-            cnt_for_tbl.HOLIDAY_WORK = holiday_work
-            cnt_for_tbl.WORKDAY_COUNT = workday_count
-            cnt_for_tbl.SUM_WORKTIME_10 = sum10_rnd
-            cnt_for_tbl.OVERTIME_10 = over_10
-            cnt_for_tbl.HOLIDAY_WORK_10 = holiday_work_10
             cnt_for_tbl.TIMEOFF = timeoff
             cnt_for_tbl.HALFWAY_THROUGH = halfway_through
 
             db.session.commit()
 
         totalling_counter += 1
+    # for終わり
 
     today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
     print(f"Totalling item count: {totalling_counter}")
     print(f"Both length: {len(null_checked_users)} {len(cfts)}")
-    # c_profile.disable()
-    # c_stats = pstats.Stats(c_profile)
-    # c_stats.sort_stats("cumtime").print_stats(20)
+    c_profile.disable()
+    c_stats = pstats.Stats(c_profile)
+    c_stats.sort_stats("cumtime").print_stats(20)
 
     end_time = time.perf_counter()
     run_time = end_time - start_time

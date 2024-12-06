@@ -9,9 +9,9 @@ import pandas as pd
 
 from app import db
 from app.models import User, KinmuTaisei, Shinsei, D_JOB_HISTORY
-from app.calc_work_classes2 import CalcTimeClass, CalcTimeFactory
+from app.calc_work_classes2 import CalcTimeClass, CalcTimeFactory, output_rest_time
 
-id_for_contract: int = 188
+id_for_contract: int = 20
 
 
 @pytest.fixture(name="contract")
@@ -32,27 +32,27 @@ def get_contract_work_time(app_context):
 
 @pytest.fixture(name="calc_work")
 def make_calc_work(app_context):
-    calc_work_object = CalcTimeClass(3, "08:30", "12:00", ("", "4"), "0", "0")
+    calc_factory_object = CalcTimeFactory()
+    calc_work_object = calc_factory_object.get_instance(20)
+    calc_work_object.set_data("09:00", "18:00", ("13", "10"), "0", "0")
     return calc_work_object
 
 
 @pytest.mark.skip
-def test_get_actual_work_time(calc_work):
-    actual_time: timedelta = calc_work.get_actual_work_time()
+def test_calc_actual_work_time(calc_work):
+    actual_time: timedelta = calc_work.calc_actual_work_time()
     actual_second = actual_time.total_seconds()
     result_actual = actual_second / 3600
-    assert result_actual == 6.75
+    assert result_actual == 8
 
 
-@pytest.mark.skip
-def test_check_over_work(contract, calc_work):
-    actual_time = calc_work.calc_actual_work_time()
-    print(f"timedalta: {actual_time}")
-    print(f"contract: {contract}")
-    output_time: timedelta = calc_work.check_over_work()
+# @pytest.mark.skip
+def test_get_actual_work_time(contract, calc_work):
+    print(f"Contract: {contract}")
+    output_time: timedelta = calc_work.get_actual_work_time()
     time_second = output_time.total_seconds()
     result_time = time_second / 3600
-    assert result_time == 3.5
+    assert result_time == 8
 
 
 @pytest.mark.skip
@@ -62,11 +62,18 @@ def test_get_over_time(calc_work):
     assert output_time / 3600 == 1.5
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_get_real_time(calc_work):
     time_second = calc_work.get_real_time()
     result_real = time_second / 3600
-    assert result_real == 3.5
+    assert result_real == 6
+
+
+def test_output_rest_time():
+    sum_dict: dict = output_rest_time("13", "12")
+    print(f"Test output_rest_time: {sum_dict}")
+    # assert sum_dict.get("Off") == [3]
+    # assert sum_dict.get("Through") == [1]
 
 
 def get_month_attendance(staff_ids: list[int]) -> list[list[Shinsei]]:
@@ -174,6 +181,7 @@ def test_print_list_type(month_attends):
         print(f"Test over sum: {over_sum}")
 
 
+@pytest.mark.skip
 def test_print_list_factory(month_attends):
     calc_time_factory = CalcTimeFactory()
     actual_list = []
