@@ -40,7 +40,7 @@ def make_calc_work(app_context):
 
 @pytest.mark.skip
 def test_calc_actual_work_time(calc_work):
-    actual_time: timedelta = calc_work.calc_actual_work_time()
+    actual_time: timedelta = calc_work.calc_base_work_time()
     actual_second = actual_time.total_seconds()
     result_actual = actual_second / 3600
     assert result_actual == 8

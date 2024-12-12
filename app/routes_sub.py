@@ -17,7 +17,7 @@ from app.auth_middleware import (
     get_user_group,
 )
 from app.dummy_model_todo import TodoOrm, EventORM
-from app.models import RecordPaidHoliday, Team
+from app.models import RecordPaidHoliday, Team, User
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
 
@@ -86,16 +86,10 @@ def post_access_token():
 @token_required
 def refresh_token(auth_user, extension):
     new_token = issue_token(auth_user.STAFFID, extension)
-    flask_resp = make_response(jsonify(new_token))
+    print(f"New token type: {type(make_response(jsonify(new_token)))}")
+    print(f"New token: {new_token}")
 
     return new_token["data"]
-
-
-@app.route("/group-names", methods=["GET", "POST"])
-@token_required
-def get_team_name(auth_user, extension):
-    team_query = db.session.query(Team).all()
-    return [t.SHORTNAME for t in team_query]
 
 
 @app.route("/timetable/inquiry", methods=["GET", "POST"])
@@ -105,26 +99,41 @@ def print_user_inquiry(auth_user, extension):
     print(f"Auth user at server: {auth_user}")
     print(f"Group number: {extension}")
     # user_num, group_num = get_user_group_id()
-    group = db.session.get(Team, extension)
+    team = db.session.get(Team, extension)
     return {
         "staff_id": str(auth_user.STAFFID),
         "group_id": extension,
-        "group_name": group.SHORTNAME,
+        "group_name": team.SHORTNAME,
     }
+
+
+@app.route("/group/all", methods=["GET"])
+@token_required
+def get_team_events(auth_user, extension):
+    events_of_team = db.session.query(EventORM).filter(Team.CODE == extension).all()
+    return [event.to_dict() for event in events_of_team]
+
+
+@app.route("/group/users", methods=["GET", "POST"])
+@token_required
+def get_team_member(auth_user, extension):
+    print(f"Group code: {extension}")
+    same_team_member = db.session.query(User).filter(User.TEAM_CODE == extension).all()
+    return [
+        {"staff_id": m.STAFFID, "family_kana": m.FKANA, "last_kana": m.LKANA}
+        for m in same_team_member
+    ]
 
 
 @app.route("/event/all", methods=["GET"])
 @token_required
 def get_all_event(auth_user, extension):
-    event_dict_list = []
     event_list = db.session.query(EventORM).all()
     return [event_item.to_dict() for event_item in event_list]
     # なぜこっちでインスタンスができない!?
     # group = Team(event_item.group_id)
     # group = db.session.get(Team, event_item.group_id)
     # print(f"Team name: {group.NAME}")
-    # event_dict_list.append(event_item.to_dict(group.SHORTNAME))
-    #     event_dict_list.append()
 
     # return event_dict_list
 
@@ -136,6 +145,13 @@ def get_user_event(auth_user, extension):
         db.session.query(EventORM).filter(EventORM.staff_id == auth_user.STAFFID).all()
     )
     return [user_event.to_dict() for user_event in user_events]
+
+
+@app.route("/group-names", methods=["GET", "POST"])
+@token_required
+def get_team_name(auth_user, extension):
+    team_query = db.session.query(Team).all()
+    return [t.SHORTNAME for t in team_query]
 
 
 def convert_strToDate(str_date: str):

@@ -38,7 +38,7 @@ def token_required(f):
         # 以下コメントで、issue_tokenか!?
         # info = get_user_group_id()
         # token = issue_token(info.STAFFID, info.DEPARTMENT_CODE)["data"]
-        # token = ""
+        # token: str
         if "Authorization" in request.headers:
             # token = request.headers["Authorization"].split(" ")[1]
             # header_parts: list = token.split(".")

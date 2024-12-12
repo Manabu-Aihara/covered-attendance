@@ -29,7 +29,6 @@ from app.calc_work_classes2 import (
     CalcTimeClass,
     CalcTimeFactory,
     DataForTable,
-    TimeOffClass,
     get_last_date,
     output_rest_time,
 )
@@ -311,7 +310,7 @@ def jimu_oncall_count_26(STAFFID):
 
 
 """
-    例: 第2引数（退職日）が今日を過ぎていても、今月なら対象とする
+    第2引数（退職日）が今日を過ぎていても、今月なら対象とする
     @Params:
         query_instances: list<T>
         date_columns: str
@@ -522,6 +521,20 @@ def jimu_summary_fulltime(startday, worktype):
             halfway_through2 = []
             halfway_through3 = []
 
+            on_call_cnt: int
+            on_call_holiday_cnt: int
+            on_call_cnt_cnt: int
+            engel_cnt: int
+
+            holiday_cnt: int
+            half_holiday_cnt: int
+            late_cnt: int
+            leave_early_cnt: int
+            absence_cnt: int
+            trip_cnt: int
+            half_trip: int
+            reflash_cnt: int
+
         # if u.CONTRACT_CODE == 2:
         ##### １日基準 #####
 
@@ -554,6 +567,13 @@ def jimu_summary_fulltime(startday, worktype):
             ToDay,
         )
         dft.other_data()
+        # if Shin.WORKDAY.weekday() in [5, 6]:
+        #     on_call_holiday_cnt += 1
+        # else:
+        #     on_call_cnt += 1
+
+        # if Shin.ONCALL_COUNT > "0":
+        #     on_call_cnt_cnt = int(Shin.ONCALL_COUNT)
 
         # tm_off = TimeOffClass(
         #     y,
@@ -581,6 +601,7 @@ def jimu_summary_fulltime(startday, worktype):
         # これを抹殺する
         # AttendanceDada[Shin.WORKDAY.day][14] = 0
 
+        real_time_sum_append = real_time_sum.append
         over_time_append = over_time_0.append
         nurse_holiday_append = syukkin_holiday_times_0.append
         # setting_time.staff_id = Shin.STAFFID
@@ -612,7 +633,7 @@ def jimu_summary_fulltime(startday, worktype):
         #         "error/403.html", title="Exception message", message=msg
         #     )
         # else:
-        real_time_sum.append(calc_real_time)
+        real_time_sum_append(calc_real_time)
         if Shin.OVERTIME == "1" and clerical_attendance.CONTRACT_CODE != 2:
             # over_time_0.append(over_time)
             over_time_append(over_time)

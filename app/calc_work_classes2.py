@@ -203,6 +203,11 @@ class DataForTable:
                 self.s_kyori.append(str(self.sh_mileage))
 
 
+# def strategy_notification(notification_am: Optional[str], notification_pm: Optional[str]):
+#     n_absence_list: List[str] = ["8", "17", "18", "19", "20"]
+# def count_oncall_engel(work_day: datetime, on_call: str, on_call_count: str, engel: str):
+
+
 @dataclass
 class ContractTimeClass:
     # staff_id: Optional[int]
@@ -284,6 +289,9 @@ class CalcTimeClass:
         default_factory=lambda: ["10", "11", "12", "13", "14", "15"]
     )
     n_half_list: List[str] = field(default_factory=lambda: ["4", "9", "16"])
+    n_absence_list: List[str] = field(
+        default_factory=lambda: ["8", "17", "18", "19", "20"]
+    )
 
     # def pre_method(self, staff_id: int):
     #     return ContractTimeClass.get_contract_times(staff_id)
@@ -335,8 +343,14 @@ class CalcTimeClass:
             h_string_time = f"{h_split}:30"
             return datetime.strptime(h_string_time, "%H:%M")
 
+    """
+        労働時間は2パターン
+        1. self.full_work_time()
+        2. calc_base_work_time() - calc_normal_rest_time(...)
+        """
+
     # 実働時間の算出
-    def calc_actual_work_time(self) -> timedelta:
+    def calc_base_work_time(self) -> timedelta:
         # self.jobtype != 12
         start_time_hm = datetime.strptime(self.sh_starttime, "%H:%M")
         end_time_hm = datetime.strptime(self.sh_endtime, "%H:%M")
@@ -346,16 +360,16 @@ class CalcTimeClass:
         ):
             start_time_hm = time(hour=8, minute=0)
 
-            actual_work_time = datetime.combine(
+            input_work_time = datetime.combine(
                 d, end_time_hm.time()
             ) - datetime.combine(d, start_time_hm)
 
-            return actual_work_time
+            return input_work_time
         # elif self.sh_starttime != "00:00" and (start_time_hm.minute != 0):
         #     start_time_hm = self.round_up_time()
         else:
-            actual_work_time = end_time_hm - start_time_hm
-            return actual_work_time
+            input_work_time = end_time_hm - start_time_hm
+            return input_work_time
 
     """
         - 時間休
@@ -394,8 +408,8 @@ class CalcTimeClass:
     # 半日出張、半休、生理休暇かつ打刻のある場合
     def provide_half_rest(self) -> timedelta:
         # print(f"Start inner method: {self.full_work_time}")
-        actual_time = self.calc_actual_work_time()
-        working_time = actual_time - self.calc_normal_rest(actual_time)
+        input_time = self.calc_base_work_time()
+        working_time = input_time - self.calc_normal_rest(input_time)
 
         # 承認時間のリストを作成する処理を最適化
         approval_count = sum(
@@ -411,9 +425,9 @@ class CalcTimeClass:
             )
         elif approval_count == 1:
             return (
-                self.full_work_time - actual_time
+                self.full_work_time - input_time
                 # irregular
-                if actual_time < self.half_work_time
+                if input_time < self.half_work_time
                 else (
                     self.half_work_time
                     if "6" in self.notifications
@@ -432,18 +446,18 @@ class CalcTimeClass:
         """
 
     def check_over_work(self) -> timedelta:
-        actual_work_time = self.calc_actual_work_time()
+        input_work_time = self.calc_base_work_time()
         if self.sh_overtime == "0":
             working_time = (
                 self.full_work_time
                 - self.provide_half_rest()
-                # - self.calc_normal_rest(actual_work_time)
+                # - self.calc_normal_rest(input_work_time)
             )
             # 契約時間 / 2 or 契約時間 or irregular
             return working_time
         elif self.sh_overtime == "1":  # 残業した場合
-            work_without_time_rest = actual_work_time - self.calc_normal_rest(
-                actual_work_time
+            work_without_time_rest = input_work_time - self.calc_normal_rest(
+                input_work_time
             )
             print(f"Over without rest: {work_without_time_rest}")
             return work_without_time_rest
@@ -457,8 +471,8 @@ class CalcTimeClass:
 
     # 9: 慶弔 congratulations and condolences
     def get_actual_work_time(self) -> timedelta:
-        actual_work_time = self.calc_actual_work_time()
-        print(f"Actual second: {actual_work_time.total_seconds()}")
+        input_work_time = self.calc_base_work_time()
+        print(f"Actual second: {input_work_time.total_seconds()}")
         for notification in self.notifications:
             if notification == "5":
                 return self.full_work_time
@@ -466,19 +480,19 @@ class CalcTimeClass:
                 notification == "9" and self.sh_starttime == "00:00"
             ):
                 return self.full_holiday_time
-            elif notification == "8":
+            elif notification in self.n_absence_list:
                 return timedelta(0)
             else:
                 print(f"'-'check!: {self.provide_half_rest()}")
                 return (
-                    actual_work_time
+                    input_work_time
                     + (
                         # 申請貼れば、irregular数値は返さない
                         self.provide_half_rest()
                         if notification in self.n_half_list + ["6"]
                         else timedelta(0)
                     )
-                    - self.calc_normal_rest(actual_work_time)
+                    - self.calc_normal_rest(input_work_time)
                 )
 
     """
@@ -541,53 +555,6 @@ class CalcTimeFactory:
 
 
 # ************************************** 時間休カウント ********************************************#
-# class TimeOffClass:
-#     def __init__(
-#         self,
-#         y,
-#         m,
-#         d,
-#         sh_workday,
-#         sh_notification,
-#         sh_notification_pm,
-#         timeoff1,
-#         timeoff2,
-#         timeoff3,
-#         halfway_through1,
-#         halfway_through2,
-#         halfway_through3,
-#         FromDay,
-#         ToDay,
-#     ):
-#         self.y = y
-#         self.m = m
-#         self.d = d
-#         self.sh_workday = sh_workday
-#         self.sh_notification = sh_notification
-#         self.sh_notification_pm = sh_notification_pm
-#         self.timeoff1 = timeoff1
-#         self.timeoff2 = timeoff2
-#         self.timeoff3 = timeoff3
-#         self.halfway_through1 = halfway_through1
-#         self.halfway_through2 = halfway_through2
-#         self.halfway_through3 = halfway_through3
-#         self.FromDay = FromDay
-#         self.ToDay = ToDay
-
-#     def cnt_time_off(self):
-#         if self.FromDay <= self.sh_workday and self.ToDay >= self.sh_workday:
-#             if self.sh_notification == "10" or self.sh_notification_pm == "10":
-#                 self.timeoff1.append("cnt1")
-#             if self.sh_notification == "11" or self.sh_notification_pm == "11":
-#                 self.timeoff2.append("cnt2")
-#             if self.sh_notification == "12" or self.sh_notification_pm == "12":
-#                 self.timeoff3.append("cnt3")
-#             if self.sh_notification == "13" or self.sh_notification_pm == "13":
-#                 self.halfway_through1.append("cnt01")
-#             if self.sh_notification == "14" or self.sh_notification_pm == "14":
-#                 self.halfway_through2.append("cnt02")
-#             if self.sh_notification == "15" or self.sh_notification_pm == "15":
-#                 self.halfway_through3.append("cnt03")
 
 
 def output_rest_time(notification_am: Optional[str], notification_pm: Optional[str]):
@@ -608,7 +575,7 @@ def output_rest_time(notification_am: Optional[str], notification_pm: Optional[s
     #         if n == n_through
     #     ]
     #     print(f"Throuth: {through_time_list}")
-    # Result: {'Off': 3, 'Through': 0}
+    # !Result: {'Off': 3, 'Through': 0}
     off_time_list = [
         n_time
         for n_time, n_off in zip(n_time_list, n_off_list)
