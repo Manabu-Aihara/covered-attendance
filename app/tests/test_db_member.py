@@ -37,10 +37,10 @@ def test_add_user_form(app_context):
 
 @pytest.mark.skip
 def test_raise_filter(app_context):
-    print(check_table_member(31, D_JOB_HISTORY))
-    # with pytest.raises(ValueError) as except_info:
-    #     check_table_member(3)
-    # print(except_info.value)
+    # print(check_table_member(31, D_JOB_HISTORY))
+    with pytest.raises(ValueError) as except_info:
+        check_table_member(3, D_JOB_HISTORY)
+    print(except_info.value)
 
 
 @pytest.mark.skip
@@ -111,6 +111,17 @@ def test_print_sub_holiday(app_context):
         print(f"{related_holiday.STAFFID}: {related_holiday.HOLIDAY_TIME}")
 
 
+def test_count_three_if():
+    cnt1: int = 0
+    cnt2: int = 0
+    for v in [("1", "1"), ("1", "2"), ("1", "0"), ("0", "2")]:
+        cnt1 += 1 if v[0] == "1" else 0
+        cnt2 += int(v[1]) if v[1] != "0" else 0
+
+    assert cnt1 == 3
+    assert cnt2 == 5
+
+
 @pytest.fixture(name="cat_works")
 def get_cat_attendance_member(app_context):
     filters = []
@@ -170,7 +181,7 @@ def condition_users(app_context):
     return sample_users
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_get_more_condition_users(condition_users):
     # assert isinstance(condition_users, list)
     test_users = get_more_condition_users(condition_users, "OUTDAY")

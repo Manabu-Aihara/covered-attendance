@@ -205,7 +205,6 @@ class DataForTable:
 
 # def strategy_notification(notification_am: Optional[str], notification_pm: Optional[str]):
 #     n_absence_list: List[str] = ["8", "17", "18", "19", "20"]
-# def count_oncall_engel(work_day: datetime, on_call: str, on_call_count: str, engel: str):
 
 
 @dataclass

@@ -75,11 +75,9 @@ class HolidayAcquire:
     id: int
 
     def __post_init__(self):
-        target_user = (
-            db.session.query(User.INDAY).filter(User.STAFFID == self.id).first()
-        )
+        target_user = db.session.query(User).filter(User.STAFFID == self.id).first()
         # いらないかも
-        if target_user is None:
+        if target_user.INDAY is None:
             TypeError("M_STAFFINFO.INDAYの値がありません。")
         else:
             self.in_day: datetime = target_user.INDAY

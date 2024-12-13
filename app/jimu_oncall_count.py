@@ -477,6 +477,7 @@ def jimu_summary_fulltime(startday, worktype):
 
     # setting_time = CalcTimeClass(None, None, None, None, None, None)
     calc_time_factory = CalcTimeFactory()
+    n_absence_list: List[str] = ["8", "17", "18", "19", "20"]
     for clerical_attendance in clerical_attendance_query:
         Shin = clerical_attendance[0]
 
@@ -514,26 +515,26 @@ def jimu_summary_fulltime(startday, worktype):
             syukkin_holiday_times_0 = []
             over_time_0 = []
 
-            timeoff1 = []
-            timeoff2 = []
-            timeoff3 = []
-            halfway_through1 = []
-            halfway_through2 = []
-            halfway_through3 = []
+            # timeoff1 = []
+            # timeoff2 = []
+            # timeoff3 = []
+            # halfway_through1 = []
+            # halfway_through2 = []
+            # halfway_through3 = []
 
-            on_call_cnt: int
-            on_call_holiday_cnt: int
-            on_call_cnt_cnt: int
-            engel_cnt: int
+            on_call_cnt: int = 0
+            on_call_holiday_cnt: int = 0
+            on_call_cnt_cnt: int = 0
+            engel_cnt: int = 0
 
-            holiday_cnt: int
-            half_holiday_cnt: int
-            late_cnt: int
-            leave_early_cnt: int
-            absence_cnt: int
-            trip_cnt: int
-            half_trip: int
-            reflash_cnt: int
+            holiday_cnt: int = 0
+            half_holiday_cnt: int = 0
+            late_cnt: int = 0
+            leave_early_cnt: int = 0
+            absence_cnt: int = 0
+            trip_cnt: int = 0
+            half_trip_cnt: int = 0
+            reflesh_cnt: int = 0
 
         # if u.CONTRACT_CODE == 2:
         ##### １日基準 #####
@@ -567,13 +568,30 @@ def jimu_summary_fulltime(startday, worktype):
             ToDay,
         )
         dft.other_data()
-        # if Shin.WORKDAY.weekday() in [5, 6]:
-        #     on_call_holiday_cnt += 1
-        # else:
-        #     on_call_cnt += 1
 
-        # if Shin.ONCALL_COUNT > "0":
-        #     on_call_cnt_cnt = int(Shin.ONCALL_COUNT)
+        on_call_holiday_cnt += 1 if Shin.WORKDAY.weekday() in [5, 6] else 0
+        on_call_cnt += 1 if Shin.WORKDAY.weekday() not in [5, 6] else 0
+        on_call_cnt_cnt += (
+            int(Shin.ONCALL_COUNT)
+            if int(Shin.ONCALL_COUNT) > 0 or Shin.ONCALL_COUNT is not None
+            else 0
+        )
+        engel_cnt += 1 if Shin.ENGEL_COUNT == "1" else 0
+
+        holiday_cnt += 1 if Shin.NOTIFICATION == "3" else 0
+        half_holiday_cnt += (
+            1 if Shin.NOTIFICATION == "4" or Shin.NOTIFICATION2 == "4" else 0
+        )
+        late_cnt += 1 if Shin.NOTIFICATION == "1" or Shin.NOTIFICATION2 == "1" else 0
+        leave_early_cnt += (
+            1 if Shin.NOTIFICATION == "2" or Shin.NOTIFICATION2 == "2" else 0
+        )
+        absence_cnt += 1 if Shin.NOTIFICATION in n_absence_list else 0
+        trip_cnt += 1 if Shin.NOTIFICATION == "5" else 0
+        half_trip_cnt += (
+            1 if Shin.NOTIFICATION == "6" or Shin.NOTIFICATION2 == "6" else 0
+        )
+        reflesh_cnt += 1 if Shin.NOTIFICATION == "7" else 0
 
         # tm_off = TimeOffClass(
         #     y,
@@ -593,11 +611,11 @@ def jimu_summary_fulltime(startday, worktype):
         # )
         # tm_off.cnt_time_off()
 
-        dtm = datetime.strptime(Shin.ENDTIME, "%H:%M") - datetime.strptime(
-            Shin.STARTTIME, "%H:%M"
-        )
+        # dtm = datetime.strptime(Shin.ENDTIME, "%H:%M") - datetime.strptime(
+        #     Shin.STARTTIME, "%H:%M"
+        # )
         # リアル実働時間
-        real_time = dtm
+        # real_time = dtm
         # これを抹殺する
         # AttendanceDada[Shin.WORKDAY.day][14] = 0
 

@@ -301,7 +301,7 @@ class Shinsei(db.Model):
     __tablename__ = "M_ATTENDANCE"
     id = db.Column(db.Integer, primary_key=True)
     STAFFID = db.Column(db.Integer, db.ForeignKey("M_LOGGININFO.STAFFID"), index=True)
-    WORKDAY = db.Column(db.String(32), index=True, nullable=True)
+    WORKDAY = db.Column(db.Date(), index=True, nullable=True)
     HOLIDAY = db.Column(db.String(32), index=True, nullable=True)
     STARTTIME = db.Column(db.String(32), index=True, nullable=True)  # 出勤時間
     ENDTIME = db.Column(db.String(32), index=True, nullable=True)  # 退勤時間
