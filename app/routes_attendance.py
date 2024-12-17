@@ -143,21 +143,30 @@ def indextime(STAFFID, intFlg):
         oc_cnt = "hidden"
         eg = "hidden"
         sk = "hidden"
-        bk = "hidden"
+        # これ何？
         othr = "hidden"
+        # 実働
+        bk = "hidden"
     elif u.CONTRACT_CODE != 2 and u.JOBTYPE_CODE == 1:
         oc = ""
         oc_cnt = ""
         eg = ""
         sk = "hidden"
-        bk = ""
         othr = ""
+        bk = ""
     elif u.CONTRACT_CODE != 2 and u.JOBTYPE_CODE > 2:
         oc = "hidden"
         oc_cnt = "hidden"
         eg = "hidden"
         sk = "hidden"
         othr = ""
+        bk = ""
+    elif u.CONTRACT_CODE == 2:
+        oc = "hidden"
+        oc_cnt = "hidden"
+        eg = "hidden"
+        sk = ""
+        othr = "hidden"
         bk = ""
     else:
         oc = "hidden"
@@ -345,8 +354,8 @@ def indextime(STAFFID, intFlg):
                 # 要は土日
                 holiday = "1"
 
-            oncall: int = 0
-            oncall_cnt: str = "0"
+            oncall_check: int = 0
+            oncall_cnt_value: str = "0"
             engel: str = "0"
             alc: int = 0
             # 登録するかの判定
@@ -368,16 +377,17 @@ def indextime(STAFFID, intFlg):
                 # この条件に当てはまれば、消去されない
                 print(f"Insert: {InsertFlg}")
                 if oncall == "on":
-                    oncall = 1
-                    print(f"5: {oncall}")
+                    oncall_check = 1
+                    print(f"On call: {oncall}")
                 if oncall_cnt != "0":
-                    oncall_cnt = oncall_cnt
+                    print(f"On call count: {oncall_cnt}")
+                    oncall_cnt_value = oncall_cnt
                 if engel_cnt != "0":
                     engel = engel_cnt
-                    print(f"9: {engel}")
+                    print(f"Engel: {engel}")
                 if alcohol == "on":
                     alc = 1
-                    print(f"12: {alc}")
+                    print(f"Alcohol: {alc}")
 
                 InsertFlg = 1
                 # else:
@@ -392,8 +402,8 @@ def indextime(STAFFID, intFlg):
                         start_time,
                         finish_time,
                         result_mileage,
-                        oncall,
-                        oncall_cnt,
+                        oncall_check,
+                        oncall_cnt_value,
                         engel,
                         todokede_AM,
                         todokede_PM,
@@ -508,26 +518,6 @@ def indextime(STAFFID, intFlg):
         real_time = dtm
         # 常勤看護師の場合
 
-        # settime = CalcTimeClass(
-        #     dtm,
-        #     Shin.NOTIFICATION,
-        #     Shin.NOTIFICATION2,
-        #     Shin.STARTTIME,
-        #     Shin.ENDTIME,
-        #     Shin.OVERTIME,
-        #     attendace_query.CONTRACT_CODE,
-        #     AttendanceData,
-        #     over_time_0,
-        #     real_time,
-        #     real_time_sum,
-        #     syukkin_holiday_times_0,
-        #     Shin.HOLIDAY,
-        #     attendace_query.JOBTYPE_CODE,
-        #     STAFFID,
-        #     Shin.WORKDAY,
-        #     attendace_query.HOLIDAY_TIME,
-        # )
-        # settime.calc_time()
         # if Shin.STARTTIME != "00:00" and Shin.ENDTIME != "00:00":
         setting_time = calc_time_factory.get_instance(Shin.STAFFID)
         setting_time.set_data(
@@ -555,14 +545,9 @@ def indextime(STAFFID, intFlg):
         print(f"List of over time: {over_time_0}")
         print(f"Nurse holiday work: {syukkin_holiday_times_0}")
 
-        # sum_0 += AttendanceData[Shin.WORKDAY.day][14]
         work_time_sum += actual_work_time
         AttendanceData[Shin.WORKDAY.day]["worktime"] = actual_work_time
         workday_count += 1
-
-        # w_h = calc_real_time // (60 * 60)
-        # """ 24/8/1 修正分 """
-        # w_m = (calc_real_time - w_h * 60 * 60) / (60 * 60)
 
         # print(f"aD worktime: {AttendanceData[Shin.WORKDAY.day]['worktime']}")
 

@@ -177,14 +177,14 @@
               <td class="text-center oncall">
                 <div>
                   <input id="hlf" class="form-control form-control-sm" type="number" name="oncall_cnt{{ ms.m }}"
-                    step="1" inputmode="numeric" pattern="{{ ptn[0] }}" size="2" value="{{ AttendanceData[i][5] }}"
-                    style="text-align:right;font-size:0.9em;" />
+                    step="1" inputmode="numeric" pattern="{{ ptn[0] }}" size="2"
+                    value="{{ AttendanceData[i]['oncall_count'] }}" style="text-align:right;font-size:0.9em;" />
                 </div>
               </td>
               <td class="text-center oncall">
                 <div>
                   <input id="hlf" class="form-control form-control-sm" type="number" name="engel{{ ms.m }}" step="1"
-                    inputmode="numeric" pattern="{{ ptn[0] }}" size="2" value="{{ AttendanceData[i][6] }}"
+                    inputmode="numeric" pattern="{{ ptn[0] }}" size="2" value="{{ AttendanceData[i]['engel_count'] }}"
                     style="text-align:right;font-size:0.9em;" />
                 </div>
               </td>
@@ -252,7 +252,6 @@
                   {% endfor %}
                 </select>
               </td>
-
               <!-- 申請PM -->
               <td class="text-center">
                 <div>
@@ -277,9 +276,9 @@
                   </select>
                 </div>
               </td>
-
+              <!-- 残業 -->
               <td class="text-center">
-                <div>
+                <div {{ othr }}>
                   {% if AttendanceData[i]["over_time"] == "1" %}
 
                   <div class="form-control form-control-sm custom-control custom-checkbox checkbox-lg">

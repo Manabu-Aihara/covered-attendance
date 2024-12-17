@@ -45,7 +45,9 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=360),
 )
 
+# ここをモック化できないだろうか
 app.config.from_object(Config)
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 login = LoginManager(app)

@@ -383,10 +383,6 @@ def jimu_summary_fulltime(startday, worktype):
 
     cfts = CounterForTable.query.all()
 
-    # sum_0 = 0
-    # 全体のカウント、使えない
-    # outer_workday_count = 0
-
     # 年月選択をしたかどうか
     selected_workday: str = ""
     # global y, m, workday_data
@@ -409,13 +405,10 @@ def jimu_summary_fulltime(startday, worktype):
 
     UserID = ""
 
-    timeoff = 0
-    halfway_through = 0
-
     counter_id_list = db.session.query(CounterForTable.STAFFID).all()
+    # 12/16 ここを抹消したい
     for counter_id in counter_id_list:
         cftses = CounterForTable.query.get(counter_id.STAFFID)
-        # print(f"Counter attribute: {cftses.__dict__}")
 
         cftses.ONCALL = 0
         cftses.ONCALL_HOLIDAY = 0
@@ -443,8 +436,9 @@ def jimu_summary_fulltime(startday, worktype):
 
         db.session.commit()
 
-    # print(f"Date type: {type(User.INDAY)}")
+    print(f"Counter attribute: {cftses.__dict__}")
 
+    # print(f"Date type: {type(User.INDAY)}")
     job_form: str
     attendace_qry_obj = AttendanceQuery(jimu_usr.STAFFID, FromDay, ToDay)
     if worktype == "1":
@@ -486,28 +480,26 @@ def jimu_summary_fulltime(startday, worktype):
         if UserID != Shin.STAFFID:
             UserID = Shin.STAFFID
             cnt_for_tbl = CounterForTable.query.get(Shin.STAFFID)
-            # rp_holiday = RecordPaidHoliday.query.get(Shin.STAFFID)
             # AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
             # 各スタッフのカウントになる、不思議
             workday_count = 0
-            # sum_0 = 0
             """ 24/8/22 納得いかないまでも、追加した変数 """
-            time_sum = timedelta(0)
+            time_sum: float = 0.0
             # 各表示初期値
-            oncall = []
-            oncall_holiday = []
-            oncall_cnt = []
-            engel_cnt = []
+            # oncall = []
+            # oncall_holiday = []
+            # oncall_cnt = []
+            # engel_cnt = []
 
-            nenkyu = []
-            nenkyu_half = []
-            tikoku = []
-            soutai = []
-            kekkin = []
-            syuttyou = []
-            syuttyou_half = []
-            reflesh = []
-            s_kyori = []
+            # nenkyu = []
+            # nenkyu_half = []
+            # tikoku = []
+            # soutai = []
+            # kekkin = []
+            # syuttyou = []
+            # syuttyou_half = []
+            # reflesh = []
+            # s_kyori = []
 
             real_time = []
             real_time_sum = []
@@ -515,17 +507,10 @@ def jimu_summary_fulltime(startday, worktype):
             syukkin_holiday_times_0 = []
             over_time_0 = []
 
-            # timeoff1 = []
-            # timeoff2 = []
-            # timeoff3 = []
-            # halfway_through1 = []
-            # halfway_through2 = []
-            # halfway_through3 = []
-
             on_call_cnt: int = 0
             on_call_holiday_cnt: int = 0
             on_call_cnt_cnt: int = 0
-            engel_cnt: int = 0
+            engel_int_cnt: int = 0
 
             holiday_cnt: int = 0
             half_holiday_cnt: int = 0
@@ -535,48 +520,75 @@ def jimu_summary_fulltime(startday, worktype):
             trip_cnt: int = 0
             half_trip_cnt: int = 0
             reflesh_cnt: int = 0
+            distance_sum: float = 0.0
+
+            timeoff: int = 0
+            halfway_through: int = 0
 
         # if u.CONTRACT_CODE == 2:
         ##### １日基準 #####
 
-        dft = DataForTable(
-            y,
-            m,
-            d,
-            Shin.WORKDAY,
-            Shin.ONCALL,
-            Shin.HOLIDAY,
-            Shin.ONCALL_COUNT,
-            Shin.ENGEL_COUNT,
-            Shin.NOTIFICATION,
-            Shin.NOTIFICATION2,
-            Shin.MILEAGE,
-            oncall,
-            oncall_holiday,
-            oncall_cnt,
-            engel_cnt,
-            nenkyu,
-            nenkyu_half,
-            tikoku,
-            soutai,
-            kekkin,
-            syuttyou,
-            syuttyou_half,
-            reflesh,
-            s_kyori,
-            FromDay,
-            ToDay,
-        )
-        dft.other_data()
+        # dft = DataForTable(
+        #     y,
+        #     m,
+        #     d,
+        #     Shin.WORKDAY,
+        #     Shin.ONCALL,
+        #     Shin.HOLIDAY,
+        #     Shin.ONCALL_COUNT,
+        #     Shin.ENGEL_COUNT,
+        #     Shin.NOTIFICATION,
+        #     Shin.NOTIFICATION2,
+        #     Shin.MILEAGE,
+        #     oncall,
+        #     oncall_holiday,
+        #     oncall_cnt,
+        #     engel_cnt,
+        #     nenkyu,
+        #     nenkyu_half,
+        #     tikoku,
+        #     soutai,
+        #     kekkin,
+        #     syuttyou,
+        #     syuttyou_half,
+        #     reflesh,
+        #     s_kyori,
+        #     FromDay,
+        #     ToDay,
+        # )
+        # dft.other_data()
 
-        on_call_holiday_cnt += 1 if Shin.WORKDAY.weekday() in [5, 6] else 0
-        on_call_cnt += 1 if Shin.WORKDAY.weekday() not in [5, 6] else 0
+        on_call_holiday_cnt += (
+            1 if Shin.ONCALL != "0" and Shin.WORKDAY.weekday() in [5, 6] else 0
+        )
+        on_call_cnt += (
+            1 if Shin.ONCALL != "0" and Shin.WORKDAY.weekday() not in [5, 6] else 0
+        )
         on_call_cnt_cnt += (
             int(Shin.ONCALL_COUNT)
-            if int(Shin.ONCALL_COUNT) > 0 or Shin.ONCALL_COUNT is not None
+            if not isinstance(Shin.ONCALL_COUNT, type(None))
+            and Shin.ONCALL_COUNT != ""
+            and Shin.ONCALL_COUNT != "0"
             else 0
         )
-        engel_cnt += 1 if Shin.ENGEL_COUNT == "1" else 0
+        engel_int_cnt += (
+            int(Shin.ENGEL_COUNT)
+            if not isinstance(Shin.ENGEL_COUNT, type(None))
+            and Shin.ENGEL_COUNT != ""
+            and Shin.ENGEL_COUNT != "0"
+            else 0
+        )
+        distance_sum += (
+            float(Shin.MILEAGE)
+            if not isinstance(Shin.MILEAGE, type(None))
+            and Shin.MILEAGE != ""
+            and Shin.MILEAGE != "0.0"
+            else 0
+        )
+        # print(
+        #     f"Inner Count log:\
+        #         {on_call_cnt} {on_call_cnt_cnt} {on_call_holiday_cnt} {engel_int_cnt}"
+        # )
 
         holiday_cnt += 1 if Shin.NOTIFICATION == "3" else 0
         half_holiday_cnt += (
@@ -592,24 +604,9 @@ def jimu_summary_fulltime(startday, worktype):
             1 if Shin.NOTIFICATION == "6" or Shin.NOTIFICATION2 == "6" else 0
         )
         reflesh_cnt += 1 if Shin.NOTIFICATION == "7" else 0
-
-        # tm_off = TimeOffClass(
-        #     y,
-        #     m,
-        #     d,
-        #     Shin.WORKDAY,
-        #     Shin.NOTIFICATION,
-        #     Shin.NOTIFICATION2,
-        #     timeoff1,
-        #     timeoff2,
-        #     timeoff3,
-        #     halfway_through1,
-        #     halfway_through2,
-        #     halfway_through3,
-        #     FromDay,
-        #     ToDay,
-        # )
-        # tm_off.cnt_time_off()
+        print(
+            f"Inner Count log: {holiday_cnt} {half_holiday_cnt} {late_cnt} {leave_early_cnt} {absence_cnt} {trip_cnt} {half_trip_cnt}"
+        )
 
         # dtm = datetime.strptime(Shin.ENDTIME, "%H:%M") - datetime.strptime(
         #     Shin.STARTTIME, "%H:%M"
@@ -667,34 +664,34 @@ def jimu_summary_fulltime(startday, worktype):
             # print(f"Nurse holiday: {syukkin_holiday_times_0}")
 
         ##### データベース貯蔵 #####
-        ln_oncall = len(oncall)
-        ln_oncall_holiday = len(oncall_holiday)
+        # ln_oncall = len(oncall)
+        # ln_oncall_holiday = len(oncall_holiday)
 
-        ln_oncall_cnt = 0
-        for oc in oncall_cnt:
-            if str.isnumeric(oc):
-                ln_oncall_cnt += int(oc)
+        # ln_oncall_cnt = 0
+        # for oc in oncall_cnt:
+        #     if str.isnumeric(oc):
+        #         ln_oncall_cnt += int(oc)
 
-        ln_engel_cnt = 0
-        for ac in engel_cnt:
-            if str.isnumeric(ac):
-                ln_engel_cnt += int(ac)
+        # ln_engel_cnt = 0
+        # for ac in engel_cnt:
+        #     if str.isnumeric(ac):
+        #         ln_engel_cnt += int(ac)
 
-        ln_nenkyu = len(nenkyu)
-        ln_nenkyu_half = len(nenkyu_half)
-        ln_tikoku = len(tikoku)
-        ln_soutai = len(soutai)
-        ln_kekkin = len(kekkin)
-        ln_syuttyou = len(syuttyou)
-        ln_syuttyou_half = len(syuttyou_half)
-        ln_reflesh = len(reflesh)
+        # ln_nenkyu = len(nenkyu)
+        # ln_nenkyu_half = len(nenkyu_half)
+        # ln_tikoku = len(tikoku)
+        # ln_soutai = len(soutai)
+        # ln_kekkin = len(kekkin)
+        # ln_syuttyou = len(syuttyou)
+        # ln_syuttyou_half = len(syuttyou_half)
+        # ln_reflesh = len(reflesh)
 
-        ln_s_kyori: float = 0.0
+        # ln_s_kyori: float = 0.0
         # for s in s_kyori:
         #     if is_integer_num(s):
         #         ln_s_kyori += float(s)
-        float_list: List[float] = [float(x) for x in s_kyori]
-        ln_s_kyori = math.fsum(float_list)
+        # float_list: List[float] = [float(x) for x in s_kyori]
+        # ln_s_kyori = math.fsum(float_list)
 
         # for n in range(len(syukkin_times_0)):
         #     if is_integer_num(syukkin_times_0[n]):
@@ -705,69 +702,65 @@ def jimu_summary_fulltime(startday, worktype):
         # work_time_sum_60: float = 0.0
         # 🙅 work_time_sum_60 += AttendanceDada[Shin.WORKDAY.day][14]
 
-        time_sum += actual_work_time
-        workday_count += 1 if time_sum != timedelta(0) else workday_count
+        actual_second = actual_work_time.total_seconds()
+        workday_count += 1 if actual_second != 0.0 else workday_count
 
-        w_h = time_sum.total_seconds() // (60 * 60)
-        w_m = (time_sum.total_seconds() - w_h * 60 * 60) // 60
-
+        time_sum += actual_second
+        time_sum_normal = time_sum / 3600
         # 実働時間計：10進数
-        time_sum10 = w_h + w_m / (60 * 60)
-        sum10_rnd = Decimal(time_sum10).quantize(Decimal("0.01"), ROUND_HALF_UP)
+        time_sum_rnd = Decimal(time_sum_normal).quantize(Decimal("0.01"), ROUND_HALF_UP)
 
-        # w_m_60 = w_m * 60 / 100
+        w_h = time_sum // (60 * 60)
+        w_m = (time_sum - w_h * 60 * 60) // 60
         # 実労働時間計：60進数
         time_sum60 = w_h + w_m / 100
-        # sum60_rnd = Decimal(time_sum60).quantize(Decimal("0.01"), ROUND_HALF_UP)
 
-        real_sum = 0
-        for n in range(len(real_time_sum)):
-            real_sum += real_time_sum[n]
+        real_sum: float = 0.0
+        # for n in range(len(real_time_sum)):
+        #     real_sum += real_time_sum[n]
+        real_sum = sum(real_time_sum)
         w_h = real_sum // (60 * 60)
         w_m = (real_sum - w_h * 60 * 60) // 60
+        # リアル労働時間計：60進数
         real_time = w_h + w_m / 100
         # real_time_10 = real_sum / (60 * 60)
+
         """ 24/8/20 変更分 """
         # w_m = (real_sum - w_h * 60 * 60) / (60 * 60)
         # real_time_lengthy = w_h + w_m
         # real_time = Decimal(real_time_lengthy).quantize(Decimal("0.01"), ROUND_HALF_UP)
 
-        sum_over_0 = 0
-        for n in range(len(over_time_0)):
-            if not over_time_0[n]:
-                sum_over_0 = sum_over_0
-            else:
-                sum_over_0 += over_time_0[n]
+        sum_over_0: float = 0.0
+        # for n in range(len(over_time_0)):
+        #     if not over_time_0[n]:
+        #         sum_over_0 = sum_over_0
+        #     else:
+        #         sum_over_0 += over_time_0[n]
+        sum_over_0 = sum(over_time_0)
         o_h = sum_over_0 // (60 * 60)
         o_m = (sum_over_0 - o_h * 60 * 60) // 60
+        # 残業時間計：60進数
         over_60 = o_h + o_m / 100
+
         over_10 = sum_over_0 / (60 * 60)
+        # 残業時間計：10進数
         over10_rnd = Decimal(over_10).quantize(Decimal("0.01"), ROUND_HALF_UP)
 
-        sum_hol_0 = 0
-        for t in syukkin_holiday_times_0:
-            sum_hol_0 += t
+        sum_hol_0: float = 0.0
+        # for t in syukkin_holiday_times_0:
+        #     sum_hol_0 += t
+        sum_hol_0 = sum(syukkin_holiday_times_0)
         h_h = sum_hol_0 // (60 * 60)
         h_m = (sum_hol_0 - h_h * 60 * 60) // 60
+        # 看護師休日労働時間計：60進数
         holiday_work_60 = h_h + h_m / 100
+
+        # 看護師休日労働時間計：10進数
         holiday_work_10 = sum_hol_0 / (60 * 60)
         holiday_work10_rnd = Decimal(holiday_work_10).quantize(
             Decimal("0.01"), ROUND_HALF_UP
         )
 
-        # workday_count = len(syukkin_times_0)
-
-        # sum_timeoff1 = len(timeoff1)
-        # sum_timeoff2 = len(timeoff2)
-        # sum_timeoff3 = len(timeoff3)
-        # timeoff = sum_timeoff1 + sum_timeoff2 * 2 + sum_timeoff3 * 3
-
-        # sum_halfway_through1 = len(halfway_through1)
-        # sum_halfway_through2 = len(halfway_through2)
-        # sum_halfway_through3 = len(halfway_through3)
-        # halfway_through = (
-        #     sum_halfway_through1 + sum_halfway_through2 * 2 + sum_halfway_through3 * 3
-        # )
         sum_dict: Dict[str, int] = output_rest_time(
             Shin.NOTIFICATION, Shin.NOTIFICATION2
         )
@@ -776,26 +769,38 @@ def jimu_summary_fulltime(startday, worktype):
 
         if cnt_for_tbl:
             cnt_for_tbl.SUM_WORKTIME = time_sum60
-            cnt_for_tbl.SUM_WORKTIME_10 = sum10_rnd
+            cnt_for_tbl.SUM_WORKTIME_10 = time_sum_rnd
             cnt_for_tbl.OVERTIME = over_60
             cnt_for_tbl.SUM_REAL_WORKTIME = real_time
             cnt_for_tbl.WORKDAY_COUNT = workday_count
             cnt_for_tbl.OVERTIME_10 = over10_rnd
             cnt_for_tbl.HOLIDAY_WORK = holiday_work_60
             cnt_for_tbl.HOLIDAY_WORK_10 = holiday_work10_rnd
-            cnt_for_tbl.ONCALL = ln_oncall
-            cnt_for_tbl.ONCALL_HOLIDAY = ln_oncall_holiday
-            cnt_for_tbl.ONCALL_COUNT = ln_oncall_cnt
-            cnt_for_tbl.ENGEL_COUNT = ln_engel_cnt
-            cnt_for_tbl.NENKYU = ln_nenkyu
-            cnt_for_tbl.NENKYU_HALF = ln_nenkyu_half
-            cnt_for_tbl.TIKOKU = ln_tikoku
-            cnt_for_tbl.SOUTAI = ln_soutai
-            cnt_for_tbl.KEKKIN = ln_kekkin
-            cnt_for_tbl.SYUTTYOU = ln_syuttyou
-            cnt_for_tbl.SYUTTYOU_HALF = ln_syuttyou_half
-            cnt_for_tbl.REFLESH = ln_reflesh
-            cnt_for_tbl.MILEAGE = ln_s_kyori
+            # cnt_for_tbl.ONCALL = ln_oncall
+            # cnt_for_tbl.ONCALL_HOLIDAY = ln_oncall_holiday
+            # cnt_for_tbl.ONCALL_COUNT = ln_oncall_cnt
+            # cnt_for_tbl.ENGEL_COUNT = ln_engel_cnt
+            # cnt_for_tbl.NENKYU = ln_nenkyu
+            # cnt_for_tbl.NENKYU_HALF = ln_nenkyu_half
+            # cnt_for_tbl.TIKOKU = ln_tikoku
+            # cnt_for_tbl.SOUTAI = ln_soutai
+            # cnt_for_tbl.KEKKIN = ln_kekkin
+            # cnt_for_tbl.SYUTTYOU = ln_syuttyou
+            # cnt_for_tbl.SYUTTYOU_HALF = ln_syuttyou_half
+            # cnt_for_tbl.REFLESH = ln_reflesh
+            cnt_for_tbl.ONCALL = on_call_cnt
+            cnt_for_tbl.ONCALL_HOLIDAY = on_call_holiday_cnt
+            cnt_for_tbl.ONCALL_COUNT = on_call_cnt_cnt
+            cnt_for_tbl.ENGEL_COUNT = engel_int_cnt
+            cnt_for_tbl.NENKYU = holiday_cnt
+            cnt_for_tbl.NENKYU_HALF = half_holiday_cnt
+            cnt_for_tbl.TIKOKU = late_cnt
+            cnt_for_tbl.SOUTAI = leave_early_cnt
+            cnt_for_tbl.KEKKIN = absence_cnt
+            cnt_for_tbl.SYUTTYOU = trip_cnt
+            cnt_for_tbl.SYUTTYOU_HALF = half_trip_cnt
+            cnt_for_tbl.REFLESH = reflesh_cnt
+            cnt_for_tbl.MILEAGE = distance_sum
             cnt_for_tbl.TIMEOFF = timeoff
             cnt_for_tbl.HALFWAY_THROUGH = halfway_through
 
@@ -806,16 +811,16 @@ def jimu_summary_fulltime(startday, worktype):
 
     today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
-    print(f"Totalling item count: {totalling_counter}")
-    print(f"Both length: {len(null_checked_users)} {len(cfts)}")
-    c_profile.disable()
-    c_stats = pstats.Stats(c_profile)
-    c_stats.sort_stats("cumtime").print_stats(20)
+    # print(f"Totalling item count: {totalling_counter}")
+    # print(f"Both length: {len(null_checked_users)} {len(cfts)}")
+    # c_profile.disable()
+    # c_stats = pstats.Stats(c_profile)
+    # c_stats.sort_stats("cumtime").print_stats(20)
 
     end_time = time.perf_counter()
     run_time = end_time - start_time
     pref_result = f"{today}'| 実行時間'{str(run_time)}'秒'"
-    syslog.syslog(pref_result)
+    print(pref_result)
 
     return render_template(
         "attendance/jimu_summary_fulltime_diff.html",

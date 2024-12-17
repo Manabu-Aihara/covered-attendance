@@ -203,10 +203,6 @@ class DataForTable:
                 self.s_kyori.append(str(self.sh_mileage))
 
 
-# def strategy_notification(notification_am: Optional[str], notification_pm: Optional[str]):
-#     n_absence_list: List[str] = ["8", "17", "18", "19", "20"]
-
-
 @dataclass
 class ContractTimeClass:
     # staff_id: Optional[int]
@@ -482,7 +478,7 @@ class CalcTimeClass:
             elif notification in self.n_absence_list:
                 return timedelta(0)
             else:
-                print(f"'-'check!: {self.provide_half_rest()}")
+                print(f"check!: {self.provide_half_rest()}")
                 return (
                     input_work_time
                     + (
@@ -556,6 +552,7 @@ class CalcTimeFactory:
 # ************************************** 時間休カウント ********************************************#
 
 
+# @lru_cache
 def output_rest_time(notification_am: Optional[str], notification_pm: Optional[str]):
     # def output_rest_time(*notifications: str) -> Dict[str, int]:
     n_time_list: List[int] = [1, 2, 3]
