@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKeyConstraint
+from sqlalchemy import ForeignKeyConstraint, PrimaryKeyConstraint, UniqueConstraint
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
@@ -484,13 +484,16 @@ class TimeAttendance(db.Model):  ##### 実働時間計算結果ダンプ
 
 class CounterForTable(db.Model):
     __tablename__ = "D_COUNTER_FOR_TABLE"
+    # __table_args__ = (PrimaryKeyConstraint("STAFFID", "YEAR_MONTH", name="staff_date"),)
+    id = db.Column(db.Integer, primary_key=True)
     STAFFID = db.Column(
         db.Integer,
         db.ForeignKey("M_STAFFINFO.STAFFID"),
-        primary_key=True,
+        # primary_key=True,
         index=True,
         nullable=False,
     )
+    YEAR_MONTH = db.Column(db.String(10), index=True, nullable=False)
     ONCALL = db.Column(db.Integer, index=True, nullable=True)
     ONCALL_HOLIDAY = db.Column(db.Integer, index=True, nullable=True)
     ONCALL_COUNT = db.Column(db.Integer, index=True, nullable=True)
@@ -514,6 +517,11 @@ class CounterForTable(db.Model):
     HOLIDAY_WORK_10 = db.Column(db.Float, index=True, nullable=True)
     TIMEOFF = db.Column(db.Integer, index=True, nullable=True)
     HALFWAY_THROUGH = db.Column(db.Integer, index=True, nullable=True)
+
+    def __init__(self, staff_id: int):
+        super().__init__()
+        self.STAFFID = staff_id
+        # self.YEAR_MONTH = year_month
 
 
 class SystemInfo(db.Model):

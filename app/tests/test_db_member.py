@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import or_, and_
 from sqlalchemy.sql import func
 
-from app import db
+from app import db, external_db
 from app.models import (
     User,
     Busho,
@@ -13,6 +13,7 @@ from app.models import (
     Shinsei,
     D_JOB_HISTORY,
     D_HOLIDAY_HISTORY,
+    CounterForTable,
 )
 from app.forms import AddDataUserForm
 from app.jimu_oncall_count import get_more_condition_users
@@ -122,6 +123,52 @@ def test_count_three_if():
     assert cnt2 == 5
 
 
+@pytest.mark.skip
+def test_output_from_table_key(app_context):
+    count_table_obj = (
+        db.session.query(CounterForTable)
+        .filter(
+            and_(
+                CounterForTable.STAFFID == 20,
+                or_(
+                    CounterForTable.YEAR_MONTH == "202410",
+                    CounterForTable.YEAR_MONTH == "",
+                ),
+            )
+        )
+        .first()
+    )
+    count_empty_obj = CounterForTable(78)
+    # print(CounterForTable.__table_args__)
+    print(count_table_obj.__dict__.keys())
+    # print(count_empty_obj.__table__.c.keys())
+    for k in count_empty_obj.__table__.c.keys():
+        if k in count_table_obj.__dict__.keys():
+            if k != "id":
+                setattr(count_empty_obj, k, count_table_obj.__dict__.get(k))
+            # setattr(count_empty_obj, k, "202411")
+
+    # print(count_empty_obj.__dict__)
+
+    db.session.add(count_empty_obj)
+    db.session.commit()
+
+
+def test_pass_parse(app_context):
+    counter_month_list = (
+        db.session.query(CounterForTable)
+        .filter(CounterForTable.YEAR_MONTH == "20249")
+        .all()
+    )
+
+    if len(counter_month_list) == 0:
+        # print(len(counter_month_list))
+        print(f"{[cm.id for cm in counter_month_list]}")
+        return
+
+    print("No passing")
+
+
 @pytest.fixture(name="cat_works")
 def get_cat_attendance_member(app_context):
     filters = []
@@ -170,6 +217,9 @@ def test_compare_db_item(app_context):
     print(result_list)
 
 
+""" jimu_oncall_count.py::get_more_condition_users """
+
+
 @pytest.fixture
 def condition_users(app_context):
     sample_users = (
@@ -193,6 +243,9 @@ def test_raise_more_condition_users(condition_users):
     with pytest.raises(TypeError) as except_info:
         get_more_condition_users(condition_users, "INDAY", "OUTDAY")
     print(except_info.value)
+
+
+""" From attendace_query_class.py """
 
 
 @pytest.fixture(name="aq")

@@ -547,7 +547,8 @@ def indextime(STAFFID, intFlg):
 
         work_time_sum += actual_work_time
         AttendanceData[Shin.WORKDAY.day]["worktime"] = actual_work_time
-        workday_count += 1
+        actual_second = actual_work_time.total_seconds()
+        workday_count += 1 if actual_second != 0.0 else 0
 
         # print(f"aD worktime: {AttendanceData[Shin.WORKDAY.day]['worktime']}")
 

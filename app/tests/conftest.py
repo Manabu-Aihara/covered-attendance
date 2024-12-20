@@ -27,3 +27,13 @@ def app_context():
     with app.app_context():
         db.create_all()
         yield
+
+
+from app import app2, external_db
+
+
+@pytest.fixture
+def app2_context():
+    with app2.app_context():
+        external_db.create_all()
+        yield
