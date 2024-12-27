@@ -485,7 +485,7 @@ class TimeAttendance(db.Model):  ##### 実働時間計算結果ダンプ
 class CounterForTable(db.Model):
     __tablename__ = "D_COUNTER_FOR_TABLE"
     # __table_args__ = (PrimaryKeyConstraint("STAFFID", "YEAR_MONTH", name="staff_date"),)
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(10), primary_key=True)
     STAFFID = db.Column(
         db.Integer,
         db.ForeignKey("M_STAFFINFO.STAFFID"),
@@ -521,7 +521,6 @@ class CounterForTable(db.Model):
     def __init__(self, staff_id: int):
         super().__init__()
         self.STAFFID = staff_id
-        # self.YEAR_MONTH = year_month
 
 
 class SystemInfo(db.Model):

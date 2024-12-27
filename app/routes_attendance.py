@@ -43,7 +43,7 @@ from app.models import (
 )
 from app.attendance_classes import AttendanceAnalysys
 from app.calender_classes import MakeCalender
-from app.calc_work_classes2 import DataForTable, CalcTimeFactory, get_last_date
+from app.calc_work_classes2 import CalcTimeFactory, get_last_date
 from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
 from app.attendance_query_class import AttendanceQuery
 
@@ -262,26 +262,6 @@ def indextime(STAFFID, intFlg):
             template1 = template.TEMPLATE_NO
         else:
             template2 = template.TEMPLATE_NO
-
-    onc = []
-    onc_1 = []
-    onc_2 = []
-    onc_3 = []
-    onc_4 = []
-    onc_5 = []
-    onc_6 = []
-    onc_7 = []
-    onc_8 = []
-
-    length_oncall = len(onc)
-    length_oncall_1 = len(onc_1)
-    length_oncall_2 = len(onc_2)
-    length_oncall_3 = len(onc_3)
-    length_oncall_4 = len(onc_4)
-    length_oncall_5 = len(onc_5)
-    length_oncall_6 = len(onc_6)
-    length_oncall_7 = len(onc_7)
-    length_oncall_8 = len(onc_8)
 
     reload_y = ""
     ##### 保存ボタン押下処理（１日始まり） 打刻ページ表示で使用 #####
@@ -567,13 +547,13 @@ def indextime(STAFFID, intFlg):
     # working_time = w_h + w_m
     # working_time_10 = sum_0 / (60 * 60)
 
-    sum_over_0 = 0.0
-    for n in range(len(over_time_0)):
-        sum_over_0 += over_time_0[n]
-    o_h = sum_over_0 // (60 * 60)
-    o_m = (sum_over_0 - o_h * 60 * 60) // 60
-    over = o_h + o_m / 100
-    over_10 = sum_over_0 / (60 * 60)
+    # sum_over_0 = 0.0
+    # for n in range(len(over_time_0)):
+    #     sum_over_0 += over_time_0[n]
+    # o_h = sum_over_0 // (60 * 60)
+    # o_m = (sum_over_0 - o_h * 60 * 60) // 60
+    # over = o_h + o_m / 100
+    # over_10 = sum_over_0 / (60 * 60)
 
     sum_hol_0 = 0
     for n in range(len(syukkin_holiday_times_0)):
@@ -621,18 +601,9 @@ def indextime(STAFFID, intFlg):
         cnt_attemdance=cnt_attemdance,
         reload_y=reload_y,
         stf_login=stf_login,
-        length_oncall=length_oncall,
         team=team,
         jobtype=jobtype,
         team_name=team_name,
-        length_oncall_1=length_oncall_1,
-        length_oncall_2=length_oncall_2,
-        length_oncall_3=length_oncall_3,
-        length_oncall_4=length_oncall_4,
-        length_oncall_5=length_oncall_5,
-        length_oncall_6=length_oncall_6,
-        length_oncall_7=length_oncall_7,
-        length_oncall_8=length_oncall_8,
         dsp_page=dsp_page,
         STAFFID=STAFFID,
         template1=template1,

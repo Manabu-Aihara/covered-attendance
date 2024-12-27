@@ -16,31 +16,10 @@ from datetime import datetime, timedelta, time
 from decimal import Decimal, ROUND_HALF_UP
 import calendar
 import jpholiday
-from dateutil.relativedelta import relativedelta
-from monthdelta import monthmod
 
-from flask import render_template, flash, redirect, request, session
-from flask.helpers import url_for
-from flask_login.utils import login_required
 from flask_login import current_user, login_user
-from flask_login import logout_user
-from flask import abort
-from werkzeug.urls import url_parse
-from werkzeug.security import generate_password_hash
-from sqlalchemy import and_
-from sqlalchemy.sql import func
 
 from app import app, db
-from app.forms import (
-    LoginForm,
-    AdminUserCreateForm,
-    ResetPasswordForm,
-    DelForm,
-    UpdateForm,
-    SaveForm,
-    AddDataUserForm,
-    SelectMonthForm,
-)
 from app.models import (
     User,
     Shinsei,
@@ -82,125 +61,125 @@ def get_last_date(year, month):
 
 
 # ***** 各勤怠カウント計算ひな形（１日基準） *****#
-class DataForTable:
-    def __init__(
-        self,
-        y,
-        m,
-        d,
-        sh_workday,
-        sh_oncall,
-        sh_holiday,
-        sh_oncall_count,
-        sh_engel_count,
-        sh_notification,
-        sh_notification_pm,
-        sh_mileage,
-        oncall,
-        oncall_holiday,
-        oncall_cnt,
-        engel_cnt,
-        nenkyu,
-        nenkyu_half,
-        tikoku,
-        soutai,
-        kekkin,
-        syuttyou,
-        syuttyou_half,
-        reflesh,
-        s_kyori,
-        startday,
-        today,
-    ):
-        self.y = y
-        self.m = m
-        self.d = d
-        self.sh_workday = sh_workday
-        self.sh_oncall = sh_oncall
-        self.sh_holiday = sh_holiday
-        self.sh_oncall_count = sh_oncall_count
-        self.sh_engel_count = sh_engel_count
-        self.sh_notification = sh_notification
-        self.sh_notification_pm = sh_notification_pm
-        self.sh_mileage = sh_mileage
-        self.oncall = oncall
-        self.oncall_holiday = oncall_holiday
-        self.oncall_cnt = oncall_cnt
-        self.engel_cnt = engel_cnt
-        self.nenkyu = nenkyu
-        self.nenkyu_half = nenkyu_half
-        self.tikoku = tikoku
-        self.soutai = soutai
-        self.kekkin = kekkin
-        self.syuttyou = syuttyou
-        self.syuttyou_half = syuttyou_half
-        self.reflesh = reflesh
-        self.s_kyori = s_kyori
-        self.startday = startday
-        self.today = today
+# class DataForTable:
+#     def __init__(
+#         self,
+#         y,
+#         m,
+#         d,
+#         sh_workday,
+#         sh_oncall,
+#         sh_holiday,
+#         sh_oncall_count,
+#         sh_engel_count,
+#         sh_notification,
+#         sh_notification_pm,
+#         sh_mileage,
+#         oncall,
+#         oncall_holiday,
+#         oncall_cnt,
+#         engel_cnt,
+#         nenkyu,
+#         nenkyu_half,
+#         tikoku,
+#         soutai,
+#         kekkin,
+#         syuttyou,
+#         syuttyou_half,
+#         reflesh,
+#         s_kyori,
+#         startday,
+#         today,
+#     ):
+#         self.y = y
+#         self.m = m
+#         self.d = d
+#         self.sh_workday = sh_workday
+#         self.sh_oncall = sh_oncall
+#         self.sh_holiday = sh_holiday
+#         self.sh_oncall_count = sh_oncall_count
+#         self.sh_engel_count = sh_engel_count
+#         self.sh_notification = sh_notification
+#         self.sh_notification_pm = sh_notification_pm
+#         self.sh_mileage = sh_mileage
+#         self.oncall = oncall
+#         self.oncall_holiday = oncall_holiday
+#         self.oncall_cnt = oncall_cnt
+#         self.engel_cnt = engel_cnt
+#         self.nenkyu = nenkyu
+#         self.nenkyu_half = nenkyu_half
+#         self.tikoku = tikoku
+#         self.soutai = soutai
+#         self.kekkin = kekkin
+#         self.syuttyou = syuttyou
+#         self.syuttyou_half = syuttyou_half
+#         self.reflesh = reflesh
+#         self.s_kyori = s_kyori
+#         self.startday = startday
+#         self.today = today
 
-    def other_data(self):
-        if self.startday <= self.sh_workday and self.today >= self.sh_workday:
-            # オンコール当番
-            if self.sh_oncall == "1":
+#     def other_data(self):
+#         if self.startday <= self.sh_workday and self.today >= self.sh_workday:
+#             # オンコール当番
+#             if self.sh_oncall == "1":
 
-                if self.sh_workday.weekday() == 5 or self.sh_workday.weekday() == 6:
-                    # 土日オンコール当番
-                    self.oncall_holiday.append("cnt")
-                else:
-                    self.oncall.append("cnt")
+#                 if self.sh_workday.weekday() == 5 or self.sh_workday.weekday() == 6:
+#                     # 土日オンコール当番
+#                     self.oncall_holiday.append("cnt")
+#                 else:
+#                     self.oncall.append("cnt")
 
-            # オンコール対応件数
-            if self.sh_oncall_count:
-                self.oncall_cnt.append(str(self.sh_oncall_count))
-            # エンゼルケア対応件数
-            if self.sh_engel_count:
-                self.engel_cnt.append(str(self.sh_engel_count))
-            # 年休日数（全日）
-            if self.sh_notification == "3":
-                self.nenkyu.append("cnt")
-            # 年休日数（半日）
-            if self.sh_notification == "4" or self.sh_notification == "16":
-                self.nenkyu_half.append("cnt")
-            # 年休日数（半日）
-            if self.sh_notification_pm == "4" or self.sh_notification_pm == "16":
-                self.nenkyu_half.append("cnt")
-            # 遅刻回数
-            if self.sh_notification == "1":
-                self.tikoku.append("cnt")
-            # 遅刻回数
-            if self.sh_notification_pm == "1":
-                self.tikoku.append("cnt")
-            # 早退回数
-            if self.sh_notification == "2":
-                self.soutai.append("cnt")
-            # 早退回数
-            if self.sh_notification_pm == "2":
-                self.soutai.append("cnt")
-            # 欠勤日数
-            if (
-                self.sh_notification == "8"
-                or self.sh_notification == "17"
-                or self.sh_notification == "18"
-                or self.sh_notification == "19"
-                or self.sh_notification == "20"
-            ):
-                self.kekkin.append("cnt")
-            # 出張（全日）回数
-            if self.sh_notification == "5":
-                self.syuttyou.append("cnt")
-            # 出張（半日）回数
-            if self.sh_notification == "6":
-                self.syuttyou_half.append("cnt")
-            # 出張（半日）回数
-            if self.sh_notification_pm == "6":
-                self.syuttyou_half.append("cnt")
-            # リフレッシュ休暇日数
-            if self.sh_notification == "7":
-                self.reflesh.append("cnt")
-            # 走行距離
-            if self.sh_mileage:
-                self.s_kyori.append(str(self.sh_mileage))
+#             # オンコール対応件数
+#             if self.sh_oncall_count:
+#                 self.oncall_cnt.append(str(self.sh_oncall_count))
+#             # エンゼルケア対応件数
+#             if self.sh_engel_count:
+#                 self.engel_cnt.append(str(self.sh_engel_count))
+#             # 年休日数（全日）
+#             if self.sh_notification == "3":
+#                 self.nenkyu.append("cnt")
+#             # 年休日数（半日）
+#             if self.sh_notification == "4" or self.sh_notification == "16":
+#                 self.nenkyu_half.append("cnt")
+#             # 年休日数（半日）
+#             if self.sh_notification_pm == "4" or self.sh_notification_pm == "16":
+#                 self.nenkyu_half.append("cnt")
+#             # 遅刻回数
+#             if self.sh_notification == "1":
+#                 self.tikoku.append("cnt")
+#             # 遅刻回数
+#             if self.sh_notification_pm == "1":
+#                 self.tikoku.append("cnt")
+#             # 早退回数
+#             if self.sh_notification == "2":
+#                 self.soutai.append("cnt")
+#             # 早退回数
+#             if self.sh_notification_pm == "2":
+#                 self.soutai.append("cnt")
+#             # 欠勤日数
+#             if (
+#                 self.sh_notification == "8"
+#                 or self.sh_notification == "17"
+#                 or self.sh_notification == "18"
+#                 or self.sh_notification == "19"
+#                 or self.sh_notification == "20"
+#             ):
+#                 self.kekkin.append("cnt")
+#             # 出張（全日）回数
+#             if self.sh_notification == "5":
+#                 self.syuttyou.append("cnt")
+#             # 出張（半日）回数
+#             if self.sh_notification == "6":
+#                 self.syuttyou_half.append("cnt")
+#             # 出張（半日）回数
+#             if self.sh_notification_pm == "6":
+#                 self.syuttyou_half.append("cnt")
+#             # リフレッシュ休暇日数
+#             if self.sh_notification == "7":
+#                 self.reflesh.append("cnt")
+#             # 走行距離
+#             if self.sh_mileage:
+#                 self.s_kyori.append(str(self.sh_mileage))
 
 
 @dataclass

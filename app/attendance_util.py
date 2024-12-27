@@ -7,18 +7,18 @@ from app import db
 from app.models import Busho, KinmuTaisei, Post, Team, Jobtype
 
 
-def get_month_workday(selected_date: str = "") -> Tuple[int, int, str]:
+def get_month_workday(selected_date: str) -> Tuple[int, int]:
     if selected_date:
         select_year = datetime.strptime(selected_date, "%Y-%m").year
         select_month = datetime.strptime(selected_date, "%Y-%m").month
-        session["workday_data"] = selected_date
-        workday_date = session["workday_data"]
+        # session["workday_data"] = selected_date
+        # workday_date = session["workday_data"]
     else:
         select_year = datetime.today().year
         select_month = datetime.today().month
-        workday_date = datetime.today().strftime("%Y-%m")
+        # workday_date = datetime.today().strftime("%Y-%m")
 
-    return select_year, select_month, workday_date
+    return select_year, select_month
 
 
 """

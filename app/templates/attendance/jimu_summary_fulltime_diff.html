@@ -4,12 +4,16 @@
 <h3>{{ job_form }}職員一覧画面（{{ startday }}日基準）　　　対象期間：　{{ FromDay }}　～　{{ ToDay }}</span></h3>
 <hr>
 <div>
-  <form method="POST" action="{{ url_for('jimu_summary_fulltime', startday=startday, worktype=worktype) }}">
+  <form method="post" action="{{ url_for('calcrate_month_data', startday=startday, worktype=worktype) }}">
     {{ form_month.csrf_token }}
-    <input type="{{ typ[1] }}" id="select_month" class="h5" name="workday_name" value="{{ workday_data }}">
+    <input type="text" id="select_month" class="h5" name="year-month" value="{{ y_and_m }}">
     {{ wtf.form_field(form_month.slct, class="btn btn-primary") }}
   </form>
   <p>{{ str_workday }}</p>
+  <form method="post" action="{{ url_for('calcrate_month_data', startday=startday, worktype=worktype) }}">
+    <input type="text" name="year-month" value="{{ y_and_m }}">
+    <input type="submit" value="再集計">
+  </form>
 </div>
 <br>
 <br>
