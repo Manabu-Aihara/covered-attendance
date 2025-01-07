@@ -18,7 +18,10 @@ def get_month_workday(selected_date: str) -> Tuple[int, int]:
         select_month = datetime.today().month
         # workday_date = datetime.today().strftime("%Y-%m")
 
-    return select_year, select_month
+    return (
+        select_year,
+        select_month,
+    )
 
 
 """

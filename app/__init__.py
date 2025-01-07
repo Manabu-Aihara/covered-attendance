@@ -15,7 +15,6 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 from jinja2 import Environment
 
 from config import Config
-from configMock import ConfigPanda
 
 # loggerを定義
 logger = logging.getLogger(__name__)
@@ -65,10 +64,10 @@ log_handler = logging.FileHandler(LOGFILE_NAME)
 log_handler.setLevel(logging.DEBUG)
 app.logger.addHandler(log_handler)
 
-app2 = Flask(__name__)
-app2.config.from_object(ConfigPanda)
-external_db = SQLAlchemy()
-external_db.init_app(app2)
+# app2 = Flask(__name__)
+# app2.config.from_object(ConfigPanda)
+# external_db = SQLAlchemy()
+# external_db.init_app(app2)
 
 from app import routes, models, errors
 from app import routes_sub

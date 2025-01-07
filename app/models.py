@@ -484,12 +484,45 @@ class TimeAttendance(db.Model):  ##### 実働時間計算結果ダンプ
 
 class CounterForTable(db.Model):
     __tablename__ = "D_COUNTER_FOR_TABLE"
+    STAFFID = db.Column(
+        db.Integer,
+        db.ForeignKey("M_STAFFINFO.STAFFID"),
+        primary_key=True,
+        index=True,
+        nullable=False,
+    )
+    ONCALL = db.Column(db.Integer, index=True, nullable=True)
+    ONCALL_HOLIDAY = db.Column(db.Integer, index=True, nullable=True)
+    ONCALL_COUNT = db.Column(db.Integer, index=True, nullable=True)
+    ENGEL_COUNT = db.Column(db.Integer, index=True, nullable=True)
+    NENKYU = db.Column(db.Integer, index=True, nullable=True)
+    NENKYU_HALF = db.Column(db.Integer, index=True, nullable=True)
+    TIKOKU = db.Column(db.Integer, index=True, nullable=True)
+    SOUTAI = db.Column(db.Integer, index=True, nullable=True)
+    KEKKIN = db.Column(db.Integer, index=True, nullable=True)
+    SYUTTYOU = db.Column(db.Integer, index=True, nullable=True)
+    SYUTTYOU_HALF = db.Column(db.Integer, index=True, nullable=True)
+    REFLESH = db.Column(db.Integer, index=True, nullable=True)
+    MILEAGE = db.Column(db.Float, index=True, nullable=True)
+    SUM_WORKTIME = db.Column(db.Float, index=True, nullable=True)
+    SUM_REAL_WORKTIME = db.Column(db.Float, index=True, nullable=True)
+    OVERTIME = db.Column(db.Float, index=True, nullable=True)
+    HOLIDAY_WORK = db.Column(db.Float, index=True, nullable=True)
+    WORKDAY_COUNT = db.Column(db.Integer, index=True, nullable=True)
+    SUM_WORKTIME_10 = db.Column(db.Float, index=True, nullable=True)
+    OVERTIME_10 = db.Column(db.Float, index=True, nullable=True)
+    HOLIDAY_WORK_10 = db.Column(db.Float, index=True, nullable=True)
+    TIMEOFF = db.Column(db.Integer, index=True, nullable=True)
+    HALFWAY_THROUGH = db.Column(db.Integer, index=True, nullable=True)
+
+
+class TableOfCount(db.Model):
+    __tablename__ = "M_TABLE_OF_COUNTER"
     # __table_args__ = (PrimaryKeyConstraint("STAFFID", "YEAR_MONTH", name="staff_date"),)
     id = db.Column(db.String(10), primary_key=True)
     STAFFID = db.Column(
         db.Integer,
         db.ForeignKey("M_STAFFINFO.STAFFID"),
-        # primary_key=True,
         index=True,
         nullable=False,
     )
