@@ -27,18 +27,3 @@ def app_context():
     with app.app_context():
         db.create_all()
         yield
-
-
-# from app import app2
-from database_async import Base, external_db, Engines, async_session_generator
-
-
-@pytest_asyncio.fixture
-async def async_session():
-    # Base.metadata.create_all()
-    # Base.metadata.create_all(bind=Engines)
-    external_db.create_all(bind_key=Engines.PRIMARY)
-    async with async_session_generator():
-        yield
-    # async with get_session():
-    #     yield

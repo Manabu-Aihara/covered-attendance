@@ -40,12 +40,14 @@ from app.models import (
     D_JOB_HISTORY,
     M_TIMECARD_TEMPLATE,
     Team,
+    SystemInfo,
 )
 from app.attendance_classes import AttendanceAnalysys
 from app.calender_classes import MakeCalender
 from app.calc_work_classes2 import CalcTimeFactory, get_last_date
 from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
 from app.attendance_query_class import AttendanceQuery
+from app.approval_contact import make_system_skype_object
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -264,6 +266,14 @@ def indextime(STAFFID, intFlg):
             template2 = template.TEMPLATE_NO
 
     reload_y = ""
+
+    today = datetime.today()
+    # 変更する人SkypeID
+    skype_alert_account = db.session.get(SystemInfo, STAFFID)
+    skype_system_obj = make_system_skype_object()
+    channel = skype_system_obj.contacts[skype_alert_account.SKYPE_ID].chat
+    updated_user_list = []
+
     ##### 保存ボタン押下処理（１日始まり） 打刻ページ表示で使用 #####
     if form.validate_on_submit():
 
@@ -326,11 +336,12 @@ def indextime(STAFFID, intFlg):
             zangyou = 1 if overtime == "on" else 0
             todokede_PM = notification_pm
 
+            current_type_date = datetime.strptime(current_date, "%Y-%m-%d")
             holiday = ""
-            if jpholiday.is_holiday_name(datetime.strptime(current_date, "%Y-%m-%d")):
+            if jpholiday.is_holiday_name(current_type_date):
                 # 要は祝日
                 holiday = "2"
-            elif get_day_of_week_jp(datetime.strptime(current_date, "%Y-%m-%d")) == "1":
+            elif get_day_of_week_jp(current_type_date) == "1":
                 # 要は土日
                 holiday = "1"
 
@@ -392,6 +403,13 @@ def indextime(STAFFID, intFlg):
                         remark,
                     )
                     db.session.add(AddATTENDANCE)
+
+                # 先月の変更した人、後Skype通知
+                if today.month < current_type_date.month or (
+                    current_type_date.month == 12 and today.month == 1
+                ):
+                    updated_user_list.append(STAFFID)
+
                 db.session.commit()
 
     """ ここから、押下後の表示 """
@@ -572,6 +590,14 @@ def indextime(STAFFID, intFlg):
     ]
     for n in range(len(syukkin_times)):
         AttendanceData[Shin.WORKDAY.day]["alcohol"] += syukkin_times[n]
+
+    # ここでSkype通知
+    if len(updated_user_list) != 0:
+        print("!!ここ通過")
+        report_message = (
+            f"ID{set(updated_user_list)}さんが、先月の出退勤を変更されました。"
+        )
+        channel.sendMsg(report_message)
 
     return render_template(
         "attendance/index_diff.html",

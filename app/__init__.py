@@ -64,11 +64,6 @@ log_handler = logging.FileHandler(LOGFILE_NAME)
 log_handler.setLevel(logging.DEBUG)
 app.logger.addHandler(log_handler)
 
-# app2 = Flask(__name__)
-# app2.config.from_object(ConfigPanda)
-# external_db = SQLAlchemy()
-# external_db.init_app(app2)
-
 from app import routes, models, errors
 from app import routes_sub
 
