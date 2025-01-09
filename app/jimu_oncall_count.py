@@ -464,7 +464,7 @@ def jimu_summary_fulltime(startday, worktype):
         conditional_users = get_more_condition_users(users_without_condition, "OUTDAY")
 
     null_checked_users = []
-    for conditional_user in users_without_condition:
+    for conditional_user in conditional_users:
         null_checked_users.append(convert_null_role(conditional_user))
 
     totalling_counter: int = 0
@@ -612,10 +612,10 @@ def jimu_summary_fulltime(startday, worktype):
             nurse_holiday_append(nurse_holiday_work_time)
 
         print(f"{Shin.WORKDAY.day} 日")
-        print(f"Real time: {calc_real_time}")
-        print(f"Actual time: {actual_work_time}")
-        print(f"Real time list: {real_time_sum}")
-        print(f"Over time list: {over_time_0}")
+        # print(f"Real time: {calc_real_time}")
+        # print(f"Actual time: {actual_work_time}")
+        # print(f"Real time list: {real_time_sum}")
+        # print(f"Over time list: {over_time_0}")
         # print(f"Nurse holiday: {syukkin_holiday_times_0}")
 
         ##### データベース貯蔵 #####
@@ -624,7 +624,7 @@ def jimu_summary_fulltime(startday, worktype):
         # 🙅 work_time_sum_60 += AttendanceDada[Shin.WORKDAY.day][14]
 
         actual_second = actual_work_time.total_seconds()
-        workday_count += 1 if actual_second != 0.0 else workday_count
+        workday_count += 1 if actual_second != 0.0 else 0
 
         time_sum += actual_second
         time_sum_normal = time_sum / 3600
@@ -734,7 +734,7 @@ def jimu_summary_fulltime(startday, worktype):
     end_time = time.perf_counter()
     run_time = end_time - start_time
     pref_result = f"{today}'| 実行時間'{str(run_time)}'秒'"
-    print(pref_result)
+    syslog.syslog(pref_result)
 
     return render_template(
         "attendance/jimu_summary_fulltime.html",
