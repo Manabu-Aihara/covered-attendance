@@ -46,6 +46,7 @@ from app.calender_classes import MakeCalender
 from app.calc_work_classes2 import CalcTimeFactory, get_last_date
 from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
 from app.attendance_query_class import AttendanceQuery
+from app.attendance_util import report_update_last_month
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -145,7 +146,7 @@ def indextime(STAFFID, intFlg):
         sk = "hidden"
         # これ何？
         othr = "hidden"
-        # 実働
+        # 実働だった…
         bk = "hidden"
     elif u.CONTRACT_CODE != 2 and u.JOBTYPE_CODE == 1:
         oc = ""
@@ -264,6 +265,7 @@ def indextime(STAFFID, intFlg):
             template2 = template.TEMPLATE_NO
 
     reload_y = ""
+
     ##### 保存ボタン押下処理（１日始まり） 打刻ページ表示で使用 #####
     if form.validate_on_submit():
 
@@ -326,11 +328,12 @@ def indextime(STAFFID, intFlg):
             zangyou = 1 if overtime == "on" else 0
             todokede_PM = notification_pm
 
+            current_type_date = datetime.strptime(current_date, "%Y-%m-%d")
             holiday = ""
-            if jpholiday.is_holiday_name(datetime.strptime(current_date, "%Y-%m-%d")):
+            if jpholiday.is_holiday_name(current_type_date):
                 # 要は祝日
                 holiday = "2"
-            elif get_day_of_week_jp(datetime.strptime(current_date, "%Y-%m-%d")) == "1":
+            elif get_day_of_week_jp(current_type_date) == "1":
                 # 要は土日
                 holiday = "1"
 
@@ -392,6 +395,8 @@ def indextime(STAFFID, intFlg):
                         remark,
                     )
                     db.session.add(AddATTENDANCE)
+
+                # report_update_last_month(current_type_date, STAFFID)
                 db.session.commit()
 
     """ ここから、押下後の表示 """

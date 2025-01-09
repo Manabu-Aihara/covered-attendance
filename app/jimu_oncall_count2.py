@@ -45,6 +45,7 @@ from app.forms import (
 from app.models import (
     CountAttendance,
     CounterForTable,
+    TableOfCount,
     RecordPaidHoliday,
     D_HOLIDAY_HISTORY,
     Post,
@@ -486,9 +487,7 @@ def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
     )
 
 
-""" ここからPOST工事スタート """
-
-
+# 再集計ボタンクリック
 @app.route("/calc_clerk/<startday>/<worktype>", methods=["POST"])
 @login_required
 def calcrate_month_data(startday: str, worktype: str):
@@ -527,7 +526,7 @@ def calcrate_month_data(startday: str, worktype: str):
         if UserID != Shin.STAFFID:
             UserID = Shin.STAFFID
             # cnt_for_tbl = CounterForTable.query.get(UserID)
-            cnt_for_tbl = CounterForTable(UserID)
+            count_table_obj = TableOfCount(UserID)
             # AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
             # 各スタッフのカウントになる、不思議
             workday_count = 0
@@ -609,14 +608,6 @@ def calcrate_month_data(startday: str, worktype: str):
         print(
             f"Inner Count log: {holiday_cnt} {half_holiday_cnt} {late_cnt} {leave_early_cnt} {absence_cnt} {trip_cnt} {half_trip_cnt}"
         )
-
-        # dtm = datetime.strptime(Shin.ENDTIME, "%H:%M") - datetime.strptime(
-        #     Shin.STARTTIME, "%H:%M"
-        # )
-        # リアル実働時間
-        # real_time = dtm
-        # これを抹殺する
-        # AttendanceDada[Shin.WORKDAY.day][14] = 0
 
         real_time_sum_append = real_time_sum.append
         over_time_append = over_time_0.append
@@ -737,36 +728,36 @@ def calcrate_month_data(startday: str, worktype: str):
         timeoff += sum_dict.get("Off")
         halfway_through += sum_dict.get("Through")
 
-        # if cnt_for_tbl.YEAR_MONTH != year_month:
+        # if count_table_obj.YEAR_MONTH != year_month:
         year_month = f"{y}{m}"
-        cnt_for_tbl.id = str(UserID) + year_month
+        count_table_obj.id = str(UserID) + year_month
         # print(f"!!Compare date: {year_month}")
-        cnt_for_tbl.YEAR_MONTH = year_month
-        cnt_for_tbl.SUM_WORKTIME = time_sum60
-        cnt_for_tbl.SUM_WORKTIME_10 = time_sum_rnd
-        cnt_for_tbl.SUM_REAL_WORKTIME = real_time
-        cnt_for_tbl.WORKDAY_COUNT = workday_count
-        cnt_for_tbl.OVERTIME = over_60
-        cnt_for_tbl.OVERTIME_10 = over10_rnd
-        cnt_for_tbl.HOLIDAY_WORK = holiday_work_60
-        cnt_for_tbl.HOLIDAY_WORK_10 = holiday_work10_rnd
-        cnt_for_tbl.ONCALL = on_call_cnt
-        cnt_for_tbl.ONCALL_HOLIDAY = on_call_holiday_cnt
-        cnt_for_tbl.ONCALL_COUNT = on_call_cnt_cnt
-        cnt_for_tbl.ENGEL_COUNT = engel_int_cnt
-        cnt_for_tbl.NENKYU = holiday_cnt
-        cnt_for_tbl.NENKYU_HALF = half_holiday_cnt
-        cnt_for_tbl.TIKOKU = late_cnt
-        cnt_for_tbl.SOUTAI = leave_early_cnt
-        cnt_for_tbl.KEKKIN = absence_cnt
-        cnt_for_tbl.SYUTTYOU = trip_cnt
-        cnt_for_tbl.SYUTTYOU_HALF = half_trip_cnt
-        cnt_for_tbl.REFLESH = reflesh_cnt
-        cnt_for_tbl.MILEAGE = distance_sum
-        cnt_for_tbl.TIMEOFF = timeoff
-        cnt_for_tbl.HALFWAY_THROUGH = halfway_through
-        # print(f"!DB date: {cnt_for_tbl.YEAR_MONTH}")
-        db.session.merge(cnt_for_tbl)
+        count_table_obj.YEAR_MONTH = year_month
+        count_table_obj.SUM_WORKTIME = time_sum60
+        count_table_obj.SUM_WORKTIME_10 = time_sum_rnd
+        count_table_obj.SUM_REAL_WORKTIME = real_time
+        count_table_obj.WORKDAY_COUNT = workday_count
+        count_table_obj.OVERTIME = over_60
+        count_table_obj.OVERTIME_10 = over10_rnd
+        count_table_obj.HOLIDAY_WORK = holiday_work_60
+        count_table_obj.HOLIDAY_WORK_10 = holiday_work10_rnd
+        count_table_obj.ONCALL = on_call_cnt
+        count_table_obj.ONCALL_HOLIDAY = on_call_holiday_cnt
+        count_table_obj.ONCALL_COUNT = on_call_cnt_cnt
+        count_table_obj.ENGEL_COUNT = engel_int_cnt
+        count_table_obj.NENKYU = holiday_cnt
+        count_table_obj.NENKYU_HALF = half_holiday_cnt
+        count_table_obj.TIKOKU = late_cnt
+        count_table_obj.SOUTAI = leave_early_cnt
+        count_table_obj.KEKKIN = absence_cnt
+        count_table_obj.SYUTTYOU = trip_cnt
+        count_table_obj.SYUTTYOU_HALF = half_trip_cnt
+        count_table_obj.REFLESH = reflesh_cnt
+        count_table_obj.MILEAGE = distance_sum
+        count_table_obj.TIMEOFF = timeoff
+        count_table_obj.HALFWAY_THROUGH = halfway_through
+        # print(f"!DB date: {count_table_obj.YEAR_MONTH}")
+        db.session.merge(count_table_obj)
 
         db.session.commit()
 
