@@ -268,10 +268,16 @@ def indextime(STAFFID, intFlg):
     reload_y = ""
 
     today = datetime.today()
-    # 変更する人SkypeID
-    skype_alert_account = db.session.get(SystemInfo, STAFFID)
+    # 受け取る人SkypeID
+    skype_recive_account = db.session.get(SystemInfo, 20)
+    # 送る人SkypeID
+    skype_send_account = db.session.get(SystemInfo, STAFFID)
+
     skype_system_obj = make_system_skype_object()
-    channel = skype_system_obj.contacts[skype_alert_account.SKYPE_ID].chat
+    # skype_system_obj = make_skype_object(
+    #     skype_send_account.MAIL, skype_send_account.MICRO_PASS
+    # )
+    channel = skype_system_obj.contacts[skype_recive_account.SKYPE_ID].chat
     updated_user_list = []
 
     ##### 保存ボタン押下処理（１日始まり） 打刻ページ表示で使用 #####
