@@ -8,7 +8,7 @@ import pstats
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
 from collections import namedtuple
-from typing import List, Dict, Optional
+from typing import List, Dict, Tuple, Optional
 import jpholiday
 
 from dateutil.relativedelta import relativedelta
@@ -45,6 +45,7 @@ from app.forms import (
 from app.models import (
     CountAttendance,
     CounterForTable,
+    TableOfCount,
     RecordPaidHoliday,
     D_HOLIDAY_HISTORY,
     Post,
@@ -90,9 +91,14 @@ def pulldown_select_page(
         return redirect(url_for(url_dict.get(option_value), STAFFID=current_id))
     else:
         print(f"Page args: {args_pattern[0]} {args_pattern[1]}")
+        date_type_today = datetime.today()
+        default_y_m = date_type_today.strftime("%Y-%m")
         return redirect(
             url_for(
-                url_dict.get("3"), startday=args_pattern[0], worktype=args_pattern[1]
+                url_dict.get("3"),
+                startday=args_pattern[0],
+                worktype=args_pattern[1],
+                selected_date=default_y_m,
             )
         )
 
@@ -349,10 +355,27 @@ def get_more_condition_users(query_instances: list[T], date_columun: str) -> lis
     return result_data_list
 
 
+def get_day_term(start_day: int, select_year: int, select_month: int) -> Tuple[date]:
+    last_day = get_last_date(select_year, select_month)
+    if start_day != 1:
+        # 1日開始以外の場合
+        from_day = date(select_year, select_month, start_day) - relativedelta(months=1)
+        to_day = date(select_year, select_month, 25)
+    else:
+        # 1日開始の場合
+        from_day = date(select_year, select_month, start_day)
+        to_day = date(select_year, select_month, last_day)
+
+    return from_day, to_day
+
+
 ##### 常勤1日基準 ######
-@app.route("/jimu_summary_fulltime/<startday>/<worktype>", methods=["GET", "POST"])
+@app.route(
+    "/jimu_summary_fulltime/<startday>/<worktype>/<selected_date>",
+    methods=["GET"],
+)
 @login_required
-def jimu_summary_fulltime(startday, worktype):
+def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
     typ = ["submit", "text", "time", "checkbox", "number", "date"]
     form_month = SelectMonthForm()
@@ -380,75 +403,20 @@ def jimu_summary_fulltime(startday, worktype):
     # users = User.query.all()
     # 後述
 
-    cfts = CounterForTable.query.all()
-
-    # 年月選択をしたかどうか
-    selected_workday: str = ""
-    # global y, m, workday_data
-    if form_month.validate_on_submit():
-        selected_workday = request.form.get("workday_name")  # 選択された日付
-
-    print(f"Select month: {selected_workday}")
-    y, m = get_month_workday(selected_workday)
+    print(f"Select arg date: {selected_date}")
+    y, m = get_month_workday(selected_date)
     disp_y_and_m = f"{y}-{m}"
-    # print(f"Select value: {workday_data}")
 
-    d = get_last_date(y, m)
-    if int(startday) != 1:
-        # 1日開始以外の場合
-        FromDay = date(y, m, int(startday)) - relativedelta(months=1)
-        ToDay = date(y, m, 25)
-    else:
-        # 1日開始の場合
-        FromDay = date(y, m, int(startday))
-        ToDay = date(y, m, d)
-
-    UserID = ""
-
-    counter_id_list = db.session.query(CounterForTable.STAFFID).all()
-    # 12/16 ここを抹消したい
-    for counter_id in counter_id_list:
-        cftses = CounterForTable.query.get(counter_id.STAFFID)
-
-        cftses.ONCALL = 0
-        cftses.ONCALL_HOLIDAY = 0
-        cftses.ONCALL_COUNT = 0
-        cftses.ENGEL_COUNT = 0
-        cftses.NENKYU = 0
-        cftses.NENKYU_HALF = 0
-        cftses.TIKOKU = 0
-        cftses.SOUTAI = 0
-        cftses.KEKKIN = 0
-        cftses.SYUTTYOU = 0
-        cftses.SYUTTYOU_HALF = 0
-        cftses.REFLESH = 0
-        cftses.MILEAGE = 0
-        cftses.SUM_WORKTIME = 0
-        cftses.SUM_REAL_WORKTIME = 0
-        cftses.OVERTIME = 0
-        cftses.HOLIDAY_WORK = 0
-        cftses.WORKDAY_COUNT = 0
-        cftses.SUM_WORKTIME_10 = 0
-        cftses.OVERTIME_10 = 0
-        cftses.HOLIDAY_WORK_10 = 0
-        cftses.TIMEOFF = 0
-        cftses.HALFWAY_THROUGH = 0
-
-        db.session.commit()
-
-    print(f"Counters : {cfts}")
+    FromDay, ToDay = get_day_term(int(startday), y, m)
 
     # print(f"Date type: {type(User.INDAY)}")
     job_form: str
-    attendace_qry_obj = AttendanceQuery(jimu_usr.STAFFID, FromDay, ToDay)
     if worktype == "1":
         job_form = "常勤"
         users_without_condition = db.session.query(User).filter(User.CONTRACT_CODE != 2)
-        clerical_attendance_query = attendace_qry_obj.get_clerical_attendance(False)
     elif worktype == "2":
         job_form = "パート"
         users_without_condition = db.session.query(User).filter(User.CONTRACT_CODE == 2)
-        clerical_attendance_query = attendace_qry_obj.get_clerical_attendance(True)
 
     if jimu_usr.TEAM_CODE != 1:
         # raise TypeError("Boolean value of this clause is not defined")
@@ -464,8 +432,85 @@ def jimu_summary_fulltime(startday, worktype):
         conditional_users = get_more_condition_users(users_without_condition, "OUTDAY")
 
     null_checked_users = []
-    for conditional_user in conditional_users:
+    for conditional_user in users_without_condition:
         null_checked_users.append(convert_null_role(conditional_user))
+
+    date_type_today = datetime.today()
+    today = date_type_today.strftime("%Y-%m-%d %H:%M:%S")
+
+    """ 集計テーブル、永続化への道 """
+    year_month = f"{y}{m}"
+    counter_month_list = (
+        db.session.query(CounterForTable)
+        .filter(CounterForTable.YEAR_MONTH == year_month)
+        .all()
+    )
+
+    # c_profile.disable()
+    # c_stats = pstats.Stats(c_profile)
+    # c_stats.sort_stats("cumtime").print_stats(20)
+
+    end_time = time.perf_counter()
+    run_time = end_time - start_time
+    pref_result = f"{today}'| 実行時間'{str(run_time)}'秒'"
+    print(pref_result)
+
+    # if len(counter_month_list) != 0:
+    #     return f"Select month: {y}-{m} {workday_data}"
+
+    return render_template(
+        "attendance/jimu_summary_fulltime_diff.html",
+        startday=startday,
+        selected_date=selected_date,
+        worktype=worktype,
+        typ=typ,
+        form_month=form_month,
+        # bumon=bumon,
+        # syozoku=syozoku,
+        # syokusyu=syokusyu,
+        # keitai=keitai,
+        # POST=POST,
+        str_workday=str_workday,
+        jimu_usr=jimu_usr,
+        y=y,
+        m=m,
+        y_and_m=disp_y_and_m,
+        FromDay=FromDay,
+        ToDay=ToDay,
+        dwl_today=date_type_today,
+        job_form=job_form,
+        # users=users,
+        users=null_checked_users,
+        cfts=counter_month_list,
+        today=today,
+        stf_login=stf_login,
+    )
+
+
+# 再集計ボタンクリック
+@app.route("/calc_clerk/<startday>/<worktype>", methods=["POST"])
+@login_required
+def calcrate_month_data(startday: str, worktype: str):
+    form_month = SelectMonthForm()
+    selected_date: str
+    if form_month.validate_on_submit():
+        selected_date = request.form.get("year-month")  # 選択された日付
+        print(f"Select form date: {selected_date}")
+        return redirect(f"/jimu_summary_fulltime/{startday}/{worktype}/{selected_date}")
+
+    print(f"!!Re-render date: {request.form.get('year-month')}")
+    y, m = get_month_workday(request.form.get("year-month"))
+    disp_y_and_m = f"{y}-{m}"
+    FromDay, ToDay = get_day_term(int(startday), y, m)
+    print(f"!From To: {FromDay} {ToDay}")
+
+    UserID = ""
+
+    attendace_qry_obj = AttendanceQuery(current_user.STAFFID, FromDay, ToDay)
+    if worktype == "1":
+        clerical_attendance_query = attendace_qry_obj.get_clerical_attendance(False)
+    elif worktype == "2":
+        clerical_attendance_query = attendace_qry_obj.get_clerical_attendance(True)
 
     totalling_counter: int = 0
 
@@ -473,14 +518,15 @@ def jimu_summary_fulltime(startday, worktype):
     calc_time_factory = CalcTimeFactory()
     n_absence_list: List[str] = ["8", "17", "18", "19", "20"]
     for clerical_attendance in clerical_attendance_query:
+        print("!!!処理を通る!!!")
         Shin = clerical_attendance[0]
 
         # スタッフが変ったら
         # ここあまり好きじゃない、Unbound変数
         if UserID != Shin.STAFFID:
             UserID = Shin.STAFFID
-            cnt_for_tbl = CounterForTable.query.get(Shin.STAFFID)
-            # cnt_for_tbl = CounterForTable()
+            # cnt_for_tbl = CounterForTable.query.get(UserID)
+            count_table_obj = TableOfCount(UserID)
             # AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
             # 各スタッフのカウントになる、不思議
             workday_count = 0
@@ -542,7 +588,7 @@ def jimu_summary_fulltime(startday, worktype):
             else 0
         )
         print(
-            f"Count log1: {on_call_cnt} {on_call_cnt_cnt} {on_call_holiday_cnt} {engel_int_cnt}"
+            f"Inner Count log: {on_call_cnt} {on_call_cnt_cnt} {on_call_holiday_cnt} {engel_int_cnt}"
         )
 
         holiday_cnt += 1 if Shin.NOTIFICATION == "3" else 0
@@ -560,16 +606,8 @@ def jimu_summary_fulltime(startday, worktype):
         )
         reflesh_cnt += 1 if Shin.NOTIFICATION == "7" else 0
         print(
-            f"Count log2: {holiday_cnt} {half_holiday_cnt} {late_cnt} {leave_early_cnt} {absence_cnt} {trip_cnt} {half_trip_cnt}"
+            f"Inner Count log: {holiday_cnt} {half_holiday_cnt} {late_cnt} {leave_early_cnt} {absence_cnt} {trip_cnt} {half_trip_cnt}"
         )
-
-        # dtm = datetime.strptime(Shin.ENDTIME, "%H:%M") - datetime.strptime(
-        #     Shin.STARTTIME, "%H:%M"
-        # )
-        # リアル実働時間
-        # real_time = dtm
-        # これを抹殺する
-        # AttendanceDada[Shin.WORKDAY.day][14] = 0
 
         real_time_sum_append = real_time_sum.append
         over_time_append = over_time_0.append
@@ -603,6 +641,7 @@ def jimu_summary_fulltime(startday, worktype):
         #         "error/403.html", title="Exception message", message=msg
         #     )
         # else:
+        # real_time_sum.append(calc_real_time)
         real_time_sum_append(calc_real_time)
         if Shin.OVERTIME == "1" and clerical_attendance.CONTRACT_CODE != 2:
             # over_time_0.append(over_time)
@@ -612,13 +651,14 @@ def jimu_summary_fulltime(startday, worktype):
             nurse_holiday_append(nurse_holiday_work_time)
 
         print(f"{Shin.WORKDAY.day} 日")
-        # print(f"Real time: {calc_real_time}")
-        # print(f"Actual time: {actual_work_time}")
-        # print(f"Real time list: {real_time_sum}")
-        # print(f"Over time list: {over_time_0}")
-        # print(f"Nurse holiday: {syukkin_holiday_times_0}")
+        print(f"Real time: {calc_real_time}")
+        print(f"Actual time: {actual_work_time}")
+        print(f"In real time list: {real_time_sum}")
+        print(f"In over time list: {over_time_0}")
+        print(f"Nurse holiday: {syukkin_holiday_times_0}")
 
         ##### データベース貯蔵 #####
+
         # ここで宣言された変数は“+=”不可
         # work_time_sum_60: float = 0.0
         # 🙅 work_time_sum_60 += AttendanceDada[Shin.WORKDAY.day][14]
@@ -687,84 +727,45 @@ def jimu_summary_fulltime(startday, worktype):
         )
         timeoff += sum_dict.get("Off")
         halfway_through += sum_dict.get("Through")
-        # print(f"Inner time rest: {timeoff} {halfway_through}")
-        print(f"Counter type: {isinstance(cnt_for_tbl, CounterForTable)}")
 
-        if cnt_for_tbl:
-            # cnt_for_tbl.STAFFID = Shin.STAFFID
-            cnt_for_tbl.SUM_WORKTIME = time_sum60
-            cnt_for_tbl.SUM_WORKTIME_10 = time_sum_rnd
-            cnt_for_tbl.OVERTIME = over_60
-            cnt_for_tbl.SUM_REAL_WORKTIME = real_time
-            cnt_for_tbl.WORKDAY_COUNT = workday_count
-            cnt_for_tbl.OVERTIME_10 = over10_rnd
-            cnt_for_tbl.HOLIDAY_WORK = holiday_work_60
-            cnt_for_tbl.HOLIDAY_WORK_10 = holiday_work10_rnd
-            cnt_for_tbl.ONCALL = on_call_cnt
-            cnt_for_tbl.ONCALL_HOLIDAY = on_call_holiday_cnt
-            cnt_for_tbl.ONCALL_COUNT = on_call_cnt_cnt
-            cnt_for_tbl.ENGEL_COUNT = engel_int_cnt
-            cnt_for_tbl.NENKYU = holiday_cnt
-            cnt_for_tbl.NENKYU_HALF = half_holiday_cnt
-            cnt_for_tbl.TIKOKU = late_cnt
-            cnt_for_tbl.SOUTAI = leave_early_cnt
-            cnt_for_tbl.KEKKIN = absence_cnt
-            cnt_for_tbl.SYUTTYOU = trip_cnt
-            cnt_for_tbl.SYUTTYOU_HALF = half_trip_cnt
-            cnt_for_tbl.REFLESH = reflesh_cnt
-            cnt_for_tbl.MILEAGE = distance_sum
-            cnt_for_tbl.TIMEOFF = timeoff
-            cnt_for_tbl.HALFWAY_THROUGH = halfway_through
-            db.session.add(cnt_for_tbl)
+        # if count_table_obj.YEAR_MONTH != year_month:
+        year_month = f"{y}{m}"
+        count_table_obj.id = str(UserID) + year_month
+        # print(f"!!Compare date: {year_month}")
+        count_table_obj.YEAR_MONTH = year_month
+        count_table_obj.SUM_WORKTIME = time_sum60
+        count_table_obj.SUM_WORKTIME_10 = time_sum_rnd
+        count_table_obj.SUM_REAL_WORKTIME = real_time
+        count_table_obj.WORKDAY_COUNT = workday_count
+        count_table_obj.OVERTIME = over_60
+        count_table_obj.OVERTIME_10 = over10_rnd
+        count_table_obj.HOLIDAY_WORK = holiday_work_60
+        count_table_obj.HOLIDAY_WORK_10 = holiday_work10_rnd
+        count_table_obj.ONCALL = on_call_cnt
+        count_table_obj.ONCALL_HOLIDAY = on_call_holiday_cnt
+        count_table_obj.ONCALL_COUNT = on_call_cnt_cnt
+        count_table_obj.ENGEL_COUNT = engel_int_cnt
+        count_table_obj.NENKYU = holiday_cnt
+        count_table_obj.NENKYU_HALF = half_holiday_cnt
+        count_table_obj.TIKOKU = late_cnt
+        count_table_obj.SOUTAI = leave_early_cnt
+        count_table_obj.KEKKIN = absence_cnt
+        count_table_obj.SYUTTYOU = trip_cnt
+        count_table_obj.SYUTTYOU_HALF = half_trip_cnt
+        count_table_obj.REFLESH = reflesh_cnt
+        count_table_obj.MILEAGE = distance_sum
+        count_table_obj.TIMEOFF = timeoff
+        count_table_obj.HALFWAY_THROUGH = halfway_through
+        # print(f"!DB date: {count_table_obj.YEAR_MONTH}")
+        db.session.merge(count_table_obj)
 
         db.session.commit()
 
         totalling_counter += 1
     # for終わり
-    # print(f"!!Outer time rest: {timeoff} {halfway_through}")
+    print(f"Totalling item count: {totalling_counter}")
 
-    today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-
-    # print(f"Totalling item count: {totalling_counter}")
-    # print(f"Both length: {len(null_checked_users)} {len(cfts)}")
-    # c_profile.disable()
-    # c_stats = pstats.Stats(c_profile)
-    # c_stats.sort_stats("cumtime").print_stats(20)
-
-    end_time = time.perf_counter()
-    run_time = end_time - start_time
-    pref_result = f"{today}'| 実行時間'{str(run_time)}'秒'"
-    syslog.syslog(pref_result)
-
-    return render_template(
-        "attendance/jimu_summary_fulltime.html",
-        startday=startday,
-        worktype=worktype,
-        typ=typ,
-        form_month=form_month,
-        workday_data=disp_y_and_m,
-        y=y,
-        m=m,
-        dwl_today=datetime.today(),
-        # users=users,
-        users=null_checked_users,
-        cfts=cfts,
-        str_workday=str_workday,
-        # bumon=bumon,
-        # syozoku=syozoku,
-        # syokusyu=syokusyu,
-        # keitai=keitai,
-        # POST=POST,
-        jimu_usr=jimu_usr,
-        stf_login=stf_login,
-        # workday_count=workday_count,
-        # timeoff=timeoff,
-        # halfway_rough=halfway_through,
-        FromDay=FromDay,
-        ToDay=ToDay,
-        today=today,
-        job_form=job_form,
-    )
+    return redirect(f"/jimu_summary_fulltime/{startday}/{worktype}/{disp_y_and_m}")
 
 
 @app.route("/jimu_users_list/<STAFFID>", methods=["GET", "POST"])

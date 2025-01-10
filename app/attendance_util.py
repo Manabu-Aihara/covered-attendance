@@ -86,15 +86,15 @@ def check_table_member(staff_id: int, table_model: T):
 # https://zenn.dev/timoneko/articles/16f9ee7113f3cd
 
 
-def report_update_last_month(current_ymd_date: datetime, current_user: int) -> int:
-    today = datetime.today()
-    # 通知相手SkypeID
-    skype_alert_account = db.session.get(SystemInfo, 20)
-    skype_system_obj = make_system_skype_object()
-    channel = skype_system_obj.contacts[skype_alert_account.SKYPE_ID].chat
+# def report_update_last_month(current_ymd_date: datetime, current_user: int) -> int:
+#     today = datetime.today()
+#     # 通知相手SkypeID
+#     skype_alert_account = db.session.get(SystemInfo, 20)
+#     skype_system_obj = make_system_skype_object()
+#     channel = skype_system_obj.contacts[skype_alert_account.SKYPE_ID].chat
 
-    if today.month < current_ymd_date.month or (
-        current_ymd_date.month == 12 and today.month == 1
-    ):
-        report_message = f"ID{current_user}さんが、先月の出退勤を変更されました。"
-        channel.sendMsg(report_message)
+#     if today.month < current_ymd_date.month or (
+#         current_ymd_date.month == 12 and today.month == 1
+#     ):
+#         report_message = f"ID{current_user}さんが、先月の出退勤を変更されました。"
+#         channel.sendMsg(report_message)
