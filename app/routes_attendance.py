@@ -271,7 +271,7 @@ def indextime(STAFFID, intFlg):
     # 受け取る人SkypeID
     skype_recive_account = db.session.get(SystemInfo, 20)
     # 送る人SkypeID
-    skype_send_account = db.session.get(SystemInfo, STAFFID)
+    # skype_send_account = db.session.get(SystemInfo, STAFFID)
 
     skype_system_obj = make_system_skype_object()
     # skype_system_obj = make_skype_object(
