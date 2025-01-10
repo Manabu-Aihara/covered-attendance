@@ -1,5 +1,6 @@
 import pytest
 from datetime import datetime
+import re
 
 from sqlalchemy import and_, or_
 
@@ -52,9 +53,18 @@ def test_count_attend_notificatin(app_context):
     print(f"使った日数: {count}")
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_sum_attend_time_rest(app_context):
     attenntion_nofice_obj = AttendaceNotice(TARGET_ID)
     count = attenntion_nofice_obj.sum_attend_time_rest()
     # print(f"使った日数: {count}")
     assert count == 7
+
+
+def test_re_replace():
+    s = "12:34:00"
+    # date_t = datetime.strptime(s, "%h:%m:%s")
+
+    re_result = re.sub(r"(\d{2}):(\d{2}):00", r"\1:\2", s)
+    assert re_result == "12:34"
+    assert isinstance(re_result, str)

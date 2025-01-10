@@ -3,6 +3,7 @@ from functools import wraps
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta, date, time
 from decimal import Decimal, ROUND_HALF_UP
+import re
 import jpholiday
 from dateutil.relativedelta import relativedelta
 from monthdelta import monthmod
@@ -485,7 +486,7 @@ def indextime(STAFFID, intFlg):
     )
 
     workday_count: int = 0
-    work_time_sum: timedelta = timedelta(0)
+    work_time_sum: float = 0.0
     calc_time_factory = CalcTimeFactory()
     for attendace_query in attendance_query_list:
         Shin = attendace_query[0]
@@ -549,14 +550,22 @@ def indextime(STAFFID, intFlg):
         print(f"List of over time: {over_time_0}")
         print(f"Nurse holiday work: {syukkin_holiday_times_0}")
 
-        work_time_sum += actual_work_time
-        AttendanceData[Shin.WORKDAY.day]["worktime"] = actual_work_time
+        # 実働時間表示用
+        actual_work_time_str = re.sub(
+            r"([0-9]{1,2}):([0-9]{2}):00", r"\1:\2", f"{actual_work_time}"
+        )
+        AttendanceData[Shin.WORKDAY.day]["worktime"] = actual_work_time_str
+
         actual_second = actual_work_time.total_seconds()
         workday_count += 1 if actual_second != 0.0 else 0
 
-        # print(f"aD worktime: {AttendanceData[Shin.WORKDAY.day]['worktime']}")
+        work_time_sum += actual_second
+        work_time_sum_lengthy = work_time_sum / 3600
+        disp_work_time_sum = Decimal(work_time_sum_lengthy).quantize(
+            Decimal("0.1"), ROUND_HALF_UP
+        )
 
-        s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
+    s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
 
     ln_s_kyori = 0
     if s_kyori is not None:
@@ -599,7 +608,6 @@ def indextime(STAFFID, intFlg):
 
     # ここでSkype通知
     if len(updated_user_list) != 0:
-        print("!!ここ通過")
         report_message = (
             f"ID{set(updated_user_list)}さんが、先月の出退勤を変更されました。"
         )
@@ -641,7 +649,7 @@ def indextime(STAFFID, intFlg):
         template1=template1,
         template2=template2,
         AttendanceData=AttendanceData,
-        working_time=work_time_sum,
+        working_time=disp_work_time_sum,
         ln_s_kyori=ln_s_kyori,
         workday_count=workday_count,
         holiday_work=holiday_work,
