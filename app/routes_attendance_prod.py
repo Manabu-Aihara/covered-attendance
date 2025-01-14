@@ -21,6 +21,7 @@ from app import app, db
 from app import routes_attendance_option, jimu_oncall_count
 from app.models import (
     User,
+    Team,
     Shinsei,
     StaffLoggin,
     Todokede,
@@ -97,16 +98,8 @@ def indextime(STAFFID, intFlg):
     ptn = ["^[0-9０-９]+$", "^[0-9.０-９．]+$"]
     specification = ["readonly", "checked", "selected", "hidden", "disabled"]
     typ = ["submit", "text", "time", "checkbox", "number", "month"]
-    team_name = [
-        "本社",
-        "WADEWADE訪問看護ステーション宇都宮",
-        "WADEWADE訪問看護ステーション下野",
-        "WADEWADE訪問看護ステーション鹿沼",
-        "KODOMOTOナースステーションうつのみや",
-        "わでわで在宅支援センターうつのみや",
-        "わでわで子どもそうだんしえん",
-        "WADEWADE訪問看護ステーションつくば",
-    ]
+
+    team_name = db.session.query(Team.NAME).all()
 
     ##### カレンダーとM_NOTIFICATION土日出勤の紐づけ関数 #####
 
@@ -322,6 +315,7 @@ def indextime(STAFFID, intFlg):
 
     reload_y = ""
 
+    """ 25/1/12 変更箇所① """
     today = datetime.today()
     # 受け取る人SkypeID
     skype_recive_account = db.session.get(SystemInfo, 20)
@@ -485,7 +479,8 @@ def indextime(STAFFID, intFlg):
 
                 db.session.add(AddATTENDANCE)
 
-                # 先月の変更した人、後Skype通知
+            """ 25/1/12 変更箇所② """
+            # 先月の変更した人、後Skype通知
             if today.month < current_type_date.month or (
                 current_type_date.month == 12 and today.month == 1
             ):
@@ -688,7 +683,6 @@ def indextime(STAFFID, intFlg):
     over = o_h + o_m / 100
     over_10 = sum_over_0 / (60 * 60)
 
-    print(f"Holiday work: {syukkin_holiday_times_0}")
     sum_hol_0 = 0
     for n in range(len(syukkin_holiday_times_0)):
         sum_hol_0 += syukkin_holiday_times_0[n]
@@ -706,9 +700,9 @@ def indextime(STAFFID, intFlg):
         AttendanceDada[Shin.WORKDAY.day][13] += syukkin_times[n]
         print(f"Work time list: {AttendanceDada[Shin.WORKDAY.day][13]}")
 
+    """ 25/1/12 変更箇所③ """
     # ここでSkype通知
     if len(updated_user_list) != 0:
-        print("!!ここ通過")
         report_message = (
             f"ID{set(updated_user_list)}さんが、先月の出退勤を変更されました。"
         )

@@ -107,14 +107,14 @@ class ContractTimeClass:
         #     raise TypeError("There is not in D_HOLIDAY_HISTORY")
         # 契約時間を更新
         contract_work_time = (
-            part_contract_work.PART_WORKTIME
-            if part_contract_work.PART_WORKTIME is not None
-            else paid_holiday_time
+            paid_holiday_time
+            if part_contract_work.PART_WORKTIME is None
+            else part_contract_work.PART_WORKTIME
         )
         contract_holiday_time = (
-            part_contract_holiday.HOLIDAY_TIME
-            if part_contract_holiday is not None
-            else paid_holiday_time
+            paid_holiday_time
+            if part_contract_holiday is None
+            else part_contract_holiday.HOLIDAY_TIME
         )
 
         return contract_work_time, contract_holiday_time
@@ -138,6 +138,8 @@ class CalcTimeClass:
     # notifications: tuple[str]  # = field(init=False)
     # sh_overtime: str  # = field(init=False)
     # sh_holiday: str  # = field(init=False)
+
+    # CalcTimeFactoryに委譲
     staff_id: InitVar[int]  # = None
 
     n_code_list: List[str] = field(
@@ -245,7 +247,7 @@ class CalcTimeClass:
         round_up_start = self.round_up_time(self.sh_starttime)
 
         # 今のところ私の判断、追加・変更あり
-        if round_up_start.strftime("%H:%M") >= "13:00" or self.sh_endtime < "13:00":
+        if round_up_start.strftime("%H:%M") >= "13:00" or self.sh_endtime <= "13:00":
             return timedelta(0)
         else:
             if input_work_time >= timedelta(hours=6):
@@ -421,6 +423,8 @@ def output_rest_time(notification_am: Optional[str], notification_pm: Optional[s
 
     # example: output_rest_time("13", "12")
     # リストのなかのリストは、最後のしか残らない
+    # Python に参照渡しは存在しない話
+    # https://note.com/crefil/n/n7a0d2dec929b
     # for n in notifications:
     #     off_time_list = [
     #         n_time for n_time, n_off in zip(n_time_list, n_off_list) if n == n_off
