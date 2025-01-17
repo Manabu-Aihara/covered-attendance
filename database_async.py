@@ -1,3 +1,5 @@
+# Asynchronous SqlAlchemy and multiple databases
+# https://makimo.com/blog/asynchronous-sqlalchemy-and-multiple-databases/
 import os
 from contextlib import asynccontextmanager
 from enum import Enum
@@ -61,12 +63,12 @@ external_db = SQLAlchemy()
 
 class RoutingSession(Session):
     def get_bind(self, mapper=None, clause=None, **kw):
-        if isinstance(clause, Select):
-            print(f"first pass: {clause}---")
+        print(f"first pass: ---{clause}---")
+        if isinstance(clause, (Insert, Update, Delete)):
+            return Engines.SECONDARY.value.sync_engine
+        elif isinstance(clause, Select):
+            print(f"second pass: ---{clause}---")
             return Engines.PRIMARY.value.sync_engine
-        # elif isinstance(clause, Select):
-        print(f"second pass: {clause}---")
-        return Engines.SECONDARY.value.sync_engine
 
 
 def async_session_generator():
@@ -80,8 +82,9 @@ async def get_session():
 
         async with async_session() as session:
             yield session
-    except:
+    except RuntimeError as e:
+        print(f"!!Async session error: {e}!!")
         await session.rollback()
-        raise
+        raise "再度ボタンクリックしてください"
     finally:
         await session.close()

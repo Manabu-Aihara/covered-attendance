@@ -6,7 +6,9 @@ import sys
 import pathlib
 from os.path import join, dirname
 
+from flask import Flask
 from dotenv import load_dotenv
+
 
 packagedir = pathlib.Path(__file__).resolve().parent.parent.parent
 print(packagedir)
@@ -29,16 +31,11 @@ def app_context():
         yield
 
 
-# from app import app2
-from database_async import Base, external_db, Engines, async_session_generator
+from database_async import get_session, Engines, external_db
 
-
-@pytest_asyncio.fixture
-async def async_session():
-    # Base.metadata.create_all()
-    # Base.metadata.create_all(bind=Engines)
-    external_db.create_all(bind_key=Engines.PRIMARY)
-    async with async_session_generator():
-        yield
-    # async with get_session():
-    #     yield
+# @pytest_asyncio.fixture(loop_scope="session")
+# def async_app_context():
+#     app.config.from_object(Engines)
+#     external_db.init_app(app)
+#     async with app.app_context():
+#         async with get_session() as session:

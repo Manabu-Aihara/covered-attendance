@@ -19,10 +19,11 @@ from flask.helpers import url_for
 from flask_login import current_user, login_user, logout_user
 from flask_login.utils import login_required
 from sqlalchemy.orm import aliased
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, select
 from werkzeug.security import generate_password_hash
 from werkzeug.urls import url_parse
 
+from database_async import get_session
 from app import app, db, jimu_every_attendance, routes_attendance_option
 from app.attendance_admin_classes import AttendanceAdminAnalysys
 from app.calc_work_classes2 import (
@@ -68,6 +69,7 @@ from app.attendance_util import (
     convert_null_role,
 )
 from app.db_check_util import compare_db_item, check_contract_value
+from app.async_db_lib import get_query_from_date
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -375,7 +377,7 @@ def get_day_term(start_day: int, select_year: int, select_month: int) -> Tuple[d
     methods=["GET"],
 )
 @login_required
-def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
+async def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
     typ = ["submit", "text", "time", "checkbox", "number", "date"]
     form_month = SelectMonthForm()
@@ -440,11 +442,14 @@ def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
 
     """ 集計テーブル、永続化への道 """
     year_month = f"{y}{m}"
-    counter_month_list = (
-        db.session.query(CounterForTable)
-        .filter(CounterForTable.YEAR_MONTH == year_month)
+    count_month_list = (
+        db.session.query(TableOfCount)
+        .filter(TableOfCount.YEAR_MONTH == year_month)
         .all()
     )
+    count_month_list = await get_query_from_date(year_month)
+    # stmt = select(TableOfCount).filter(TableOfCount.YEAR_MONTH == year_month)
+    # count_month_list = []
 
     # c_profile.disable()
     # c_stats = pstats.Stats(c_profile)
@@ -481,7 +486,7 @@ def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
         job_form=job_form,
         # users=users,
         users=null_checked_users,
-        cfts=counter_month_list,
+        cfts=count_month_list,
         today=today,
         stf_login=stf_login,
     )

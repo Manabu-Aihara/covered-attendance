@@ -5,12 +5,10 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import or_, and_
 from sqlalchemy.sql import func
 
-from database_async import get_session, async_session_generator
 from app import db
 from app.models import (
     User,
     Busho,
-    KinmuTaisei,
     Shinsei,
     D_JOB_HISTORY,
     D_HOLIDAY_HISTORY,
@@ -169,29 +167,6 @@ def test_pass_parse(app_context):
         return
 
     print("Nothing pass")
-
-
-# @pytest.mark.skip
-@pytest.mark.asyncio
-async def test_multidb_access_async(app_context):
-    existing_count = (
-        db.session.query(CounterForTable)
-        .filter(CounterForTable.YEAR_MONTH == "202412")
-        .first()
-    )
-    # assert len(existing_count_list) != 0
-
-    cft = CounterForTable(201)
-    cft.id = "201202020"
-    cft.YEAR_MONTH = "202410"
-    async with get_session() as session:
-        async with session.begin():
-            result = await session.get(CounterForTable, "78202020")
-            result.ONCALL_COUNT = 5
-            co = await session.merge(result)
-            # session.add(result)
-    # await session.commit()
-    print(f"警告だけでは: {existing_count} {co}")
 
 
 # def test_multidb_access(app_context):
