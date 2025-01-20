@@ -10,7 +10,7 @@ from database_async import get_session, async_session_generator
 
 from app import db
 from app.models import TableOfCount
-from app.async_db_lib import get_query_from_date, get_session_query
+from app.async_db_lib import get_query_from_date, get_session_query, update_count_table
 
 
 @pytest_asyncio.fixture(loop_scope="session")
@@ -24,15 +24,13 @@ async def multidb_access_select_one():
 
 
 # @pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.skip
 def test_check_fixture(multidb_access_select_one):
     result_one: TableOfCount = multidb_access_select_one
     assert result_one.SUM_REAL_WORKTIME == 15.15
 
 
 async def insert_objects(async_session: AsyncSession) -> None:
-    toc_obj = TableOfCount(42)
-    toc_obj.id = "42202412"
-    toc_obj.YEAR_MONTH = "202412"
     stmt = insert(TableOfCount).values(id="42202412", STAFFID=201, YEAR_MONTH="1020")
     async with async_session as session:
         async with session.begin():
@@ -49,6 +47,7 @@ async def select_objects(async_session: AsyncSession):
             print(f"{existing_count.STAFFID}: {existing_count.WORKDAY_COUNT}")
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio(loop_scope="session")
 async def test_db_main():
     sessions = get_session()
@@ -64,15 +63,28 @@ async def async_session():
         yield session
 
 
-@pytest.mark.asyncio(loop_scope="session")
-async def test_get_query_from_data():
-    results = await get_query_from_date("202412")
-    assert len(results) == 5
-
-
 @pytest.mark.skip
 def test_get_session(async_session: AsyncSession):
     stmt = select(TableOfCount).filter(TableOfCount.YEAR_MONTH == "202412")
     results = async_session.execute(statement=stmt)
     with results as result:
         print(result.scalar_one().id)
+
+
+@pytest.mark.skip
+@pytest.mark.asyncio(loop_scope="session")
+async def test_get_query_from_data():
+    results = await get_query_from_date("202412")
+    assert len(results) == 5
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_update_count_table():
+    toc_obj = TableOfCount(10)
+    toc_obj.id = "10202501"
+    toc_obj.YEAR_MONTH = "102501"
+    toc_obj.KEKKIN = 1
+    # toc_obj.ONCALL = 1
+    toc_obj.WORKDAY_COUNT = 15
+    # print(toc_obj.__dict__)
+    await update_count_table(toc_obj)

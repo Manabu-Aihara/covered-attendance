@@ -4,7 +4,7 @@ import os
 from contextlib import asynccontextmanager
 from enum import Enum
 
-from sqlalchemy import Column, Integer, String, Insert, Update, Delete, Select
+from sqlalchemy import Column, Integer, String, Insert, Update, Delete, Select, NullPool
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base, Session
 
@@ -33,6 +33,11 @@ class Engines(Enum):
             )
         ),
         echo=False,
+        # Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly,\
+        # either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+        # https://stackoverflow.com/questions/72468241/exception-closing-connection-using-sqlalchemy-with-asyncio-and-postgresql
+        pool_pre_ping=True,
+        poolclass=NullPool,
     )
     SECONDARY = create_async_engine(
         url=(
@@ -47,6 +52,8 @@ class Engines(Enum):
             )
         ),
         echo=True,
+        pool_pre_ping=True,
+        poolclass=NullPool,
     )
 
 
@@ -63,11 +70,11 @@ external_db = SQLAlchemy()
 
 class RoutingSession(Session):
     def get_bind(self, mapper=None, clause=None, **kw):
-        print(f"first pass: ---{clause}---")
         if isinstance(clause, (Insert, Update, Delete)):
+            print(f"second pass: ---{clause}---")
             return Engines.SECONDARY.value.sync_engine
         elif isinstance(clause, Select):
-            print(f"second pass: ---{clause}---")
+            print(f"first pass: ---{clause}---")
             return Engines.PRIMARY.value.sync_engine
 
 

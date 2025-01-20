@@ -1,5 +1,6 @@
 import os, math
 import syslog
+import threading
 from typing import TypeVar
 from datetime import date, datetime, timedelta
 import time
@@ -69,7 +70,7 @@ from app.attendance_util import (
     convert_null_role,
 )
 from app.db_check_util import compare_db_item, check_contract_value
-from app.async_db_lib import get_query_from_date
+from app.async_db_lib import get_query_from_date, get_session_query
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -442,14 +443,20 @@ async def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str
 
     """ 集計テーブル、永続化への道 """
     year_month = f"{y}{m}"
-    count_month_list = (
-        db.session.query(TableOfCount)
-        .filter(TableOfCount.YEAR_MONTH == year_month)
-        .all()
-    )
+    # count_month_list = (
+    #     db.session.query(TableOfCount)
+    #     .filter(TableOfCount.YEAR_MONTH == year_month)
+    #     .all()
+    # )
+
+    # スレッド諸々
+    # route_tss = threading.Thread(target=get_query_from_date(year_month))
+    # route_tss.start()
+    # print(f"Main thread: {route_tss.ident}")
+    # route_tss.join()
     count_month_list = await get_query_from_date(year_month)
-    # stmt = select(TableOfCount).filter(TableOfCount.YEAR_MONTH == year_month)
-    # count_month_list = []
+    # async with get_session() as session:
+    #     count_month_list = await get_session_query(session, year_month)
 
     # c_profile.disable()
     # c_stats = pstats.Stats(c_profile)
