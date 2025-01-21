@@ -5,6 +5,7 @@ from sqlalchemy import select, update, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database_async import get_session
+from app import db
 from app.models import TableOfCount
 
 
@@ -38,16 +39,27 @@ async def get_session_query(async_session: AsyncSession, year_and_month: str):
 async def update_count_table(
     count_table_obj: TableOfCount,
     staff_id: Optional[int] = None,
-    dateYM: Optional[str] = None,
-):
-    making_id = f"{staff_id}{dateYM}"
+    # dateYM: Optional[str] = None,
+) -> None:
+    # making_id = f"{staff_id}{dateYM}"
+    # making_id = f"{count_table_obj.STAFFID}{count_table_obj.YEAR_MONTH}"
+    making_id = f"{staff_id}{count_table_obj.YEAR_MONTH}"
+
+    # 今回、通常対象のDB
+    target_data: Optional[TableOfCount] = (
+        db.session.query(TableOfCount).filter(TableOfCount.id == making_id).first()
+    )
+
     object_dict = count_table_obj.__dict__.pop("_sa_instance_state")
     print(object_dict)
-    stmt = (
-        update(TableOfCount)
-        .where(TableOfCount.id == making_id)
-        .values(count_table_obj.__dict__)
-    )
+    if target_data is not None:
+        stmt = (
+            update(TableOfCount)
+            .where(TableOfCount.id == making_id)
+            .values(count_table_obj.__dict__)
+        )
+    else:  # TableOfCount is None
+        stmt = insert(TableOfCount).values(count_table_obj.__dict__)
     async with get_session() as session:
         async with session.begin():
             existing_count = await session.execute(statement=stmt)

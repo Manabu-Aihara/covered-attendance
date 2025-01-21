@@ -1,21 +1,27 @@
-from app import routes_attendance_option, jimu_oncall_count
-from flask import render_template, flash, redirect, request, session
+import os
+import math
+from functools import wraps
+import jpholiday
+from datetime import datetime, timedelta, date, time
+from decimal import Decimal, ROUND_HALF_UP
+from dateutil.relativedelta import relativedelta
+from monthdelta import monthmod
+
+from sqlalchemy import and_
 from werkzeug.urls import url_parse
+from werkzeug.security import generate_password_hash
+from flask import render_template, flash, redirect, request, session
 from flask.helpers import url_for
 from flask_login.utils import login_required
-from app import app, db
-from app.forms import (
-    LoginForm,
-    AdminUserCreateForm,
-    ResetPasswordForm,
-    DelForm,
-    UpdateForm,
-    SaveForm,
-    SelectMonthForm,
-)
+from flask_login import logout_user
+from flask import abort
 from flask_login import current_user, login_user
+
+from app import app, db
+from app import routes_attendance_option, jimu_oncall_count
 from app.models import (
     User,
+    Team,
     Shinsei,
     StaffLoggin,
     Todokede,
@@ -25,23 +31,22 @@ from app.models import (
     TimeAttendance,
     D_JOB_HISTORY,
     M_TIMECARD_TEMPLATE,
+    SystemInfo,
 )
-from flask_login import logout_user
-from flask import abort
-from functools import wraps
-from werkzeug.security import generate_password_hash
-from datetime import datetime, timedelta, date, time
-from decimal import Decimal, ROUND_HALF_UP
-import jpholiday
-import os
-from dateutil.relativedelta import relativedelta
-from monthdelta import monthmod
+from app.forms import (
+    LoginForm,
+    AdminUserCreateForm,
+    ResetPasswordForm,
+    DelForm,
+    UpdateForm,
+    SaveForm,
+    SelectMonthForm,
+)
 from app.attendance_classes import AttendanceAnalysys
 from app.calender_classes import MakeCalender
 from app.calc_work_classes import DataForTable, CalcTimeClass, get_last_date
-from sqlalchemy import and_
 from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
-import math
+from app.approval_contact import make_system_skype_object
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -93,16 +98,8 @@ def indextime(STAFFID, intFlg):
     ptn = ["^[0-9０-９]+$", "^[0-9.０-９．]+$"]
     specification = ["readonly", "checked", "selected", "hidden", "disabled"]
     typ = ["submit", "text", "time", "checkbox", "number", "month"]
-    team_name = [
-        "本社",
-        "WADEWADE訪問看護ステーション宇都宮",
-        "WADEWADE訪問看護ステーション下野",
-        "WADEWADE訪問看護ステーション鹿沼",
-        "KODOMOTOナースステーションうつのみや",
-        "わでわで在宅支援センターうつのみや",
-        "わでわで子どもそうだんしえん",
-        "WADEWADE訪問看護ステーションつくば",
-    ]
+
+    team_name = db.session.query(Team.NAME).all()
 
     ##### カレンダーとM_NOTIFICATION土日出勤の紐づけ関数 #####
 
@@ -317,6 +314,17 @@ def indextime(STAFFID, intFlg):
     length_oncall_8 = len(onc_8)
 
     reload_y = ""
+
+    """ 25/1/12 変更箇所① """
+    today = datetime.today()
+    # 受け取る人SkypeID
+    skype_recive_account = db.session.get(SystemInfo, 20)
+    # 送る人SkypeID
+    skype_system_obj = make_system_skype_object()
+
+    channel = skype_system_obj.contacts[skype_recive_account.SKYPE_ID].chat
+    updated_user_list = []
+
     ##### 保存ボタン押下処理（１日始まり） 打刻ページ表示で使用 #####
     if form.validate_on_submit():
 
@@ -414,10 +422,11 @@ def indextime(STAFFID, intFlg):
             elif data9 == "" or data9 == "0":
                 engel = "0"
 
+            current_type_date = datetime.strptime(data1, "%Y-%m-%d")
             holiday = ""
-            if jpholiday.is_holiday_name(datetime.strptime(data1, "%Y-%m-%d")):
+            if jpholiday.is_holiday_name(current_type_date):
                 holiday = "2"
-            elif get_day_of_week_jp(datetime.strptime(data1, "%Y-%m-%d")) == "1":
+            elif get_day_of_week_jp(current_type_date) == "1":
                 holiday = "1"
 
             if data12 == "on":
@@ -471,8 +480,14 @@ def indextime(STAFFID, intFlg):
 
                 db.session.add(AddATTENDANCE)
 
-            i = i + 1
+            """ 25/1/12 変更箇所② """
+            # 先月の変更した人、後Skype通知
+            if today.month > current_type_date.month or (
+                current_type_date.month == 12 and today.month == 1
+            ):
+                updated_user_list.append(STAFFID)
 
+            i = i + 1
         db.session.commit()
 
     # 配列に初期値入れてデータの存在するとこに入れる
@@ -669,7 +684,6 @@ def indextime(STAFFID, intFlg):
     over = o_h + o_m / 100
     over_10 = sum_over_0 / (60 * 60)
 
-    print(f"Holiday work: {syukkin_holiday_times_0}")
     sum_hol_0 = 0
     for n in range(len(syukkin_holiday_times_0)):
         sum_hol_0 += syukkin_holiday_times_0[n]
@@ -686,6 +700,14 @@ def indextime(STAFFID, intFlg):
     for n in range(len(syukkin_times)):
         AttendanceDada[Shin.WORKDAY.day][13] += syukkin_times[n]
         print(f"Work time list: {AttendanceDada[Shin.WORKDAY.day][13]}")
+
+    """ 25/1/12 変更箇所③ """
+    # ここでSkype通知
+    if len(updated_user_list) != 0:
+        report_message = (
+            f"ID{set(updated_user_list)}さんが、先月の出退勤を変更されました。"
+        )
+        channel.sendMsg(report_message)
 
     return render_template(
         "attendance/index.html",

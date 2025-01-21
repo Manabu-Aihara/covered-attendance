@@ -79,12 +79,12 @@ async def test_get_query_from_data():
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_update_count_table():
-    toc_obj = TableOfCount(10)
-    toc_obj.id = "10202501"
-    toc_obj.YEAR_MONTH = "102501"
+async def test_update_count_table(app_context):
+    toc_obj = TableOfCount(42)
+    # toc_obj.id = "422501"
+    toc_obj.YEAR_MONTH = "2501"
     toc_obj.KEKKIN = 1
     # toc_obj.ONCALL = 1
     toc_obj.WORKDAY_COUNT = 15
     # print(toc_obj.__dict__)
-    await update_count_table(toc_obj)
+    await update_count_table(toc_obj, 42)

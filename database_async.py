@@ -72,7 +72,7 @@ class RoutingSession(Session):
     def get_bind(self, mapper=None, clause=None, **kw):
         if isinstance(clause, (Insert, Update, Delete)):
             print(f"second pass: ---{clause}---")
-            return Engines.SECONDARY.value.sync_engine
+            return Engines.PRIMARY.value.sync_engine
         elif isinstance(clause, Select):
             print(f"first pass: ---{clause}---")
             return Engines.PRIMARY.value.sync_engine

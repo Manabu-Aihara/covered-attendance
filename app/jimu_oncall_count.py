@@ -70,7 +70,7 @@ from app.attendance_util import (
     convert_null_role,
 )
 from app.db_check_util import compare_db_item, check_contract_value
-from app.async_db_lib import get_query_from_date, get_session_query
+from app.async_db_lib import get_query_from_date, get_session_query, update_count_table
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -502,7 +502,7 @@ async def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str
 # 再集計ボタンクリック
 @app.route("/calc_clerk/<startday>/<worktype>", methods=["POST"])
 @login_required
-def calcrate_month_data(startday: str, worktype: str):
+async def calcrate_month_data(startday: str, worktype: str):
     form_month = SelectMonthForm()
     selected_date: str
     if form_month.validate_on_submit():
@@ -538,8 +538,9 @@ def calcrate_month_data(startday: str, worktype: str):
         if UserID != Shin.STAFFID:
             UserID = Shin.STAFFID
             # cnt_for_tbl = CounterForTable.query.get(UserID)
-            count_table_obj = TableOfCount(UserID)
-            # AttendanceDada = [["" for i in range(16)] for j in range(d + 1)]
+
+            # ここじゃダメなのですよ！
+            # count_table_obj = TableOfCount(UserID)
             # 各スタッフのカウントになる、不思議
             workday_count = 0
             """ 24/8/22 納得いかないまでも、追加した変数 """
@@ -688,28 +689,21 @@ def calcrate_month_data(startday: str, worktype: str):
         # 実労働時間計：60進数
         time_sum60 = w_h + w_m / 100
 
-        real_sum: float = 0.0
         # for n in range(len(real_time_sum)):
         #     real_sum += real_time_sum[n]
-        real_sum = sum(real_time_sum)
+        real_sum: int = sum(real_time_sum)
         w_h = real_sum // (60 * 60)
         w_m = (real_sum - w_h * 60 * 60) // 60
         # リアル労働時間計：60進数
         real_time = w_h + w_m / 100
         # real_time_10 = real_sum / (60 * 60)
 
-        """ 24/8/20 変更分 """
-        # w_m = (real_sum - w_h * 60 * 60) / (60 * 60)
-        # real_time_lengthy = w_h + w_m
-        # real_time = Decimal(real_time_lengthy).quantize(Decimal("0.01"), ROUND_HALF_UP)
-
-        sum_over_0: float = 0.0
         # for n in range(len(over_time_0)):
         #     if not over_time_0[n]:
         #         sum_over_0 = sum_over_0
         #     else:
         #         sum_over_0 += over_time_0[n]
-        sum_over_0 = sum(over_time_0)
+        sum_over_0: int = sum(over_time_0)
         o_h = sum_over_0 // (60 * 60)
         o_m = (sum_over_0 - o_h * 60 * 60) // 60
         # 残業時間計：60進数
@@ -719,10 +713,9 @@ def calcrate_month_data(startday: str, worktype: str):
         # 残業時間計：10進数
         over10_rnd = Decimal(over_10).quantize(Decimal("0.01"), ROUND_HALF_UP)
 
-        sum_hol_0: float = 0.0
         # for t in syukkin_holiday_times_0:
         #     sum_hol_0 += t
-        sum_hol_0 = sum(syukkin_holiday_times_0)
+        sum_hol_0: int = sum(syukkin_holiday_times_0)
         h_h = sum_hol_0 // (60 * 60)
         h_m = (sum_hol_0 - h_h * 60 * 60) // 60
         # 看護師休日労働時間計：60進数
@@ -742,8 +735,8 @@ def calcrate_month_data(startday: str, worktype: str):
 
         # if count_table_obj.YEAR_MONTH != year_month:
         year_month = f"{y}{m}"
+        count_table_obj = TableOfCount(UserID)
         count_table_obj.id = str(UserID) + year_month
-        # print(f"!!Compare date: {year_month}")
         count_table_obj.YEAR_MONTH = year_month
         count_table_obj.SUM_WORKTIME = time_sum60
         count_table_obj.SUM_WORKTIME_10 = time_sum_rnd
@@ -768,10 +761,11 @@ def calcrate_month_data(startday: str, worktype: str):
         count_table_obj.MILEAGE = distance_sum
         count_table_obj.TIMEOFF = timeoff
         count_table_obj.HALFWAY_THROUGH = halfway_through
-        # print(f"!DB date: {count_table_obj.YEAR_MONTH}")
-        db.session.merge(count_table_obj)
 
-        db.session.commit()
+        # db.session.merge(count_table_obj)
+        await update_count_table(count_table_obj, UserID)
+
+        # db.session.commit()
 
         totalling_counter += 1
     # for終わり
