@@ -412,7 +412,7 @@ def indextime(STAFFID, intFlg):
                     db.session.add(AddATTENDANCE)
 
                 # 先月の変更した人、後Skype通知
-                if today.month < current_type_date.month or (
+                if current_type_date.month < today.month or (
                     current_type_date.month == 12 and today.month == 1
                 ):
                     updated_user_list.append(STAFFID)
@@ -487,6 +487,7 @@ def indextime(STAFFID, intFlg):
 
     workday_count: int = 0
     work_time_sum: float = 0.0
+    disp_work_time_sum = Decimal("0")
     calc_time_factory = CalcTimeFactory()
     for attendace_query in attendance_query_list:
         Shin = attendace_query[0]
@@ -565,7 +566,7 @@ def indextime(STAFFID, intFlg):
             Decimal("0.1"), ROUND_HALF_UP
         )
 
-    s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
+        s_kyori.append(str(ZeroCheck(Shin.MILEAGE)))
 
     ln_s_kyori = 0
     if s_kyori is not None:
