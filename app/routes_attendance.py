@@ -279,7 +279,8 @@ def indextime(STAFFID, intFlg):
     #     skype_send_account.MAIL, skype_send_account.MICRO_PASS
     # )
     channel = skype_system_obj.contacts[skype_recive_account.SKYPE_ID].chat
-    updated_user_list = []
+    updated_user: str = ""
+    updated_month: int = 0
 
     ##### 保存ボタン押下処理（１日始まり） 打刻ページ表示で使用 #####
     if form.validate_on_submit():
@@ -411,11 +412,13 @@ def indextime(STAFFID, intFlg):
                     )
                     db.session.add(AddATTENDANCE)
 
-                # 先月の変更した人、後Skype通知
-                if current_type_date.month < today.month or (
-                    current_type_date.month == 12 and today.month == 1
+                # 過去出退勤、変更した人、後Skype通知
+                if current_type_date.month != today.month and (
+                    current_type_date < today
                 ):
-                    updated_user_list.append(STAFFID)
+                    target_user: User = db.session.get(User, STAFFID)
+                    updated_user = f"{target_user.LNAME} {target_user.FNAME}"
+                    updated_month = current_type_date.month
 
                 db.session.commit()
 
@@ -545,11 +548,11 @@ def indextime(STAFFID, intFlg):
             syukkin_holiday_times_0.append(nurse_holiday_work_time)
 
         print(f"{Shin.WORKDAY.day} 日")
-        print(f"Real time: {calc_real_time}")
-        print(f"Actual time: {actual_work_time}")
-        print(f"List of real time: {real_time_sum}")
-        print(f"List of over time: {over_time_0}")
-        print(f"Nurse holiday work: {syukkin_holiday_times_0}")
+        # print(f"Real time: {calc_real_time}")
+        # print(f"Actual time: {actual_work_time}")
+        # print(f"List of real time: {real_time_sum}")
+        # print(f"List of over time: {over_time_0}")
+        # print(f"Nurse holiday work: {syukkin_holiday_times_0}")
 
         # 実働時間表示用
         actual_work_time_str = re.sub(
@@ -574,21 +577,6 @@ def indextime(STAFFID, intFlg):
             ln_s_kyori += float(s)
         ln_s_kyori = math.floor(ln_s_kyori * 10) / 10
 
-    # w_h = sum_0 // (60 * 60)
-    # """ 24/8/1 修正分 """
-    # w_m = (sum_0 - w_h * 60 * 60) / (60 * 60)
-    # # 勤務時間合計
-    # working_time = w_h + w_m
-    # working_time_10 = sum_0 / (60 * 60)
-
-    # sum_over_0 = 0.0
-    # for n in range(len(over_time_0)):
-    #     sum_over_0 += over_time_0[n]
-    # o_h = sum_over_0 // (60 * 60)
-    # o_m = (sum_over_0 - o_h * 60 * 60) // 60
-    # over = o_h + o_m / 100
-    # over_10 = sum_over_0 / (60 * 60)
-
     sum_hol_0 = 0
     for n in range(len(syukkin_holiday_times_0)):
         sum_hol_0 += syukkin_holiday_times_0[n]
@@ -608,9 +596,9 @@ def indextime(STAFFID, intFlg):
         AttendanceData[Shin.WORKDAY.day]["alcohol"] += syukkin_times[n]
 
     # ここでSkype通知
-    if len(updated_user_list) != 0:
+    if updated_user != "" and updated_month != 0:
         report_message = (
-            f"ID{set(updated_user_list)}さんが、先月の出退勤を変更されました。"
+            f"{updated_user}さんが、{updated_month}月の出退勤を変更されました。"
         )
         channel.sendMsg(report_message)
 

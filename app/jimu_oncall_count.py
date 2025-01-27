@@ -21,6 +21,7 @@ from flask_login import current_user, login_user, logout_user
 from flask_login.utils import login_required
 from sqlalchemy.orm import aliased
 from sqlalchemy import and_, or_, select
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash
 from werkzeug.urls import url_parse
 
@@ -70,7 +71,12 @@ from app.attendance_util import (
     convert_null_role,
 )
 from app.db_check_util import compare_db_item, check_contract_value
-from app.async_db_lib import get_query_from_date, get_session_query, update_count_table
+from app.async_db_lib import (
+    get_query_from_date,
+    merge_count_table,
+    update_count_table,
+    insert_count_table,
+)
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -735,8 +741,10 @@ async def calcrate_month_data(startday: str, worktype: str):
 
         # if count_table_obj.YEAR_MONTH != year_month:
         year_month = f"{y}{m}"
+        making_id = f"{UserID}{year_month}"
+
         count_table_obj = TableOfCount(UserID)
-        count_table_obj.id = str(UserID) + year_month
+        count_table_obj.id = making_id
         count_table_obj.YEAR_MONTH = year_month
         count_table_obj.SUM_WORKTIME = time_sum60
         count_table_obj.SUM_WORKTIME_10 = time_sum_rnd
@@ -763,10 +771,12 @@ async def calcrate_month_data(startday: str, worktype: str):
         count_table_obj.HALFWAY_THROUGH = halfway_through
 
         # db.session.merge(count_table_obj)
-        await update_count_table(count_table_obj, UserID)
+        try:
+            await merge_count_table(count_table_obj)
+        except Exception as e:
+            print(e)
 
         # db.session.commit()
-
         totalling_counter += 1
     # for終わり
     print(f"Totalling item count: {totalling_counter}")

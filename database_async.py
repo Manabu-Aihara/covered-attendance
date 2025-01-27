@@ -4,14 +4,16 @@ import os
 from contextlib import asynccontextmanager
 from enum import Enum
 
-from sqlalchemy import Column, Integer, String, Insert, Update, Delete, Select, NullPool
+from sqlalchemy import Insert, Update, Delete, Select, NullPool
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base, Session
+
+# from asyncmy.errors import IntegrityError
+from sqlalchemy.exc import IntegrityError
 
 # from flask.ext.sqlalchemy import SQLAlchemy
 from flask_sqlalchemy import SQLAlchemy
 
-from app import app
 
 from dotenv import load_dotenv
 
@@ -57,10 +59,6 @@ class Engines(Enum):
     )
 
 
-Base = declarative_base()
-external_db = SQLAlchemy()
-
-
 # class Tutorial(Base):
 #     __tablename__ = "tutorials"
 
@@ -89,9 +87,10 @@ async def get_session():
 
         async with async_session() as session:
             yield session
-    except RuntimeError as e:
-        print(f"!!Async session error: {e}!!")
+    except IntegrityError as e:
+        # print(f"!!Async session error: {e}!!")
         await session.rollback()
-        raise "再度ボタンクリックしてください"
+        raise "再度「再集計」ボタンをクリックしてください"
     finally:
+        # print("ここは通る！")
         await session.close()

@@ -323,7 +323,8 @@ def indextime(STAFFID, intFlg):
     skype_system_obj = make_system_skype_object()
 
     channel = skype_system_obj.contacts[skype_recive_account.SKYPE_ID].chat
-    updated_user_list = []
+    updated_user: str = ""
+    updated_month: int = 0
 
     ##### 保存ボタン押下処理（１日始まり） 打刻ページ表示で使用 #####
     if form.validate_on_submit():
@@ -481,11 +482,11 @@ def indextime(STAFFID, intFlg):
                 db.session.add(AddATTENDANCE)
 
             """ 25/1/12 変更箇所② """
-            # 先月の変更した人、後Skype通知
-            if today.month > current_type_date.month or (
-                current_type_date.month == 12 and today.month == 1
-            ):
-                updated_user_list.append(STAFFID)
+            # 過去出退勤、変更した人、後Skype通知
+            if current_type_date.month != today.month and (current_type_date < today):
+                target_user: User = db.session.get(User, STAFFID)
+                updated_user = f"{target_user.LNAME} {target_user.FNAME}"
+                updated_month = current_type_date.month
 
             i = i + 1
         db.session.commit()
@@ -703,9 +704,9 @@ def indextime(STAFFID, intFlg):
 
     """ 25/1/12 変更箇所③ """
     # ここでSkype通知
-    if len(updated_user_list) != 0:
+    if updated_user != "" and updated_month != 0:
         report_message = (
-            f"ID{set(updated_user_list)}さんが、先月の出退勤を変更されました。"
+            f"{updated_user}さんが、{updated_month}月の出退勤を変更されました。"
         )
         channel.sendMsg(report_message)
 
