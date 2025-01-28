@@ -192,7 +192,7 @@ class CalcTimeClass:
         m_split = select_time_hm.minute
         if m_split == 0:
             return select_time_hm
-        elif m_split > 30:
+        elif m_split >= 30:
             h_integer = h_split + 1
             h_string_time = f"{h_integer}:00"
             return datetime.strptime(h_string_time, "%H:%M")
