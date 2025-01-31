@@ -49,6 +49,7 @@ from app.calc_work_classes2 import CalcTimeFactory, get_last_date
 from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
 from app.attendance_query_class import AttendanceQuery
 from app.approval_contact import make_system_skype_object
+from app.attendance_logging import AttendanceLogger
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -269,16 +270,18 @@ def indextime(STAFFID, intFlg):
     reload_y = ""
 
     today = datetime.today()
+    """ Skype通知機能、今不要 """
     # 受け取る人SkypeID
-    skype_recive_account = db.session.get(SystemInfo, 20)
+    # skype_recive_account = db.session.get(SystemInfo, 20)
     # 送る人SkypeID
     # skype_send_account = db.session.get(SystemInfo, STAFFID)
 
-    skype_system_obj = make_system_skype_object()
+    # skype_system_obj = make_system_skype_object()
     # skype_system_obj = make_skype_object(
     #     skype_send_account.MAIL, skype_send_account.MICRO_PASS
     # )
-    channel = skype_system_obj.contacts[skype_recive_account.SKYPE_ID].chat
+    # channel = skype_system_obj.contacts[skype_recive_account.SKYPE_ID].chat
+
     updated_user: str = ""
     updated_month: int = 0
 
@@ -413,12 +416,12 @@ def indextime(STAFFID, intFlg):
                     db.session.add(AddATTENDANCE)
 
                 # 過去出退勤、変更した人、後Skype通知
-                if current_type_date.month != today.month and (
-                    current_type_date < today
-                ):
-                    target_user: User = db.session.get(User, STAFFID)
-                    updated_user = f"{target_user.LNAME} {target_user.FNAME}"
-                    updated_month = current_type_date.month
+                # if current_type_date.month != today.month and (
+                #     current_type_date < today
+                # ):
+                target_user: User = db.session.get(User, STAFFID)
+                updated_user = f"{target_user.LNAME} {target_user.FNAME}"
+                updated_month = current_type_date.month
 
                 db.session.commit()
 
@@ -597,10 +600,11 @@ def indextime(STAFFID, intFlg):
 
     # ここでSkype通知
     if updated_user != "" and updated_month != 0:
-        report_message = (
-            f"{updated_user}さんが、{updated_month}月の出退勤を変更されました。"
-        )
-        channel.sendMsg(report_message)
+        report_message = f"{updated_user}"
+        # Skypeは、今いりません
+        # channel.sendMsg(report_message)
+        logger = AttendanceLogger.get_logger(updated_month)
+        logger.info(report_message)
 
     return render_template(
         "attendance/index_diff.html",

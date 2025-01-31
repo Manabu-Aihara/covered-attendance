@@ -13,9 +13,9 @@ from dataclasses import dataclass, field, InitVar
 from abc import ABCMeta
 from functools import lru_cache
 from datetime import datetime, timedelta, time
-from decimal import Decimal, ROUND_HALF_UP
 import calendar
-import jpholiday
+import numpy as np
+import pandas as pd
 
 from flask_login import current_user, login_user
 
@@ -60,9 +60,17 @@ def get_last_date(year, month):
     return calendar.monthrange(year, month)[1]
 
 
+def extract_last_attend(touched_month: int, target_staff: str):
+    today = datetime.today()
+    csv_file = f"attendance{today.year}{touched_month}.csv"
+
+    df = pd.read_csv(csv_file, names=["Date", "ms", "Staff"])
+    staff_dframe = df[df["Staff"] == f"{target_staff}"]
+    last_date: datetime = staff_dframe["Date"].max()
+    return last_date
+
+
 # ***** 各勤怠カウント計算ひな形（１日基準） *****#
-
-
 @dataclass
 class ContractTimeClass:
     # staff_id: Optional[int]
@@ -105,7 +113,8 @@ class ContractTimeClass:
 
         # if related_holiday is None:
         #     raise TypeError("There is not in D_HOLIDAY_HISTORY")
-        # 契約時間を更新
+        # パートの契約時間
+        # それぞれなければ、RecordPaidHoliday.BASETIMES_PAIDHOLIDAY
         contract_work_time = (
             paid_holiday_time
             if part_contract_work.PART_WORKTIME is None
@@ -247,7 +256,7 @@ class CalcTimeClass:
         round_up_start = self.round_up_time(self.sh_starttime)
 
         # 今のところ私の判断、追加・変更あり
-        if round_up_start.strftime("%H:%M") >= "13:00" or self.sh_endtime <= "13:00":
+        if round_up_start.strftime("%H:%M") >= "13:00" or self.sh_endtime < "13:00":
             return timedelta(0)
         else:
             if input_work_time >= timedelta(hours=6):

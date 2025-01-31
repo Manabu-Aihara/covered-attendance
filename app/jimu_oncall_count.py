@@ -134,6 +134,19 @@ def jimu_select_page():
     )
 
 
+@app.route("/select_month_last_change", methods=["POST"])
+@login_required
+def post_select_month():
+    select_month = request.form.get("target-month")
+
+    return redirect(f"/last_date_save/{select_month}")
+
+
+# @app.route("/last_date_save/<select_month>", methods=["GET"])
+# @login_required
+# def get_save_date(select_month: str):
+
+
 ##### 常勤1日基準 #####
 @app.route("/jimu_oncall_count_26/<STAFFID>", methods=["GET", "POST"])
 @login_required

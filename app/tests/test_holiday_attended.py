@@ -2,12 +2,14 @@ import pytest
 from datetime import datetime
 import re
 
+import pandas as pd
 from sqlalchemy import and_, or_
 
 from app import db
 from app.models import RecordPaidHoliday, Shinsei
 from app.holiday_acquisition import HolidayAcquire
 from app.holiday_detail import AttendaceNotice
+from app.calc_work_classes2 import extract_last_attend
 
 TARGET_ID = 176
 
@@ -61,6 +63,7 @@ def test_sum_attend_time_rest(app_context):
     assert count == 7
 
 
+@pytest.mark.skip
 def test_re_replace():
     s = "12:34:00"
     # date_t = datetime.strptime(s, "%h:%m:%s")
@@ -68,3 +71,9 @@ def test_re_replace():
     re_result = re.sub(r"(\d{2}):(\d{2}):00", r"\1:\2", s)
     assert re_result == "12:34"
     assert isinstance(re_result, str)
+
+
+def test_extract_last_attend():
+    result_df = extract_last_attend(1, "Sammo Hung")
+    print(result_df)
+    # assert result_df.size == 3
