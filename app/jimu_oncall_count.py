@@ -72,11 +72,9 @@ from app.attendance_util import (
 )
 from app.db_check_util import compare_db_item, check_contract_value
 from app.async_db_lib import (
-    get_query_from_date,
     merge_count_table,
-    update_count_table,
-    insert_count_table,
 )
+from app.convert_db_lib import get_query_from_date
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -384,7 +382,7 @@ def get_day_term(start_day: int, select_year: int, select_month: int) -> Tuple[d
     methods=["GET"],
 )
 @login_required
-async def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
+def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
     typ = ["submit", "text", "time", "checkbox", "number", "date"]
     form_month = SelectMonthForm()
@@ -460,9 +458,7 @@ async def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str
     # route_tss.start()
     # print(f"Main thread: {route_tss.ident}")
     # route_tss.join()
-    count_month_list = await get_query_from_date(year_month)
-    # async with get_session() as session:
-    #     count_month_list = await get_session_query(session, year_month)
+    count_month_list = get_query_from_date(year_month)
 
     # c_profile.disable()
     # c_stats = pstats.Stats(c_profile)
@@ -505,7 +501,7 @@ async def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str
     )
 
 
-# 再集計ボタンクリック
+# 再集計ボタンクリック、DB使い分けのため非同期
 @app.route("/calc_clerk/<startday>/<worktype>", methods=["POST"])
 @login_required
 async def calcrate_month_data(startday: str, worktype: str):
@@ -536,7 +532,7 @@ async def calcrate_month_data(startday: str, worktype: str):
     calc_time_factory = CalcTimeFactory()
     n_absence_list: List[str] = ["8", "17", "18", "19", "20"]
     for clerical_attendance in clerical_attendance_query:
-        print("!!!処理を通る!!!")
+        # print("!!!処理を通る!!!")
         Shin = clerical_attendance[0]
 
         # スタッフが変ったら

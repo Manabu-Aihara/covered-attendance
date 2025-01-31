@@ -6,14 +6,12 @@ from enum import Enum
 
 from sqlalchemy import Insert, Update, Delete, Select, NullPool
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.orm import declarative_base, Session
+from sqlalchemy.orm import Session
 
 # from asyncmy.errors import IntegrityError
 from sqlalchemy.exc import IntegrityError
 
-# from flask.ext.sqlalchemy import SQLAlchemy
-from flask_sqlalchemy import SQLAlchemy
-
+from app.convert_db_lib import get_panda_url
 
 from dotenv import load_dotenv
 
@@ -31,6 +29,9 @@ class Engines(Enum):
                     "host": os.getenv("DB_HOST"),
                     "port": os.getenv("DB_PORT"),
                     "db_name": os.getenv("DB_NAME"),
+                    # "host": "127.0.0.1",
+                    # "port": "3307",
+                    # "db_name": "cat",
                 }
             )
         ),
@@ -42,17 +43,7 @@ class Engines(Enum):
         poolclass=NullPool,
     )
     SECONDARY = create_async_engine(
-        url=(
-            "mysql+asyncmy://{user}:{password}@{host}:{port}/{db_name}?charset=utf8mb4".format(
-                **{
-                    "user": os.getenv("DB_USER"),
-                    "password": os.getenv("DB_PASSWORD"),
-                    "host": "127.0.0.1",
-                    "port": "3307",
-                    "db_name": "panda",
-                }
-            )
-        ),
+        url=get_panda_url(),
         echo=True,
         pool_pre_ping=True,
         poolclass=NullPool,
@@ -70,7 +61,7 @@ class RoutingSession(Session):
     def get_bind(self, mapper=None, clause=None, **kw):
         if isinstance(clause, (Insert, Update, Delete)):
             print(f"second pass: ---{clause}---")
-            return Engines.PRIMARY.value.sync_engine
+            return Engines.SECONDARY.value.sync_engine
         elif isinstance(clause, Select):
             print(f"first pass: ---{clause}---")
             return Engines.PRIMARY.value.sync_engine

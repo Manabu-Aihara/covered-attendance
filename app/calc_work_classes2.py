@@ -192,7 +192,7 @@ class CalcTimeClass:
         m_split = select_time_hm.minute
         if m_split == 0:
             return select_time_hm
-        elif m_split > 30:
+        elif m_split >= 30:
             h_integer = h_split + 1
             h_string_time = f"{h_integer}:00"
             return datetime.strptime(h_string_time, "%H:%M")
@@ -247,7 +247,7 @@ class CalcTimeClass:
         round_up_start = self.round_up_time(self.sh_starttime)
 
         # 今のところ私の判断、追加・変更あり
-        if round_up_start.strftime("%H:%M") >= "13:00" or self.sh_endtime <= "13:00":
+        if round_up_start.strftime("%H:%M") >= "13:00" or self.sh_endtime < "13:00":
             return timedelta(0)
         else:
             if input_work_time >= timedelta(hours=6):

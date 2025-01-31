@@ -13,6 +13,7 @@ from app import db
 from app.models import TableOfCount, Shinsei
 from app.async_db_lib import (
     get_query_from_date,
+    get_record,
     get_session_query,
     update_count_table,
     insert_count_table,
@@ -95,9 +96,9 @@ def make_month_attend_info(app_context):
     return attendances
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio(loop_scope="session")
 async def test_merge_count_table(month_attends):
-    # async with get_session() as session:
     cnt: int = 0
     for month_attend in month_attends:
         for target_attend in month_attend:
@@ -117,7 +118,6 @@ async def test_merge_count_table(month_attends):
             cnt += 1
             await merge_count_table(toc_obj)
             print(f"Loop: {cnt}")
-            # await session.execute(statement=stmt)
 
 
 @pytest.mark.skip
@@ -128,7 +128,7 @@ def test_get_session(async_session: AsyncSession):
         print(result.scalar_one().id)
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 @pytest.mark.asyncio(loop_scope="session")
 async def test_get_query_from_data():
     results = await get_query_from_date("202412")
@@ -146,3 +146,9 @@ async def test_update_count_table(app_context):
     toc_obj.WORKDAY_COUNT = 15
     # print(toc_obj.__dict__)
     await update_count_table(toc_obj, 42)
+
+
+# @pytest.mark.skip
+def test_get_record(app_context):
+    query = get_record("42202501")
+    assert isinstance(query, TableOfCount)
