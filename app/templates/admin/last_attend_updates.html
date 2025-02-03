@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div>
+  <ul>
+    {% for last_update in last_update_list %}
+    <li>
+      <span>{{ last_update['staff'] }}: </span>
+      <span>{{ last_update['last_date'] }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+
+{% endblock %}

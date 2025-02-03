@@ -9,7 +9,7 @@ from app import db
 from app.models import RecordPaidHoliday, Shinsei
 from app.holiday_acquisition import HolidayAcquire
 from app.holiday_detail import AttendaceNotice
-from app.calc_work_classes2 import extract_last_attend
+from app.calc_work_classes_diff import convert_ym_date, extract_last_update
 
 TARGET_ID = 176
 
@@ -73,7 +73,17 @@ def test_re_replace():
     assert isinstance(re_result, str)
 
 
+def test_convert_ym_date():
+    result_regex = convert_ym_date("2024-11")
+    print(result_regex)
+    print(type(result_regex))
+
+
 def test_extract_last_attend():
-    result_df = extract_last_attend(1, "Sammo Hung")
-    print(result_df)
+    result = extract_last_update("2024-11")
+    # print(result_sr.to_dict().values())
+    # print(type(result_df.loc[:, "Date"]))
+    print(result)
+    print(type(result))
+
     # assert result_df.size == 3

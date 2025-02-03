@@ -4,13 +4,13 @@
 <div class="container my-2">
   <h2>管理者ホーム</h2>
   <div class="disp">
-  <div class="container base-w">
-    {% with messages = get_flashed_messages(with_categories=true) %} {% if
-    messages %} {% for category, message in messages %}
-    <div class="alert alert-warning">{{ message }}</div>
-    {% endfor %} {% endif %} {% endwith %}
+    <div class="container base-w">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div class="alert alert-warning">{{ message }}</div>
+      {% endfor %} {% endif %} {% endwith %}
+    </div>
   </div>
-</div>
   <br><br>
   <a href="{{ url_for('users_nenkyu') }}" class="btn btn-loyal">ユーザ年休検索画面へ</a>
   <br><br>
@@ -20,6 +20,14 @@
   <br><br>
   <a href="{{ url_for('users_list_admin') }}" class="btn btn-warning">ユーザリスト画面（ユーザ削除・打刻編集・パスワード編集）</a>
   <br><br>
+  <!-- 2025/2/3 -->
+  <div style="margin: 2%;">
+    <form method="POST" action="{{ url_for('post_select_month') }}">
+      <input type="month" class="h5" style="height: 5vh;" name="target-month" value="">
+      <input type="submit" class="btn btn-primary" value="表　示">
+    </form>
+  </div>
+  <!---->
   <a href="{{ url_for('logout') }}" class="btn btn-secondary">ログアウト</a>
 </div>
 {% endblock %}

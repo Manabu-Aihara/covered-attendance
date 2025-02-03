@@ -14,8 +14,6 @@ from abc import ABCMeta
 from functools import lru_cache
 from datetime import datetime, timedelta, time
 import calendar
-import numpy as np
-import pandas as pd
 
 from flask_login import current_user, login_user
 
@@ -58,16 +56,6 @@ def admin_login_required(func):
 # ***** 年月から最終日を返す*****#
 def get_last_date(year, month):
     return calendar.monthrange(year, month)[1]
-
-
-def extract_last_attend(touched_month: int, target_staff: str):
-    today = datetime.today()
-    csv_file = f"attendance{today.year}{touched_month}.csv"
-
-    df = pd.read_csv(csv_file, names=["Date", "ms", "Staff"])
-    staff_dframe = df[df["Staff"] == f"{target_staff}"]
-    last_date: datetime = staff_dframe["Date"].max()
-    return last_date
 
 
 # ***** 各勤怠カウント計算ひな形（１日基準） *****#
