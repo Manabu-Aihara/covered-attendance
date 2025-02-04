@@ -1,11 +1,10 @@
-from typing import Tuple, TypeVar, Any
+from typing import Tuple, TypeVar, Any, List, Dict
 from datetime import datetime
-
-from flask import session
+import re
+import pandas as pd
 
 from app import db
-from app.models import Busho, KinmuTaisei, Post, Team, Jobtype, SystemInfo
-from app.approval_contact import make_system_skype_object
+from app.models import Busho, KinmuTaisei, Post, Team, Jobtype
 
 
 def get_month_workday(selected_date: str) -> Tuple[int, int]:
@@ -86,15 +85,34 @@ def check_table_member(staff_id: int, table_model: T):
 # https://zenn.dev/timoneko/articles/16f9ee7113f3cd
 
 
-# def report_update_last_month(current_ymd_date: datetime, current_user: int) -> int:
-#     today = datetime.today()
-#     # 通知相手SkypeID
-#     skype_alert_account = db.session.get(SystemInfo, 20)
-#     skype_system_obj = make_system_skype_object()
-#     channel = skype_system_obj.contacts[skype_alert_account.SKYPE_ID].chat
+def convert_ym_date(touched_date: str) -> Tuple[str, int]:
+    the_year = re.sub(r"(\d{4})-(\d{2})", r"\1", touched_date)
+    the_month = re.sub(r"(\d{4})-(\d{2})", r"\2", touched_date)
+    # 01を1にしなければならない
+    return the_year, int(the_month)
 
-#     if today.month < current_ymd_date.month or (
-#         current_ymd_date.month == 12 and today.month == 1
-#     ):
-#         report_message = f"ID{current_user}さんが、先月の出退勤を変更されました。"
-#         channel.sendMsg(report_message)
+
+"""
+    @Params:
+        : str 指定した年月
+    @Return:
+        : list<dict> スタッフ、最終更新日時のペア
+        """
+
+
+def extract_last_update(selected_date: str) -> List[Dict]:
+    touched_year, touched_month = convert_ym_date(selected_date)
+    csv_file = f"attendance{touched_year}{touched_month}.csv"
+
+    df = pd.read_csv(csv_file, names=["Date", "ms", "Staff"])
+    # Staffの重複を消す
+    df_no_duplicate = df.drop_duplicates(subset=["Staff"], keep="last")
+
+    the_dict_list: List[Dict] = [{}]
+    # 値の抽出
+    staffs = df_no_duplicate.loc[:, "Staff"]
+    last_dates = df_no_duplicate.loc[:, "Date"]
+    for m, n in zip(staffs.to_list(), last_dates.to_list()):
+        the_dict_list.append({"staff": m, "last_date": n})
+
+    return the_dict_list
