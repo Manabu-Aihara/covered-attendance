@@ -25,7 +25,6 @@ from werkzeug.urls import url_parse
 from werkzeug.security import generate_password_hash
 
 from app import app, db
-from app import routes_admin_nenkyu, routes_admin_display_table
 from app.forms import (
     LoginForm,
     AdminUserCreateForm,

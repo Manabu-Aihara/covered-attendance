@@ -551,11 +551,11 @@ def indextime(STAFFID, intFlg):
             syukkin_holiday_times_0.append(nurse_holiday_work_time)
 
         print(f"{Shin.WORKDAY.day} 日")
-        # print(f"Real time: {calc_real_time}")
-        # print(f"Actual time: {actual_work_time}")
-        # print(f"List of real time: {real_time_sum}")
-        # print(f"List of over time: {over_time_0}")
-        # print(f"Nurse holiday work: {syukkin_holiday_times_0}")
+        print(f"Real time: {calc_real_time}")
+        print(f"Actual time: {actual_work_time}")
+        print(f"List of real time: {real_time_sum}")
+        print(f"List of over time: {over_time_0}")
+        print(f"Nurse holiday work: {syukkin_holiday_times_0}")
 
         # 実働時間表示用
         actual_work_time_str = re.sub(

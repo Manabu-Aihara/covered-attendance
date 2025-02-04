@@ -1,5 +1,6 @@
 import pytest
 from datetime import datetime
+import re
 
 from sqlalchemy import and_, or_
 
@@ -7,6 +8,7 @@ from app import db
 from app.models import RecordPaidHoliday, Shinsei
 from app.holiday_acquisition import HolidayAcquire
 from app.holiday_detail import AttendaceNotice
+from app.attendance_util import convert_ym_date, extract_last_update
 
 TARGET_ID = 176
 
@@ -52,9 +54,35 @@ def test_count_attend_notificatin(app_context):
     print(f"使った日数: {count}")
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_sum_attend_time_rest(app_context):
     attenntion_nofice_obj = AttendaceNotice(TARGET_ID)
     count = attenntion_nofice_obj.sum_attend_time_rest()
     # print(f"使った日数: {count}")
     assert count == 7
+
+
+@pytest.mark.skip
+def test_re_replace():
+    s = "12:34:00"
+    # date_t = datetime.strptime(s, "%h:%m:%s")
+
+    re_result = re.sub(r"(\d{2}):(\d{2}):00", r"\1:\2", s)
+    assert re_result == "12:34"
+    assert isinstance(re_result, str)
+
+
+def test_convert_ym_date():
+    result_regex = convert_ym_date("2024-11")
+    print(result_regex)
+    print(type(result_regex))
+
+
+def test_extract_last_attend():
+    result = extract_last_update("2024-11")
+    # print(result_sr.to_dict().values())
+    # print(type(result_df.loc[:, "Date"]))
+    print(result)
+    print(type(result))
+
+    # assert result_df.size == 3

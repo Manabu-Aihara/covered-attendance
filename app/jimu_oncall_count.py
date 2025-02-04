@@ -26,7 +26,7 @@ from werkzeug.security import generate_password_hash
 from werkzeug.urls import url_parse
 
 from database_async import get_session
-from app import app, db, jimu_every_attendance, routes_attendance_option
+from app import app, db
 from app.attendance_admin_classes import AttendanceAdminAnalysys
 from app.calc_work_classes2 import (
     CalcTimeClass,
@@ -602,9 +602,9 @@ async def calcrate_month_data(startday: str, worktype: str):
             and Shin.MILEAGE != "0.0"
             else 0
         )
-        print(
-            f"Inner Count log: {on_call_cnt} {on_call_cnt_cnt} {on_call_holiday_cnt} {engel_int_cnt}"
-        )
+        # print(
+        #     f"Inner Count log: {on_call_cnt} {on_call_cnt_cnt} {on_call_holiday_cnt} {engel_int_cnt}"
+        # )
 
         holiday_cnt += 1 if Shin.NOTIFICATION == "3" else 0
         half_holiday_cnt += (
@@ -620,9 +620,9 @@ async def calcrate_month_data(startday: str, worktype: str):
             1 if Shin.NOTIFICATION == "6" or Shin.NOTIFICATION2 == "6" else 0
         )
         reflesh_cnt += 1 if Shin.NOTIFICATION == "7" else 0
-        print(
-            f"Inner Count log: {holiday_cnt} {half_holiday_cnt} {late_cnt} {leave_early_cnt} {absence_cnt} {trip_cnt} {half_trip_cnt}"
-        )
+        # print(
+        #     f"Inner Count log: {holiday_cnt} {half_holiday_cnt} {late_cnt} {leave_early_cnt} {absence_cnt} {trip_cnt} {half_trip_cnt}"
+        # )
 
         real_time_sum_append = real_time_sum.append
         over_time_append = over_time_0.append
@@ -666,11 +666,11 @@ async def calcrate_month_data(startday: str, worktype: str):
             nurse_holiday_append(nurse_holiday_work_time)
 
         print(f"{Shin.WORKDAY.day} 日")
-        print(f"Real time: {calc_real_time}")
-        print(f"Actual time: {actual_work_time}")
-        print(f"In real time list: {real_time_sum}")
-        print(f"In over time list: {over_time_0}")
-        print(f"Nurse holiday: {syukkin_holiday_times_0}")
+        # print(f"Real time: {calc_real_time}")
+        # print(f"Actual time: {actual_work_time}")
+        # print(f"In real time list: {real_time_sum}")
+        # print(f"In over time list: {over_time_0}")
+        # print(f"Nurse holiday: {syukkin_holiday_times_0}")
 
         ##### データベース貯蔵 #####
 
@@ -891,373 +891,374 @@ def jimu_users_select(STAFFID):
     )
 
 
-@app.route("/jimu_nenkyu_detail/<STAFFID>", methods=["GET", "POST"])
-@login_required
-def jimu_nenkyu_detail(STAFFID):
-    stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
-    STAFFID = STAFFID
-    user = User.query.get(STAFFID)
-    rp_holiday = RecordPaidHoliday.query.get(STAFFID)
-    shinseis = Shinsei.query.filter(Shinsei.STAFFID == STAFFID).all()
-    cnt_attendance = CountAttendance.query.get(STAFFID)
-    tm_attendance = TimeAttendance.query.get(STAFFID)
+# @app.route("/jimu_nenkyu_detail/<STAFFID>", methods=["GET", "POST"])
+# @login_required
+# def jimu_nenkyu_detail(STAFFID):
+#     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
+#     STAFFID = STAFFID
+#     user = User.query.get(STAFFID)
+#     rp_holiday = RecordPaidHoliday.query.get(STAFFID)
+#     shinseis = Shinsei.query.filter(Shinsei.STAFFID == STAFFID).all()
+#     cnt_attendance = CountAttendance.query.get(STAFFID)
+#     tm_attendance = TimeAttendance.query.get(STAFFID)
 
-    next_datagrant = rp_holiday.NEXT_DATEGRANT - timedelta(days=1)
+#     next_datagrant = rp_holiday.NEXT_DATEGRANT - timedelta(days=1)
 
-    ##### 今回付与日数 #####
-    inday = user.INDAY
+#     ##### 今回付与日数 #####
+#     inday = user.INDAY
 
-    def nenkyu_days(a, h, s):
+#     def nenkyu_days(a, h, s):
 
-        if rp_holiday.LAST_DATEGRANT is None:
-            shinseis = (
-                Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
-                .filter(Shinsei.NOTIFICATION == "3")
-                .all()
-            )
-            for shs in shinseis:
-                if (
-                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d") >= inday
-                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    < rp_holiday.NEXT_DATEGRANT
-                ):
-                    nenkyu_all_days.add(shs.WORKDAY)
+#         if rp_holiday.LAST_DATEGRANT is None:
+#             shinseis = (
+#                 Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
+#                 .filter(Shinsei.NOTIFICATION == "3")
+#                 .all()
+#             )
+#             for shs in shinseis:
+#                 if (
+#                     datetime.strptime(shs.WORKDAY, "%Y-%m-%d") >= inday
+#                     and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     < rp_holiday.NEXT_DATEGRANT
+#                 ):
+#                     nenkyu_all_days.add(shs.WORKDAY)
 
-            shinseis = (
-                Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
-                .filter(Shinsei.NOTIFICATION == "4")
-                .all()
-            )
-            for shs in shinseis:
-                if (
-                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d") >= inday
-                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    < rp_holiday.NEXT_DATEGRANT
-                ):
-                    nenkyu_half_days.add(shs.WORKDAY)
+#             shinseis = (
+#                 Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
+#                 .filter(Shinsei.NOTIFICATION == "4")
+#                 .all()
+#             )
+#             for shs in shinseis:
+#                 if (
+#                     datetime.strptime(shs.WORKDAY, "%Y-%m-%d") >= inday
+#                     and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     < rp_holiday.NEXT_DATEGRANT
+#                 ):
+#                     nenkyu_half_days.add(shs.WORKDAY)
 
-            shinseis = (
-                Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
-                .filter(Shinsei.NOTIFICATION == "16")
-                .all()
-            )
-            for shs in shinseis:
-                if (
-                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d") >= inday
-                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    < rp_holiday.NEXT_DATEGRANT
-                ):
-                    seiri_days.append(shs.WORKDAY)
+#             shinseis = (
+#                 Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
+#                 .filter(Shinsei.NOTIFICATION == "16")
+#                 .all()
+#             )
+#             for shs in shinseis:
+#                 if (
+#                     datetime.strptime(shs.WORKDAY, "%Y-%m-%d") >= inday
+#                     and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     < rp_holiday.NEXT_DATEGRANT
+#                 ):
+#                     seiri_days.append(shs.WORKDAY)
 
-            shinseis = (
-                Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
-                .filter(Shinsei.NOTIFICATION2 == "4")
-                .all()
-            )
-            for shs in shinseis:
-                if (
-                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d") >= inday
-                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    < rp_holiday.NEXT_DATEGRANT
-                ):
-                    nenkyu_half_days.add(shs.WORKDAY)
+#             shinseis = (
+#                 Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
+#                 .filter(Shinsei.NOTIFICATION2 == "4")
+#                 .all()
+#             )
+#             for shs in shinseis:
+#                 if (
+#                     datetime.strptime(shs.WORKDAY, "%Y-%m-%d") >= inday
+#                     and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     < rp_holiday.NEXT_DATEGRANT
+#                 ):
+#                     nenkyu_half_days.add(shs.WORKDAY)
 
-            shinseis = (
-                Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
-                .filter(Shinsei.NOTIFICATION2 == "16")
-                .all()
-            )
-            for shs in shinseis:
-                if (
-                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d") >= inday
-                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    < rp_holiday.NEXT_DATEGRANT
-                ):
-                    seiri_days.append(shs.WORKDAY)
+#             shinseis = (
+#                 Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
+#                 .filter(Shinsei.NOTIFICATION2 == "16")
+#                 .all()
+#             )
+#             for shs in shinseis:
+#                 if (
+#                     datetime.strptime(shs.WORKDAY, "%Y-%m-%d") >= inday
+#                     and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     < rp_holiday.NEXT_DATEGRANT
+#                 ):
+#                     seiri_days.append(shs.WORKDAY)
 
-        else:
-            shinseis = (
-                Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
-                .filter(Shinsei.NOTIFICATION == "3")
-                .all()
-            )
-            for shs in shinseis:
-                if (
-                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    >= rp_holiday.LAST_DATEGRANT
-                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    < rp_holiday.NEXT_DATEGRANT
-                ):
-                    nenkyu_all_days.add(shs.WORKDAY)
+#         else:
+#             shinseis = (
+#                 Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
+#                 .filter(Shinsei.NOTIFICATION == "3")
+#                 .all()
+#             )
+#             for shs in shinseis:
+#                 if (
+#                     datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     >= rp_holiday.LAST_DATEGRANT
+#                     and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     < rp_holiday.NEXT_DATEGRANT
+#                 ):
+#                     nenkyu_all_days.add(shs.WORKDAY)
 
-            shinseis = (
-                Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
-                .filter(Shinsei.NOTIFICATION == "4")
-                .all()
-            )
-            for shs in shinseis:
-                if (
-                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    >= rp_holiday.LAST_DATEGRANT
-                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    < rp_holiday.NEXT_DATEGRANT
-                ):
-                    nenkyu_half_days.add(shs.WORKDAY)
+#             shinseis = (
+#                 Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
+#                 .filter(Shinsei.NOTIFICATION == "4")
+#                 .all()
+#             )
+#             for shs in shinseis:
+#                 if (
+#                     datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     >= rp_holiday.LAST_DATEGRANT
+#                     and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     < rp_holiday.NEXT_DATEGRANT
+#                 ):
+#                     nenkyu_half_days.add(shs.WORKDAY)
 
-            shinseis = (
-                Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
-                .filter(Shinsei.NOTIFICATION == "16")
-                .all()
-            )
-            for shs in shinseis:
-                if (
-                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    >= rp_holiday.LAST_DATEGRANT
-                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    < rp_holiday.NEXT_DATEGRANT
-                ):
-                    seiri_days.append(shs.WORKDAY)
+#             shinseis = (
+#                 Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
+#                 .filter(Shinsei.NOTIFICATION == "16")
+#                 .all()
+#             )
+#             for shs in shinseis:
+#                 if (
+#                     datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     >= rp_holiday.LAST_DATEGRANT
+#                     and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     < rp_holiday.NEXT_DATEGRANT
+#                 ):
+#                     seiri_days.append(shs.WORKDAY)
 
-            shinseis = (
-                Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
-                .filter(Shinsei.NOTIFICATION2 == "4")
-                .all()
-            )
-            for shs in shinseis:
-                if (
-                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    >= rp_holiday.LAST_DATEGRANT
-                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    < rp_holiday.NEXT_DATEGRANT
-                ):
-                    nenkyu_half_days.add(shs.WORKDAY)
+#             shinseis = (
+#                 Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
+#                 .filter(Shinsei.NOTIFICATION2 == "4")
+#                 .all()
+#             )
+#             for shs in shinseis:
+#                 if (
+#                     datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     >= rp_holiday.LAST_DATEGRANT
+#                     and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     < rp_holiday.NEXT_DATEGRANT
+#                 ):
+#                     nenkyu_half_days.add(shs.WORKDAY)
 
-            shinseis = (
-                Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
-                .filter(Shinsei.NOTIFICATION2 == "16")
-                .all()
-            )
-            for shs in shinseis:
-                if (
-                    datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    >= rp_holiday.LAST_DATEGRANT
-                    and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
-                    < rp_holiday.NEXT_DATEGRANT
-                ):
-                    seiri_days.append(shs.WORKDAY)
+#             shinseis = (
+#                 Shinsei.query.filter(Shinsei.STAFFID == STAFFID)
+#                 .filter(Shinsei.NOTIFICATION2 == "16")
+#                 .all()
+#             )
+#             for shs in shinseis:
+#                 if (
+#                     datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     >= rp_holiday.LAST_DATEGRANT
+#                     and datetime.strptime(shs.WORKDAY, "%Y-%m-%d")
+#                     < rp_holiday.NEXT_DATEGRANT
+#                 ):
+#                     seiri_days.append(shs.WORKDAY)
 
-        return nenkyu_all_days, nenkyu_half_days, seiri_days
+#         return nenkyu_all_days, nenkyu_half_days, seiri_days
 
-    if inday.month == 4 and inday.month == 5:
-        first_day = inday.replacereplace(month=4, day=1)
-    elif inday.month == 6 and inday.month == 7:
-        first_day = inday.replacereplace(month=4, day=1)
-    elif inday.month == 8 and inday.month == 9:
-        first_day = inday.replacereplace(month=4, day=1)
-    elif inday.month == 10 and inday.month == 11:
-        first_day = inday.replace(month=4, day=1)
-    elif inday.month == 12 and inday.month == 1:
-        first_day = inday.replace(month=4, day=1)
-    elif inday.month == 2 and inday.month == 3:
-        first_day = inday.replace(month=4, day=1)
+#     if inday.month == 4 and inday.month == 5:
+#         first_day = inday.replacereplace(month=4, day=1)
+#     elif inday.month == 6 and inday.month == 7:
+#         first_day = inday.replacereplace(month=4, day=1)
+#     elif inday.month == 8 and inday.month == 9:
+#         first_day = inday.replacereplace(month=4, day=1)
+#     elif inday.month == 10 and inday.month == 11:
+#         first_day = inday.replace(month=4, day=1)
+#     elif inday.month == 12 and inday.month == 1:
+#         first_day = inday.replace(month=4, day=1)
+#     elif inday.month == 2 and inday.month == 3:
+#         first_day = inday.replace(month=4, day=1)
 
-    ddm = monthmod(inday, datetime.today())[0].months
-    dm = monthmod(inday, rp_holiday.LAST_DATEGRANT)[0].months
+#     ddm = monthmod(inday, datetime.today())[0].months
+#     dm = monthmod(inday, rp_holiday.LAST_DATEGRANT)[0].months
 
-    """ 常勤 """
-    if rp_holiday.CONTRACT_CODE != 2:
+#     """ 常勤 """
+#     if rp_holiday.CONTRACT_CODE != 2:
 
-        ##### 年休付与日数設定 #####
-        if inday.month == 4 or inday.month == 10:
-            if ddm < 6:
-                aquisition_days = 2
-            elif ddm < 12:
-                aquisition_days = 10
-            elif dm < 24:
-                aquisition_days = 11
-            elif dm < 36:
-                aquisition_days = 12
-            elif dm < 48:
-                aquisition_days = 14
-            elif dm < 60:
-                aquisition_days = 16
-            elif dm < 76:
-                aquisition_days = 18
-            elif dm >= 76:
-                aquisition_days = 20
-        elif inday.month == 5 or inday.month == 11:
-            if ddm < 5:
-                aquisition_days = 2
-            elif ddm < 11:
-                aquisition_days = 10
-            elif dm < 23:
-                aquisition_days = 11
-            elif dm < 35:
-                aquisition_days = 12
-            elif dm < 47:
-                aquisition_days = 14
-            elif dm < 59:
-                aquisition_days = 16
-            elif dm < 71:
-                aquisition_days = 18
-            elif dm >= 71:
-                aquisition_days = 20
-        elif inday.month == 6 or inday.month == 12:
-            if ddm < 4:
-                aquisition_days = 1
-            elif ddm < 10:
-                aquisition_days = 10
-            elif dm < 22:
-                aquisition_days = 11
-            elif dm < 34:
-                aquisition_days = 12
-            elif dm < 46:
-                aquisition_days = 14
-            elif dm < 58:
-                aquisition_days = 16
-            elif dm < 70:
-                aquisition_days = 18
-            elif dm >= 70:
-                aquisition_days = 20
-        elif inday.month == 7 or inday.month == 1:
-            if ddm < 3:
-                aquisition_days = 1
-            elif ddm < 9:
-                aquisition_days = 10
-            elif dm < 21:
-                aquisition_days = 11
-            elif dm < 33:
-                aquisition_days = 12
-            elif dm < 45:
-                aquisition_days = 14
-            elif dm < 57:
-                aquisition_days = 16
-            elif dm < 69:
-                aquisition_days = 18
-            elif dm >= 69:
-                aquisition_days = 20
-        elif inday.month == 8 or inday.month == 2:
-            if ddm < 2:
-                aquisition_days = 0
-            elif ddm < 8:
-                aquisition_days = 10
-            elif dm < 20:
-                aquisition_days = 11
-            elif dm < 32:
-                aquisition_days = 12
-            elif dm < 44:
-                aquisition_days = 14
-            elif dm < 56:
-                aquisition_days = 16
-            elif dm < 68:
-                aquisition_days = 18
-            elif dm >= 68:
-                aquisition_days = 20
-        elif inday.month == 9 or inday.month == 3:
-            if ddm < 1:
-                aquisition_days = 0
-            elif ddm < 7:
-                aquisition_days = 10
-            elif dm < 19:
-                aquisition_days = 11
-            elif dm < 31:
-                aquisition_days = 12
-            elif dm < 43:
-                aquisition_days = 14
-            elif dm < 55:
-                aquisition_days = 16
-            elif dm < 67:
-                aquisition_days = 18
-            elif dm >= 67:
-                aquisition_days = 20
+#         ##### 年休付与日数設定 #####
+#         if inday.month == 4 or inday.month == 10:
+#             if ddm < 6:
+#                 aquisition_days = 2
+#             elif ddm < 12:
+#                 aquisition_days = 10
+#             elif dm < 24:
+#                 aquisition_days = 11
+#             elif dm < 36:
+#                 aquisition_days = 12
+#             elif dm < 48:
+#                 aquisition_days = 14
+#             elif dm < 60:
+#                 aquisition_days = 16
+#             elif dm < 76:
+#                 aquisition_days = 18
+#             elif dm >= 76:
+#                 aquisition_days = 20
+#         elif inday.month == 5 or inday.month == 11:
+#             if ddm < 5:
+#                 aquisition_days = 2
+#             elif ddm < 11:
+#                 aquisition_days = 10
+#             elif dm < 23:
+#                 aquisition_days = 11
+#             elif dm < 35:
+#                 aquisition_days = 12
+#             elif dm < 47:
+#                 aquisition_days = 14
+#             elif dm < 59:
+#                 aquisition_days = 16
+#             elif dm < 71:
+#                 aquisition_days = 18
+#             elif dm >= 71:
+#                 aquisition_days = 20
+#         elif inday.month == 6 or inday.month == 12:
+#             if ddm < 4:
+#                 aquisition_days = 1
+#             elif ddm < 10:
+#                 aquisition_days = 10
+#             elif dm < 22:
+#                 aquisition_days = 11
+#             elif dm < 34:
+#                 aquisition_days = 12
+#             elif dm < 46:
+#                 aquisition_days = 14
+#             elif dm < 58:
+#                 aquisition_days = 16
+#             elif dm < 70:
+#                 aquisition_days = 18
+#             elif dm >= 70:
+#                 aquisition_days = 20
+#         elif inday.month == 7 or inday.month == 1:
+#             if ddm < 3:
+#                 aquisition_days = 1
+#             elif ddm < 9:
+#                 aquisition_days = 10
+#             elif dm < 21:
+#                 aquisition_days = 11
+#             elif dm < 33:
+#                 aquisition_days = 12
+#             elif dm < 45:
+#                 aquisition_days = 14
+#             elif dm < 57:
+#                 aquisition_days = 16
+#             elif dm < 69:
+#                 aquisition_days = 18
+#             elif dm >= 69:
+#                 aquisition_days = 20
+#         elif inday.month == 8 or inday.month == 2:
+#             if ddm < 2:
+#                 aquisition_days = 0
+#             elif ddm < 8:
+#                 aquisition_days = 10
+#             elif dm < 20:
+#                 aquisition_days = 11
+#             elif dm < 32:
+#                 aquisition_days = 12
+#             elif dm < 44:
+#                 aquisition_days = 14
+#             elif dm < 56:
+#                 aquisition_days = 16
+#             elif dm < 68:
+#                 aquisition_days = 18
+#             elif dm >= 68:
+#                 aquisition_days = 20
+#         elif inday.month == 9 or inday.month == 3:
+#             if ddm < 1:
+#                 aquisition_days = 0
+#             elif ddm < 7:
+#                 aquisition_days = 10
+#             elif dm < 19:
+#                 aquisition_days = 11
+#             elif dm < 31:
+#                 aquisition_days = 12
+#             elif dm < 43:
+#                 aquisition_days = 14
+#             elif dm < 55:
+#                 aquisition_days = 16
+#             elif dm < 67:
+#                 aquisition_days = 18
+#             elif dm >= 67:
+#                 aquisition_days = 20
 
-        ##### 繰越残日数２年消滅設定 #####
-        if (
-            monthmod(inday, datetime.today())[0].months == 24
-            and rp_holiday.REMAIN_PAIDHOLIDAY >= 12
-        ):
-            rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 0
-        elif dm < 30 and rp_holiday.REMAIN_PAIDHOLIDAY >= 21:
-            rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 10
-        elif dm < 42 and rp_holiday.REMAIN_PAIDHOLIDAY >= 23:
-            rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 11
-        elif dm < 54 and rp_holiday.REMAIN_PAIDHOLIDAY >= 26:
-            rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 12
-        elif dm < 66 and rp_holiday.REMAIN_PAIDHOLIDAY >= 30:
-            rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 14
-        elif dm < 78 and rp_holiday.REMAIN_PAIDHOLIDAY >= 34:
-            rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 16
-        elif dm < 90 and rp_holiday.REMAIN_PAIDHOLIDAY >= 38:
-            rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 18
-        elif dm >= 90 and rp_holiday.REMAIN_PAIDHOLIDAY >= 40:
-            rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 20
+#         ##### 繰越残日数２年消滅設定 #####
+#         if (
+#             monthmod(inday, datetime.today())[0].months == 24
+#             and rp_holiday.REMAIN_PAIDHOLIDAY >= 12
+#         ):
+#             rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 0
+#         elif dm < 30 and rp_holiday.REMAIN_PAIDHOLIDAY >= 21:
+#             rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 10
+#         elif dm < 42 and rp_holiday.REMAIN_PAIDHOLIDAY >= 23:
+#             rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 11
+#         elif dm < 54 and rp_holiday.REMAIN_PAIDHOLIDAY >= 26:
+#             rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 12
+#         elif dm < 66 and rp_holiday.REMAIN_PAIDHOLIDAY >= 30:
+#             rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 14
+#         elif dm < 78 and rp_holiday.REMAIN_PAIDHOLIDAY >= 34:
+#             rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 16
+#         elif dm < 90 and rp_holiday.REMAIN_PAIDHOLIDAY >= 38:
+#             rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 18
+#         elif dm >= 90 and rp_holiday.REMAIN_PAIDHOLIDAY >= 40:
+#             rp_holiday.REMAIN_PAIDHOLIDAY = rp_holiday.REMAIN_PAIDHOLIDAY - 20
 
-        db.session.commit()
-        enable_days = aquisition_days + rp_holiday.LAST_CARRIEDOVER  # 使用可能日数
+#         db.session.commit()
+#         enable_days = aquisition_days + rp_holiday.LAST_CARRIEDOVER  # 使用可能日数
 
-        ##### 取得日　取得日数　年休種類 #####
-        nenkyu_all_days = set()
-        nenkyu_half_days = set()
-        seiri_days = set()
+#         ##### 取得日　取得日数　年休種類 #####
+#         nenkyu_all_days = set()
+#         nenkyu_half_days = set()
+#         seiri_days = set()
 
-        nenkyu_days(nenkyu_all_days, nenkyu_half_days, seiri_days)
+#         nenkyu_days(nenkyu_all_days, nenkyu_half_days, seiri_days)
 
-        x = (
-            len(nenkyu_all_days) + len(nenkyu_half_days) * 0.5 + len(seiri_days) * 0.5
-        )  # 年休使用日数
+#         x = (
+#             len(nenkyu_all_days) + len(nenkyu_half_days) * 0.5 + len(seiri_days) * 0.5
+#         )  # 年休使用日数
 
-        if rp_holiday.USED_PAIDHOLIDAY is None:
-            rp_holiday(USED_PAIDHOLIDAY=x)
-            db.session.add(rp_holiday)
-            db.session.commit()
-        else:
-            rp_holiday.USED_PAIDHOLIDAY = x
-            db.session.commit()
+#         if rp_holiday.USED_PAIDHOLIDAY is None:
+#             rp_holiday(USED_PAIDHOLIDAY=x)
+#             db.session.add(rp_holiday)
+#             db.session.commit()
+#         else:
+#             rp_holiday.USED_PAIDHOLIDAY = x
+#             db.session.commit()
 
-        y = rp_holiday.LAST_CARRIEDOVER + aquisition_days - x  # 年休残日数
-        if y < 0:
-            y = 0
+#         y = rp_holiday.LAST_CARRIEDOVER + aquisition_days - x  # 年休残日数
+#         if y < 0:
+#             y = 0
 
-        """ パート """
-    elif rp_holiday.CONTRACT_CODE == 2:
+#         """ パート """
+#     elif rp_holiday.CONTRACT_CODE == 2:
 
-        aquisition_days = 0  # 簡易的に記載
-        enable_days = 0  # 簡易的に記載
+#         aquisition_days = 0  # 簡易的に記載
+#         enable_days = 0  # 簡易的に記載
 
-        ##### 取得日　取得日数　年休種類 #####
-        nenkyu_all_days = set()
-        nenkyu_half_days = set()
-        seiri_days = set()
+#         ##### 取得日　取得日数　年休種類 #####
+#         nenkyu_all_days = set()
+#         nenkyu_half_days = set()
+#         seiri_days = set()
 
-        nenkyu_days(nenkyu_all_days, nenkyu_half_days, seiri_days)
+#         nenkyu_days(nenkyu_all_days, nenkyu_half_days, seiri_days)
 
-        x = (
-            len(nenkyu_all_days) + len(nenkyu_half_days) * 0.5 + len(seiri_days) * 0.5
-        )  # 年休使用日数
+#         x = (
+#             len(nenkyu_all_days) + len(nenkyu_half_days) * 0.5 + len(seiri_days) * 0.5
+#         )  # 年休使用日数
 
-        if rp_holiday.USED_PAIDHOLIDAY is None:
-            rp_holiday(USED_PAIDHOLIDAY=x)
-            db.session.add(rp_holiday)
-            db.session.commit()
-        else:
-            rp_holiday.USED_PAIDHOLIDAY = x
-            db.session.commit()
+#         if rp_holiday.USED_PAIDHOLIDAY is None:
+#             rp_holiday(USED_PAIDHOLIDAY=x)
+#             db.session.add(rp_holiday)
+#             db.session.commit()
+#         else:
+#             rp_holiday.USED_PAIDHOLIDAY = x
+#             db.session.commit()
 
-        y = rp_holiday.LAST_CARRIEDOVER + aquisition_days - x  # 年休残日数
-        if y < 0:
-            y = 0
+#         y = rp_holiday.LAST_CARRIEDOVER + aquisition_days - x  # 年休残日数
+#         if y < 0:
+#             y = 0
 
-    return render_template(
-        "attendance/jimu_nenkyu_detail.html",
-        user=user,
-        rp_holiday=rp_holiday,
-        aquisition_days=aquisition_days,
-        next_datagrant=next_datagrant,
-        nenkyu_all_days=nenkyu_all_days,
-        nenkyu_half_days=nenkyu_half_days,
-        enable_days=enable_days,
-        cnt_attendance=cnt_attendance,
-        tm_attendance=tm_attendance,
-        seiri_days=seiri_days,
-        stf_login=stf_login,
-    )
+#     return render_template(
+#         "attendance/jimu_nenkyu_detail.html",
+#         user=user,
+#         rp_holiday=rp_holiday,
+#         aquisition_days=aquisition_days,
+#         next_datagrant=next_datagrant,
+#         nenkyu_all_days=nenkyu_all_days,
+#         nenkyu_half_days=nenkyu_half_days,
+#         enable_days=enable_days,
+#         cnt_attendance=cnt_attendance,
+#         tm_attendance=tm_attendance,
+#         seiri_days=seiri_days,
+#         stf_login=stf_login,
+#     )
+# print("")
