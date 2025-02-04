@@ -2,14 +2,13 @@ import pytest
 from datetime import datetime
 import re
 
-import pandas as pd
 from sqlalchemy import and_, or_
 
 from app import db
 from app.models import RecordPaidHoliday, Shinsei
 from app.holiday_acquisition import HolidayAcquire
 from app.holiday_detail import AttendaceNotice
-from app.calc_work_classes_diff import convert_ym_date, extract_last_update
+from app.attendance_util import convert_ym_date, extract_last_update
 
 TARGET_ID = 176
 

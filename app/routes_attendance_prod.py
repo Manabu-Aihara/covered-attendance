@@ -47,6 +47,7 @@ from app.calender_classes import MakeCalender
 from app.calc_work_classes import DataForTable, CalcTimeClass, get_last_date
 from app.common_func import NoneCheck, TimeCheck, blankCheck, ZeroCheck
 from app.approval_contact import make_system_skype_object
+from app.attendance_logging import AttendanceLogger
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -317,12 +318,12 @@ def indextime(STAFFID, intFlg):
 
     """ 25/1/12 変更箇所① """
     today = datetime.today()
-    # 受け取る人SkypeID
-    skype_recive_account = db.session.get(SystemInfo, 20)
-    # 送る人SkypeID
-    skype_system_obj = make_system_skype_object()
+    # # 受け取る人SkypeID
+    # skype_recive_account = db.session.get(SystemInfo, 20)
+    # # 送る人SkypeID
+    # skype_system_obj = make_system_skype_object()
 
-    channel = skype_system_obj.contacts[skype_recive_account.SKYPE_ID].chat
+    # channel = skype_system_obj.contacts[skype_recive_account.SKYPE_ID].chat
     updated_user: str = ""
     updated_month: int = 0
 
@@ -483,10 +484,12 @@ def indextime(STAFFID, intFlg):
 
             """ 25/1/12 変更箇所② """
             # 過去出退勤、変更した人、後Skype通知
-            if current_type_date.month != today.month and (current_type_date < today):
-                target_user: User = db.session.get(User, STAFFID)
-                updated_user = f"{target_user.LNAME} {target_user.FNAME}"
-                updated_month = current_type_date.month
+            # if current_type_date.month != today.month and (
+            #     current_type_date < today
+            # ):
+            target_user: User = db.session.get(User, STAFFID)
+            updated_user = f"{target_user.LNAME} {target_user.FNAME}"
+            updated_month = current_type_date.month
 
             i = i + 1
         db.session.commit()
@@ -705,10 +708,15 @@ def indextime(STAFFID, intFlg):
     """ 25/1/12 変更箇所③ """
     # ここでSkype通知
     if updated_user != "" and updated_month != 0:
-        report_message = (
-            f"{updated_user}さんが、{updated_month}月の出退勤を変更されました。"
-        )
-        channel.sendMsg(report_message)
+        # report_message = (
+        #     f"{updated_user}さんが、{updated_month}月の出退勤を変更されました。"
+        # )
+        # channel.sendMsg(report_message)
+        report_message = f"{updated_user}"
+        # Skypeは、今いりません
+        # channel.sendMsg(report_message)
+        logger = AttendanceLogger.get_logger(updated_month)
+        logger.info(report_message)
 
     return render_template(
         "attendance/index.html",

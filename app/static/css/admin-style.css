@@ -1,0 +1,21 @@
+ul#list-wrapper {
+  margin: 5% 10%;
+}
+ul#list-wrapper li.last-update {
+  width: 80%;
+  list-style: none;
+  font-size: large;
+}
+ul#list-wrapper li.last-update span.full-name {
+  display: inline-block;
+  width: 30%;
+  text-align: center;
+}
+ul#list-wrapper li.last-update span.last-date {
+  display: inline-block;
+  width: 40%;
+}
+ul#list-wrapper li.last-update:nth-child(even) {
+  background-color: lightblue;
+  opacity: 0.8;
+}

@@ -1,6 +1,6 @@
 import os, math
 import syslog
-from typing import TypeVar
+from typing import TypeVar, List, Dict, Optional
 from datetime import date, datetime, timedelta
 import time
 import cProfile
@@ -8,7 +8,6 @@ import pstats
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
 from collections import namedtuple
-from typing import List, Dict, Optional
 import jpholiday
 
 from dateutil.relativedelta import relativedelta

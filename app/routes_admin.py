@@ -61,8 +61,7 @@ from app.calender_classes import MakeCalender
 from app.calc_work_classes import DataForTable, CalcTimeClass
 from app.common_func import GetPullDownList, intCheck, blankCheck
 from app.db_check_util import compare_db_item, check_contract_value
-from app.attendance_util import convert_null_role
-from app.calc_work_classes_diff import extract_last_update
+from app.attendance_util import convert_null_role, extract_last_update
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -88,7 +87,8 @@ def admin_login_required(func):
 @login_required
 @admin_login_required
 def home_admin():
-    return render_template("admin/admin-home.html")
+    form_month = SelectMonthForm()
+    return render_template("admin/admin-home.html", form_month=form_month)
 
 
 # ***** ユーザリストページ *****#
@@ -689,8 +689,16 @@ def post_select_month():
 @login_required
 @admin_login_required
 def get_save_date(select_date: str):
-    result_dict_list = extract_last_update(selected_date=select_date)
+    try:
+        result_dict_list = extract_last_update(selected_date=select_date)
+    except FileNotFoundError as e:
+        return render_template(
+            "error/exception03.html",
+            title="更新された履歴がありません",
+            date=select_date,
+        )
 
     return render_template(
-        "/admin/last_attend_updates.html", last_update_list=result_dict_list
+        "/admin/last_attend_updates.html",
+        last_update_list=result_dict_list,
     )

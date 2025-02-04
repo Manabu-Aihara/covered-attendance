@@ -11,7 +11,6 @@
       {% endfor %} {% endif %} {% endwith %}
     </div>
   </div>
-  <br><br>
   <a href="{{ url_for('users_nenkyu') }}" class="btn btn-loyal">ユーザ年休検索画面へ</a>
   <br><br>
   <a href="{{ url_for('user_create_admin') }}" class="btn btn-gr">ユーザの新規作成</a>
@@ -20,7 +19,8 @@
   <br><br>
   <a href="{{ url_for('users_list_admin') }}" class="btn btn-warning">ユーザリスト画面（ユーザ削除・打刻編集・パスワード編集）</a>
   <br><br>
-  <!-- 2025/2/3 -->
+  <!-- 2025/2/3 追加 -->
+  {% import "bootstrap/wtf.html" as wtf %}
   <div style="margin: 2%;">
     <form method="POST" action="{{ url_for('post_select_month') }}">
       <input type="month" class="h5" style="height: 5vh;" name="target-month" value="">

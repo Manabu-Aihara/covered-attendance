@@ -8,16 +8,13 @@
 import os, math
 import syslog
 from functools import wraps
-from typing import Tuple, List, Dict
+from typing import List
 from dataclasses import dataclass, field
-import re
 from abc import ABCMeta
 from datetime import datetime, timedelta, time
 from decimal import Decimal, ROUND_HALF_UP
 import calendar
 import jpholiday
-import numpy as np
-import pandas as pd
 
 from flask import render_template, flash, redirect, request, session
 from flask.helpers import url_for
@@ -79,32 +76,6 @@ def admin_login_required(func):
 # ***** 年月から最終日を返す*****#
 def get_last_date(year, month):
     return calendar.monthrange(year, month)[1]
-
-
-def convert_ym_date(touched_date: str) -> Tuple[str, int]:
-    the_year = re.sub(r"(\d{4})-(\d{2})", r"\1", touched_date)
-    the_month = re.sub(r"(\d{4})-(\d{2})", r"\2", touched_date)
-    return the_year, int(the_month)
-
-
-def extract_last_update(selected_date: str) -> List[Dict]:
-    touched_year, touched_month = convert_ym_date(selected_date)
-    csv_file = f"attendance{touched_year}{touched_month}.csv"
-
-    df = pd.read_csv(csv_file, names=["Date", "ms", "Staff"])
-    df_no_duplicate = df.drop_duplicates(subset=["Staff"], keep="last")
-
-    the_dict_list: List[Dict] = [{}]
-    staffs = df_no_duplicate.loc[:, "Staff"]
-    last_dates = df_no_duplicate.loc[:, "Date"]
-    for m, n in zip(staffs.to_list(), last_dates.to_list()):
-        the_dict_list.append({"staff": m, "last_date": n})
-
-    return the_dict_list
-    # staff_dframe = df[df["Staff"] == f"{staff}"]
-    # last_date = staff_dframe.drop_duplicates(subset=["Staff"], keep="last")
-    # last_date = staff_dframe["Date"].max()
-    # return last_date.loc[:, "Date"]
 
 
 # ***** 各勤怠カウント計算ひな形（１日基準） *****#
