@@ -87,7 +87,7 @@ def admin_login_required(func):
 @admin_login_required
 def home_admin():
     form_month = SelectMonthForm()
-    return render_template("admin/admin-home.html", form_month=form_month)
+    return render_template("admin/admin_home.html", form_month=form_month)
 
 
 # ***** ユーザリストページ *****#
@@ -100,7 +100,7 @@ def users_list_admin():
     us = User.query.all()
 
     return render_template(
-        "admin/users-list-admin.html", users=users, us=us, stf_login=stf_login
+        "admin/users_list_admin.html", users=users, us=us, stf_login=stf_login
     )
 
 
@@ -221,7 +221,7 @@ def user_create_admin():
         flash(form.errors, "danger")
 
     return render_template(
-        "admin/user-create-admin.html", form=form, mes=mes, stf_login=stf_login
+        "admin/user_create_admin.html", form=form, mes=mes, stf_login=stf_login
     )
 
 

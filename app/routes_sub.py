@@ -16,7 +16,7 @@ from app.auth_middleware import (
     get_user_group_id,
     get_user_group,
 )
-from app.dummy_model_todo import TodoOrm, EventORM
+from app.model_tt import TodoOrm, EventORM
 from app.models import RecordPaidHoliday, Team, User
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire
@@ -284,7 +284,7 @@ def input_holiday_remains(month):
         input_id_zip = zip(get_target_user_list(month), remain_exist_list)
 
     return render_template(
-        "admin/before-acquisition.html",
+        "admin/before_acquisition.html",
         month=month,
         input_id_list=list(input_id_zip),
         stf_login=current_user,
