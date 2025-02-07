@@ -6,7 +6,7 @@ from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 from app import login
 from app import db, app
 from app.models_aprv import NotificationList
-from app.dummy_model_todo import TodoOrm, EventORM
+from app.model_tt import TodoOrm, EventORM
 
 
 class User(db.Model):

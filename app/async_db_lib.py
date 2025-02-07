@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from database_async import get_session
 from app.models import TableOfCount
-from app.convert_db_lib import get_sync_record
+from app.sync_select_db_lib import get_sync_record
 
 
 async def get_async_query_from_date(year_and_month: str) -> List[TableOfCount]:

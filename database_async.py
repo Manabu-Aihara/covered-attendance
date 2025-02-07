@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 # from asyncmy.errors import IntegrityError
 from sqlalchemy.exc import IntegrityError
 
-from app.convert_db_lib import get_panda_url
+from app.sync_select_db_lib import get_panda_url
 
 from dotenv import load_dotenv
 

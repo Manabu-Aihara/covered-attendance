@@ -18,7 +18,6 @@ from werkzeug.security import generate_password_hash
 from werkzeug.urls import url_parse
 
 from app import app, db, jimu_every_attendance, routes_attendance_option
-from app.attendance_admin_classes import AttendanceAdminAnalysys
 from app.calc_work_classes import (
     CalcTimeClass,
     DataForTable,
@@ -55,8 +54,6 @@ from app.models import (
     is_integer_num,
 )
 from app.common_func import GetPullDownList, ZeroCheck, GetData, GetDataS
-from app.attendance_query_class import AttendanceQuery
-from app.attendance_util import get_month_workday
 from app.db_check_util import compare_db_item, check_contract_value
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"

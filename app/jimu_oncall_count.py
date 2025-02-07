@@ -27,7 +27,6 @@ from werkzeug.urls import url_parse
 
 from database_async import get_session
 from app import app, db
-from app.attendance_admin_classes import AttendanceAdminAnalysys
 from app.calc_work_classes2 import (
     CalcTimeClass,
     CalcTimeFactory,
@@ -74,7 +73,7 @@ from app.db_check_util import compare_db_item, check_contract_value
 from app.async_db_lib import (
     merge_count_table,
 )
-from app.convert_db_lib import get_query_from_date
+from app.sync_select_db_lib import get_query_from_date
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)

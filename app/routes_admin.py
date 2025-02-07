@@ -55,7 +55,6 @@ from app.models import (
     KinmuTaisei,
     Jobtype,
 )
-from app.attendance_admin_classes import AttendanceAdminAnalysys
 from app.calender_classes import MakeCalender
 from app.calc_work_classes import DataForTable, CalcTimeClass
 from app.common_func import GetPullDownList, intCheck, blankCheck
