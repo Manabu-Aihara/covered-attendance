@@ -5,9 +5,17 @@ from sqlalchemy import select, update, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
-from database_async import get_session
+from app.database_async import get_session
 from app.models import TableOfCount
 from app.sync_select_db_lib import get_sync_record
+
+"""
+    対象年月から、クエリー from catDB
+    @Param:
+        : str
+    @Return:
+        : List<TableOfCount>
+    """
 
 
 async def get_async_query_from_date(year_and_month: str) -> List[TableOfCount]:
@@ -23,6 +31,9 @@ async def get_async_query_from_date(year_and_month: str) -> List[TableOfCount]:
 
     # print(f"Func thread: {func_tss}")
     return result_query_list
+
+
+""" 以下2つ使ってません """
 
 
 async def update_count_table(
@@ -59,6 +70,13 @@ async def insert_count_table(
         async with session.begin():
             await session.execute(statement=stmt)
             await session.flush()
+
+
+"""
+    主キーなければ挿入、あれば更新
+    @Param:
+        : TableOfCount DB挿入（変更）対象
+    """
 
 
 async def merge_count_table(

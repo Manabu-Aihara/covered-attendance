@@ -32,7 +32,7 @@ class AttendaceNotice:
 
         return flag
 
-    def make_attendace_filter(self, *notification: str):
+    def make_attendance_filter(self, *notification: str):
         # InstrumentedAttribute!
         # date_type_workday = datetime.strptime(Shinsei.WORKDAY, "%Y-%m-%d")
         attendance_filters = []

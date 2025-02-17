@@ -25,7 +25,6 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash
 from werkzeug.urls import url_parse
 
-from database_async import get_session
 from app import app, db
 from app.calc_work_classes2 import (
     CalcTimeClass,

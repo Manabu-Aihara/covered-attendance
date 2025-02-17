@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database_async import get_session, async_session_generator
+from app.database_async import get_session, async_session_generator
 
 from app import db
 from app.models import TableOfCount, Shinsei
