@@ -6,7 +6,7 @@ from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 from app import login
 from app import db, app
 from app.models_aprv import NotificationList
-from app.model_tt import TodoOrm, EventORM
+from app.models_tt import TodoOrm, EventORM
 
 
 class User(db.Model):
@@ -177,6 +177,33 @@ class M_TIMECARD_TEMPLATE(db.Model):
         self.JOBTYPE_CODE = JOBTYPE_CODE
         self.CONTRACT_CODE = CONTRACT_CODE
         self.TEMPLATE_NO = TEMPLATE_NO
+
+
+# class D_JOB_HISTORY(db.Model):
+#     __tablename__ = "D_JOB_HISTORY"
+#     STAFFID = db.Column(
+#         db.Integer,
+#         db.ForeignKey("M_STAFFINFO.STAFFID"),
+#         primary_key=True,
+#         index=True,
+#         nullable=False,
+#     )
+#     JOBTYPE_CODE = db.Column(db.Integer, index=True, nullable=False)
+#     CONTRACT_CODE = db.Column(db.Integer, index=True, nullable=False)
+#     PART_WORKTIME = db.Column(db.Integer, index=True, nullable=False)
+#     START_DAY = db.Column(db.Date(), primary_key=True, index=True, nullable=True)
+#     END_DAY = db.Column(db.Date(), index=True, nullable=True)
+
+#     def __init__(
+#         self, STAFFID, JOBTYPE_CODE, CONTRACT_CODE, PART_WORKTIME, START_DAY, END_DAY
+#     ):
+#         self.STAFFID = STAFFID
+#         self.JOBTYPE_CODE = JOBTYPE_CODE
+#         self.CONTRACT_CODE = CONTRACT_CODE
+#         self.PART_WORKTIME = PART_WORKTIME
+#         self.START_DAY = START_DAY
+#         self.END_DAY = END_DAY
+# print("")
 
 
 class D_JOB_HISTORY(db.Model):

@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.database_async import get_session
 from app.models import TableOfCount
-from app.sync_select_db_lib import get_sync_record
+from app.select_only_sync import get_sync_record
 
 """
     対象年月から、クエリー from catDB

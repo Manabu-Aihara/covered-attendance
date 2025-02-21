@@ -16,7 +16,7 @@ from app.auth_middleware import (
     get_user_group_id,
     get_user_group,
 )
-from app.model_tt import TodoOrm, EventORM
+from app.models_tt import TodoOrm, EventORM
 from app.models import RecordPaidHoliday, Team, User
 from app.models_aprv import PaidHolidayLog
 from app.holiday_acquisition import HolidayAcquire

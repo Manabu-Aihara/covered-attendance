@@ -72,7 +72,7 @@ from app.db_check_util import compare_db_item, check_contract_value
 from app.async_db_lib import (
     merge_count_table,
 )
-from app.sync_select_db_lib import get_query_from_date
+from app.select_only_sync import get_query_from_date
 
 os.environ.get("SECRET_KEY") or "you-will-never-guess"
 app.permanent_session_lifetime = timedelta(minutes=360)
@@ -735,7 +735,7 @@ async def calcrate_month_data(startday: str, worktype: str):
 
         # if count_table_obj.YEAR_MONTH != year_month:
         year_month = f"{y}{m}"
-        making_id = f"{UserID}{year_month}"
+        making_id = f"{UserID}-{year_month}"
 
         count_table_obj = TableOfCount(UserID)
         count_table_obj.id = making_id

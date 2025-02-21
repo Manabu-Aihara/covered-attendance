@@ -11,7 +11,7 @@ from flask_login import current_user
 
 from app import app, db
 from app.models import StaffLoggin, Team, User
-from app.model_tt import EventORM
+from app.models_tt import EventORM
 
 
 def get_user_group_id(current_user_id: int) -> Tuple[int, int]:
