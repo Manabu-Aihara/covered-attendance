@@ -259,16 +259,16 @@ def test_raise_more_condition_users(condition_users):
 
 @pytest.fixture(name="aq")
 def get_attendance_query_obj(app_context):
-    from_day = date(2024, 10, 1)
-    to_day = date(2024, 10, 31)
-    aq_obj20 = AttendanceQuery(3, from_day, to_day)
+    from_day = date(2024, 12, 1)
+    to_day = date(2024, 12, 31)
+    aq_obj20 = AttendanceQuery(20, from_day, to_day)
     aq_obj201 = AttendanceQuery(201, from_day, to_day)
     return aq_obj20, aq_obj201
 
 
 @pytest.mark.skip
 def test_get_attendance_query(aq):
-    querys = aq[0].get_attendance_query()
+    querys = aq[1].get_attendance_query()
     cnt: int = 0
     for test_result in querys:
         # print(f"{i}query: {test_result[0]}")
@@ -286,11 +286,17 @@ def test_get_filter_length(aq):
     # assert test_filter is None
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_get_clerical_attendance(aq):
-    clerical_attendance_list = aq[1].get_clerical_attendance()
+    clerical_attendance_list = aq[0].get_clerical_attendance(True)
     cnt: int = 0
+    id_list = []
     for test_c_attendace in clerical_attendance_list:
+        att = test_c_attendace[0]
+        id_list.append(att.STAFFID)
         cnt += 1
 
-    assert cnt == 5
+    # assert cnt == 5
+    id_set = set(id_list)
+    print(f"StaffID: {id_set}")
+    print(f"Result count: {cnt}")

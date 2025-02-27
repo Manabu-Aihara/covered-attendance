@@ -61,9 +61,7 @@ class User(db.Model):
     """ 2023/8/7 リレーション機能追加 """
     notification_list = db.relationship("NotificationList", backref="user")
 
-    """ 2023/9/19 リレーション機能追加 """
-    # joinはしてるが、必要だろうか
-    # team = db.relationship("Team", backref="user")
+    # count_table = db.relationship("TableOfCount", backref="user")
 
     def __init__(self, STAFFID):
         self.STAFFID = STAFFID
@@ -549,7 +547,7 @@ class TableOfCount(db.Model):
     id = db.Column(db.String(10), primary_key=True)
     STAFFID = db.Column(
         db.Integer,
-        db.ForeignKey("M_STAFFINFO.STAFFID"),
+        # db.ForeignKey("M_STAFFINFO.STAFFID"),
         index=True,
         nullable=False,
     )

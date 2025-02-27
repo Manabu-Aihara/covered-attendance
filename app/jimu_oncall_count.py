@@ -380,7 +380,7 @@ def get_day_term(start_day: int, select_year: int, select_month: int) -> Tuple[d
     methods=["GET"],
 )
 @login_required
-def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
+async def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
     stf_login = StaffLoggin.query.filter_by(STAFFID=current_user.STAFFID).first()
     typ = ["submit", "text", "time", "checkbox", "number", "date"]
     form_month = SelectMonthForm()
@@ -408,7 +408,7 @@ def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
     # users = User.query.all()
     # 後述
 
-    print(f"Select arg date: {selected_date}")
+    syslog.syslog(f"Select arg date: {selected_date}")
     y, m = get_month_workday(selected_date)
     disp_y_and_m = f"{y}-{m}"
 
@@ -444,19 +444,14 @@ def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
     today = date_type_today.strftime("%Y-%m-%d %H:%M:%S")
 
     """ 集計テーブル、永続化への道 """
-    year_month = f"{y}{m}"
-    # count_month_list = (
-    #     db.session.query(TableOfCount)
-    #     .filter(TableOfCount.YEAR_MONTH == year_month)
-    #     .all()
-    # )
+    year_month_arg = f"{y}{m}-{startday}"
 
     # スレッド諸々
     # route_tss = threading.Thread(target=get_query_from_date(year_month))
     # route_tss.start()
     # print(f"Main thread: {route_tss.ident}")
     # route_tss.join()
-    count_month_list = get_query_from_date(year_month)
+    count_month_list = await get_query_from_date(year_and_month=year_month_arg)
 
     # c_profile.disable()
     # c_stats = pstats.Stats(c_profile)
@@ -465,7 +460,7 @@ def jimu_summary_fulltime(startday: str, worktype: str, selected_date: str):
     end_time = time.perf_counter()
     run_time = end_time - start_time
     pref_result = f"{today}'| 実行時間'{str(run_time)}'秒'"
-    print(pref_result)
+    syslog.syslog(pref_result)
 
     # if len(counter_month_list) != 0:
     #     return f"Select month: {y}-{m} {workday_data}"
@@ -529,6 +524,7 @@ async def calcrate_month_data(startday: str, worktype: str):
     # setting_time = CalcTimeClass(None, None, None, None, None, None)
     calc_time_factory = CalcTimeFactory()
     n_absence_list: List[str] = ["8", "17", "18", "19", "20"]
+    target_usr_list = []
     for clerical_attendance in clerical_attendance_query:
         # print("!!!処理を通る!!!")
         Shin = clerical_attendance[0]
@@ -735,11 +731,11 @@ async def calcrate_month_data(startday: str, worktype: str):
 
         # if count_table_obj.YEAR_MONTH != year_month:
         year_month = f"{y}{m}"
-        making_id = f"{UserID}-{year_month}"
+        making_id = f"{startday}-{UserID}-{year_month}"
 
         count_table_obj = TableOfCount(UserID)
         count_table_obj.id = making_id
-        count_table_obj.YEAR_MONTH = year_month
+        count_table_obj.YEAR_MONTH = f"{year_month}-{startday}"
         count_table_obj.SUM_WORKTIME = time_sum60
         count_table_obj.SUM_WORKTIME_10 = time_sum_rnd
         count_table_obj.SUM_REAL_WORKTIME = real_time
@@ -766,14 +762,17 @@ async def calcrate_month_data(startday: str, worktype: str):
 
         # db.session.merge(count_table_obj)
         try:
-            await merge_count_table(count_table_obj)
+            await merge_count_table(count_table_obj, start_day=startday)
         except Exception as e:
             print(e)
 
         # db.session.commit()
+        target_usr_list.append(UserID)
         totalling_counter += 1
     # for終わり
-    print(f"Totalling item count: {totalling_counter}")
+    set_users = set(target_usr_list)
+    syslog.syslog(f"Corresponding user: {set_users}")
+    syslog.syslog(f"Totalling item count: {totalling_counter}")
 
     return redirect(f"/jimu_summary_fulltime/{startday}/{worktype}/{disp_y_and_m}")
 
